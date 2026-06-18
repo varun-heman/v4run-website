@@ -435,16 +435,18 @@ body.ui-ready #writings-section.ready {
 .sphere-label.intro-mode {
   font-size: clamp(20px, 2.4vw, 28px);
   letter-spacing: 0.18em;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 /* Typewriter cursor */
 .tw-cursor {
   display: inline-block;
   width: 0.55em;
-  height: 1em;
+  height: 0.8em;
   background: rgba(100, 255, 160, 0.85);
-  vertical-align: text-bottom;
-  margin-left: 1px;
+  vertical-align: middle;
+  margin-left: 2px;
   animation: tw-blink 0.7s steps(1, end) infinite;
 }
 @keyframes tw-blink {
@@ -2673,7 +2675,7 @@ body.strip-hovered .nav {
     uni.uBang.value   = bangStartT !== null ? Math.min(1.0, (t - bangStartT) / 2.2) : 0;
     const spd = Math.hypot(rawMx - lastMx, rawMy - lastMy);
     lastMx = rawMx; lastMy = rawMy;
-    if (t > nextIdleGlitch) {
+    if (document.body.classList.contains('ui-ready') && t > nextIdleGlitch) {
       glitchVal = 1.0;
       setTimeout(() => { glitchVal = Math.max(glitchVal, 0.9); }, 160);
       nextIdleGlitch = t + 2 + Math.random() * 3;
@@ -2985,7 +2987,7 @@ const NAV_LABELS = {};  // key → display label
   let isNavHover = false;
 
   function showLabel(key) {
-    if (!document.body.classList.contains('bang-ready')) return;
+    if (!document.body.classList.contains('ui-ready')) return;
     const text = NAV_HINTS[key] || key.toUpperCase();
     isNavHover = true;
     active = true;
