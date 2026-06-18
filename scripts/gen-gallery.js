@@ -25,7 +25,7 @@ const path = require('path');
 const root       = path.join(__dirname, '..');
 const galleryDir = path.join(root, 'images', 'gallery');
 const outFile    = path.join(root, 'content', 'gallery.json');
-const IMG_EXTS   = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']);
+const IMG_EXTS   = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif', '.svg']);
 const MAX_RECENT = 20;
 
 function parseMeta(albumPath) {

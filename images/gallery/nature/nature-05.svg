@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#080e08"/>
+  <defs>
+    <pattern id="p" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0L0 0 0 40" fill="none" stroke="#8ae898" stroke-width="0.6" opacity="0.4"/>
+    </pattern>
+  </defs>
+  <rect width="800" height="600" fill="url(#p)"/>
+  <circle cx="400" cy="280" r="60" fill="none" stroke="#8ae898" stroke-width="1" opacity="0.5"/>
+  <circle cx="400" cy="280" r="40" fill="#8ae898" opacity="0.12"/>
+  <text x="400" y="390" text-anchor="middle" font-family="monospace" font-size="13" fill="#8ae898" opacity="0.6" letter-spacing="3">NATURE 05</text>
+</svg>
