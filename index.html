@@ -835,8 +835,17 @@ body.ui-ready #writings-section.ready {
   border: 1px solid rgba(184,240,210,0.07);
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color 0.2s, background 0.2s, opacity 0.25s ease, transform 0.25s ease;
   cursor: pointer;
+  opacity: 0;
+  transform: translateY(8px);
+}
+.viewall-card.card-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+#viewall-grid.filtering {
+  pointer-events: none;
 }
 .viewall-card:hover {
   border-color: rgba(184,240,210,0.22);
@@ -2246,9 +2255,13 @@ const NAV_LABELS = {};  // key → display label
       const overflowTag = hiddenTags.length
         ? `<span class="article-card__tag article-card__tag--more" data-tags="${hiddenTags.join(',')}">+${hiddenTags.length}</span>`
         : '';
-      const THUMB_PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='460' height='280' viewBox='0 0 460 280'%3E%3Crect width='460' height='280' fill='%230a1510'/%3E%3Cdefs%3E%3Cpattern id='g' width='20' height='20' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 20 0 L 0 0 0 20' fill='none' stroke='%231a3a22' stroke-width='0.5' opacity='0.6'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='460' height='280' fill='url(%23g)'/%3E%3C/svg%3E`;
+      if (!window._thumbFb) {
+        window._thumbFb = "data:image/svg+xml," + encodeURIComponent(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="460" height="280" viewBox="0 0 460 280"><rect width="460" height="280" fill="#0a1510"/><defs><pattern id="g" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1a3a22" stroke-width="0.5" opacity="0.6"/></pattern></defs><rect width="460" height="280" fill="url(#g)"/></svg>`
+        );
+      }
       card.innerHTML = `
-        <img class="article-card__thumb" src="${a.thumb || 'images/thumbs/placeholder.svg'}" alt="" onerror="this.src='${THUMB_PLACEHOLDER}'">
+        <img class="article-card__thumb" src="${a.thumb || 'images/thumbs/placeholder.svg'}" alt="" onerror="this.src=window._thumbFb">
         <div class="article-card__body">
           <div class="article-card__meta">
             <span class="article-card__source">${a.source || ''}</span>
@@ -2331,47 +2344,43 @@ const NAV_LABELS = {};  // key → display label
       if (window._setQuotesPaused) window._setQuotesPaused(false);
     });
 
-    // ── JS-managed card hover (avoids CSS :hover on transformed elements) ──
-    track.addEventListener('mouseover', e => {
-      const card = e.target.closest('.article-card');
-      if (!card) return;
-      track.querySelectorAll('.is-hovered').forEach(c => c.classList.remove('is-hovered'));
-      card.classList.add('is-hovered');
-      track.classList.add('has-hover');
-    });
-    track.addEventListener('mouseout', e => {
-      const card = e.target.closest('.article-card');
-      if (!card) return;
-      // only remove if mouse truly left the card (not entering a child)
-      if (!card.contains(e.relatedTarget)) {
-        card.classList.remove('is-hovered');
-        if (!track.querySelector('.is-hovered')) track.classList.remove('has-hover');
-      }
-    });
-
-    // ── +N pill tooltip ────────────────────────────────────────────────────
+    // ── JS-managed card hover via pointermove + elementFromPoint ──────────
+    // mouseover/mouseout are unreliable on transformed/scrolling elements —
+    // cards sliding past a stationary cursor trigger spurious events.
+    // elementFromPoint always returns the single element actually under the pointer.
+    let _hoveredCard = null;
     const tooltip = document.createElement('div');
     tooltip.className = 'tag-tooltip';
     document.body.appendChild(tooltip);
 
-    track.addEventListener('mouseover', e => {
-      const pill = e.target.closest('.article-card__tag--more');
-      if (!pill) return;
-      const tags = (pill.dataset.tags || '').split(',').filter(Boolean);
-      tooltip.innerHTML = tags.map(t =>
-        `<span class="article-card__tag">${t.trim().toUpperCase()}</span>`
-      ).join('');
-      tooltip.classList.add('visible');
-    });
-    track.addEventListener('mouseout', e => {
-      if (e.target.closest('.article-card__tag--more')) {
-        tooltip.classList.remove('visible');
+    strip.addEventListener('pointermove', e => {
+      if (isDragging) return;
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const card = el && el.closest('.article-card');
+
+      if (card !== _hoveredCard) {
+        if (_hoveredCard) _hoveredCard.classList.remove('is-hovered');
+        _hoveredCard = card || null;
+        if (_hoveredCard) {
+          _hoveredCard.classList.add('is-hovered');
+          track.classList.add('has-hover');
+        } else {
+          track.classList.remove('has-hover');
+        }
       }
-    });
-    track.addEventListener('mousemove', e => {
-      if (tooltip.classList.contains('visible')) {
+
+      // +N tooltip
+      const pill = el && el.closest('.article-card__tag--more');
+      if (pill) {
+        const tags = (pill.dataset.tags || '').split(',').filter(Boolean);
+        tooltip.innerHTML = tags.map(t =>
+          `<span class="article-card__tag">${t.trim().toUpperCase()}</span>`
+        ).join('');
         tooltip.style.left = (e.clientX + 12) + 'px';
-        tooltip.style.top  = (e.clientY - tooltip.offsetHeight / 2) + 'px';
+        tooltip.style.top  = (e.clientY - 20) + 'px';
+        tooltip.classList.add('visible');
+      } else {
+        tooltip.classList.remove('visible');
       }
     });
 
@@ -2538,7 +2547,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
         card.href = a.url || '#';
         if (a.url && a.url !== '#') card.target = '_blank';
         card.rel = 'noopener noreferrer';
-        const thumbHtml = `<img class="articles-overlay-card__thumb" src="${a.thumb || 'images/thumbs/placeholder.svg'}" alt="" onerror="this.style.opacity='0'">`;
+        const thumbHtml = `<img class="articles-overlay-card__thumb" src="${a.thumb || 'images/thumbs/placeholder.svg'}" alt="" onerror="this.src=window._thumbFb">`;
         card.innerHTML = `${thumbHtml}
           <div class="articles-overlay-card__body">
             <div class="articles-overlay-card__meta">
@@ -2681,17 +2690,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   }
 
   // ── Render filtered grid ───────────────────────────
-  function renderGrid() {
+  function buildCards(filtered) {
     grid.innerHTML = '';
-    const filtered = allArticles.filter(a => {
-      if (activeYear) {
-        const d = new Date(a.date);
-        if (isNaN(d) || d.getFullYear().toString() !== activeYear) return false;
-      }
-      if (activeTag && !(a.tags || []).includes(activeTag)) return false;
-      return true;
-    });
-
     if (!filtered.length) {
       const empty = document.createElement('div');
       empty.className = 'viewall-empty';
@@ -2699,8 +2699,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       grid.appendChild(empty);
       return;
     }
-
-    filtered.forEach(a => {
+    filtered.forEach((a, i) => {
       const card = document.createElement('a');
       card.className = 'viewall-card' + (a._isNew ? ' is-new' : '');
       card.href = a.url || '#';
@@ -2714,7 +2713,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       const newBadge = a._isNew ? '<span class="article-card__new">NEW</span>' : '';
 
       card.innerHTML = `
-        <img class="viewall-card__thumb" src="${thumbSrc}" alt="" onerror="this.style.opacity='0'">
+        <img class="viewall-card__thumb" src="${thumbSrc}" alt="" onerror="this.src=window._thumbFb">
         <div class="viewall-card__body">
           <div class="viewall-card__meta">
             <span class="viewall-card__source">${a.source || ''}</span>
@@ -2726,7 +2725,38 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
           <div class="viewall-card__desc">${a.desc || ''}</div>
         </div>`;
       grid.appendChild(card);
+      // staggered entrance
+      requestAnimationFrame(() => {
+        setTimeout(() => card.classList.add('card-visible'), i * 40);
+      });
     });
+  }
+
+  function renderGrid() {
+    const filtered = allArticles.filter(a => {
+      if (activeYear) {
+        const d = new Date(a.date);
+        if (isNaN(d) || d.getFullYear().toString() !== activeYear) return false;
+      }
+      if (activeTag && !(a.tags || []).includes(activeTag)) return false;
+      return true;
+    });
+
+    // If grid already has cards, fade them out first then swap
+    if (grid.children.length && grid.querySelector('.card-visible')) {
+      grid.classList.add('filtering');
+      [...grid.children].forEach(c => {
+        c.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
+        c.style.opacity = '0';
+        c.style.transform = 'translateY(-6px)';
+      });
+      setTimeout(() => {
+        grid.classList.remove('filtering');
+        buildCards(filtered);
+      }, 200);
+    } else {
+      buildCards(filtered);
+    }
   }
 
   // ── Open/close ─────────────────────────────────────
