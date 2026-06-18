@@ -2916,9 +2916,12 @@ body.strip-hovered .nav {
   // Called by intro sequence (or immediately for return visitors)
   window._triggerBigBang = function () {
     if (bangStartT !== null) return; // already fired
-    bangStartT = clock.getElapsedTime();
+    // Fade canvas in first, then fire bang after 1s so the dot is visible before expanding
     document.body.classList.add('bang-ready');
-    setTimeout(() => document.body.classList.add('ui-ready'), 2700);
+    setTimeout(() => {
+      bangStartT = clock.getElapsedTime();
+      setTimeout(() => document.body.classList.add('ui-ready'), 2700);
+    }, 1000);
   };
 
   window._setModalOpen = v => {
@@ -3123,10 +3126,9 @@ const NAV_LABELS = {};  // key → display label
       deleteSpan(span, cur, () => {
 
         // Step 2 — “My name is Varun!” → glitch Varun → v4run → v4.run
-        typePhrase('My name is Varun!', 350, (span2, cur2) => {
-          // morph Varun → v4run
-          const base = 'My name is ';
-          morphSpan(span2, 'My name is Varun!', 'My name is v4run!', 340, () => {
+        typePhrase('My name is varun!', 350, (span2, cur2) => {
+          // morph varun → v4run
+          morphSpan(span2, 'My name is varun!', 'My name is v4run!', 340, () => {
             _twTimer = setTimeout(() => {
               // morph v4run → v4.run
               morphSpan(span2, 'My name is v4run!', 'My name is v4.run!', 340, () => {
