@@ -777,6 +777,16 @@ body.ui-ready #writings-section.ready {
   letter-spacing: 0.08em;
   color: rgba(232, 232, 226, 0.22);
 }
+.article-card__new {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.12em;
+  color: var(--green);
+  border: 1px solid rgba(100,255,160,0.4);
+  padding: 1px 4px;
+  border-radius: 2px;
+  opacity: 0.85;
+}
 .article-card__title {
   font-family: var(--sans);
   font-size: 11px;
@@ -1889,6 +1899,16 @@ const NAV_LABELS = {};  // key → display label
     }
 
     if (!articles.length) return;
+
+    // Sort descending by date ("Jun 2026" etc)
+    function parseArticleDate(d) { return d ? new Date(d) : new Date(0); }
+    articles.sort((a, b) => parseArticleDate(b.date) - parseArticleDate(a.date));
+
+    // Mark articles published within 60 days as new
+    const NOW = Date.now();
+    const SIXTY_DAYS = 60 * 24 * 60 * 60 * 1000;
+    articles.forEach(a => { a._isNew = (NOW - parseArticleDate(a.date).getTime()) < SIXTY_DAYS; });
+
     window._articles = articles; // expose for mobile overlay
 
     const strip   = document.getElementById('articles-strip');
@@ -1907,6 +1927,7 @@ const NAV_LABELS = {};  // key → display label
           <div class="article-card__meta">
             <span class="article-card__source">${a.source || ''}</span>
             <span class="article-card__date">${a.date || ''}</span>
+            ${a._isNew ? '<span class="article-card__new">NEW</span>' : ''}
           </div>
           <div class="article-card__title">${a.title}</div>
           <div class="article-card__desc">${a.desc || ''}</div>
@@ -2129,6 +2150,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
             <div class="articles-overlay-card__meta">
               <span>${a.source || ''}</span>
               <span>${a.date || ''}</span>
+              ${a._isNew ? '<span class="article-card__new">NEW</span>' : ''}
             </div>
             <div class="articles-overlay-card__title">${a.title}</div>
             <div class="articles-overlay-card__desc">${a.desc || ''}</div>
