@@ -4143,9 +4143,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
   if (!overlay) return;
 
-  let galleryData  = null;
-  let lbPhotos     = [];
-  let lbIndex      = 0;
+  let galleryData      = null;
+  let lbPhotos         = [];
+  let lbIndex          = 0;
+  let currentAlbumSlug = null; // slug of the open album, or 'recent'
 
   // ── Date formatter (YYYY-MM-DD → "Month DD, YYYY") ─
   function formatDate(raw) {
@@ -4156,22 +4157,30 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   }
 
   // ── Lightbox ──────────────────────────────────────
-  function openLightbox(photos, index) {
+  function lbHashPath(idx) {
+    return '#pics/' + (currentAlbumSlug || 'recent') + '/' + idx;
+  }
+  function openLightbox(photos, index, skipHash) {
     lbPhotos = photos;
     lbIndex  = index;
     showLbPhoto();
     lightbox.classList.add('open');
     window._modalOpen = true;
+    if (!skipHash) history.pushState({ panel: 'pics', album: currentAlbumSlug, photo: index }, '', lbHashPath(index));
   }
-  function closeLightbox() {
+  function closeLightbox(skipHash) {
     lightbox.classList.remove('open');
     if (overlay.classList.contains('open')) {
-      window._modalOpen = true; // gallery still open
+      window._modalOpen = true;
+      if (!skipHash) {
+        const back = currentAlbumSlug ? '#pics/' + currentAlbumSlug : '#pics';
+        history.pushState({ panel: 'pics', album: currentAlbumSlug }, '', back);
+      }
     } else {
       window._modalOpen = false;
     }
   }
-  function showLbPhoto() {
+  function showLbPhoto(replaceHash) {
     const p = lbPhotos[lbIndex];
     if (!p) return;
     lbImg.src = p.src;
@@ -4191,17 +4200,20 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     }
     lbPrev.style.visibility = lbIndex > 0 ? 'visible' : 'hidden';
     lbNext.style.visibility = lbIndex < lbPhotos.length - 1 ? 'visible' : 'hidden';
+    if (replaceHash) history.replaceState({ panel: 'pics', album: currentAlbumSlug, photo: lbIndex }, '', lbHashPath(lbIndex));
   }
-  lbPrev.addEventListener('click', () => { if (lbIndex > 0) { lbIndex--; showLbPhoto(); } });
-  lbNext.addEventListener('click', () => { if (lbIndex < lbPhotos.length - 1) { lbIndex++; showLbPhoto(); } });
-  lbClose.addEventListener('click', closeLightbox);
+  lbPrev.addEventListener('click', () => { if (lbIndex > 0) { lbIndex--; showLbPhoto(true); } });
+  lbNext.addEventListener('click', () => { if (lbIndex < lbPhotos.length - 1) { lbIndex++; showLbPhoto(true); } });
+  lbClose.addEventListener('click', () => closeLightbox());
   lightbox.addEventListener('click', e => { if (e.target === lightbox || e.target === lbImg) closeLightbox(); });
   document.addEventListener('keydown', e => {
     if (!lightbox.classList.contains('open')) return;
-    if (e.key === 'ArrowLeft')  { if (lbIndex > 0) { lbIndex--; showLbPhoto(); } }
-    if (e.key === 'ArrowRight') { if (lbIndex < lbPhotos.length - 1) { lbIndex++; showLbPhoto(); } }
+    if (e.key === 'ArrowLeft')  { if (lbIndex > 0) { lbIndex--; showLbPhoto(true); } }
+    if (e.key === 'ArrowRight') { if (lbIndex < lbPhotos.length - 1) { lbIndex++; showLbPhoto(true); } }
     if (e.key === 'Escape') closeLightbox();
   });
+  // Expose so popstate can close just the lightbox without nuking the gallery
+  window._closeLightboxOnly = () => closeLightbox(true);
 
   // ── Build thumb elements ───────────────────────────
   function makeThumb(photo, photos, index, cls) {
@@ -4261,7 +4273,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     if (data.recent && data.recent.length) {
       recentSection.style.display = 'block';
       data.recent.forEach((p, i) => {
-        recentGrid.appendChild(makeThumb(p, data.recent, i, 'gallery-recent-thumb'));
+        const thumb = makeThumb(p, data.recent, i, 'gallery-recent-thumb');
+        // Override click to set context before opening lightbox
+        thumb.addEventListener('click', () => { currentAlbumSlug = 'recent'; }, true);
+        recentGrid.appendChild(thumb);
       });
     } else {
       recentSection.style.display = 'none';
@@ -4289,6 +4304,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   function slugify(s) { return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''); }
 
   function openAlbum(album, skipHash) {
+    currentAlbumSlug = slugify(album.title);
     albumTitle.textContent = album.title;
     albumGrid.innerHTML = '';
     album.photos.forEach((p, i) => {
@@ -4296,7 +4312,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     });
     mainView.style.display = 'none';
     albumView.style.display = 'block';
-    if (!skipHash) history.pushState({ panel: 'pics', album: album.title }, '', '#pics/' + slugify(album.title));
+    if (!skipHash) history.pushState({ panel: 'pics', album: album.title }, '', '#pics/' + currentAlbumSlug);
   }
   backBtn.addEventListener('click', () => {
     albumView.style.display = 'none';
@@ -4309,6 +4325,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     // Always reset to main view
     mainView.style.display = 'block';
     albumView.style.display = 'none';
+    currentAlbumSlug = null;
     overlay.classList.add('open');
     window._modalOpen = true;
     document.body.style.overflow = 'hidden';
@@ -4349,12 +4366,18 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       closeGallery();
   });
 
-  window._openGallery = async function(skipHash, albumSlug) {
+  window._openGallery = async function(skipHash, albumSlug, photoIndex) {
     await openGallery();
-    if (!skipHash) history.pushState({ panel: 'pics' }, '', albumSlug ? '#pics/' + albumSlug : '#pics');
-    if (albumSlug && galleryData) {
+    if (!skipHash) history.pushState({ panel: 'pics' }, '', albumSlug ? '#pics/' + albumSlug + (photoIndex != null ? '/' + photoIndex : '') : '#pics');
+    if (albumSlug === 'recent' && galleryData && photoIndex != null) {
+      currentAlbumSlug = 'recent';
+      openLightbox(galleryData.recent, photoIndex, true);
+    } else if (albumSlug && galleryData) {
       const album = galleryData.albums.find(a => slugify(a.title) === albumSlug);
-      if (album) openAlbum(album, true);
+      if (album) {
+        openAlbum(album, true);
+        if (photoIndex != null) openLightbox(album.photos, photoIndex, true);
+      }
     }
   };
 })();
@@ -4817,8 +4840,14 @@ function _openFromHash(hash) {
   const key = (hash || '').replace('#', '').toLowerCase();
   if (!key) return;
   if (key === 'writing'  && window._openViewAll)  { window._openViewAll(true);  return; }
-  if (key === 'pics'     && window._openGallery)  { window._openGallery(true);  return; }
-  if (key.startsWith('pics/') && window._openGallery) { window._openGallery(true, key.slice(5)); return; }
+  if (key === 'pics' && window._openGallery) { window._openGallery(true); return; }
+  if (key.startsWith('pics/') && window._openGallery) {
+    const parts = key.slice(5).split('/');
+    const albumSlug  = parts[0] || null;
+    const photoIndex = parts[1] != null ? parseInt(parts[1]) : null;
+    window._openGallery(true, albumSlug, isNaN(photoIndex) ? null : photoIndex);
+    return;
+  }
   if (key === 'reads'    && window._openReads)    { window._openReads(true);    return; }
   if (key === 'projects' && window._openProjects) { window._openProjects(true); return; }
   // Modal keys (about, work, etc.) — openModal is defined in this scope
@@ -4833,15 +4862,28 @@ if (location.hash) {
 
 // Browser back / forward
 window.addEventListener('popstate', () => {
+  const hash = location.hash;
+
+  // If lightbox is open and we're navigating back to an album or pics level,
+  // just close the lightbox rather than tearing down the whole gallery.
+  const lb = document.getElementById('gallery-lightbox');
+  if (lb && lb.classList.contains('open')) {
+    if (window._closeLightboxOnly) window._closeLightboxOnly();
+    if (hash) _openFromHash(hash); // re-open album/gallery view if needed
+    return;
+  }
+
   // Close whatever is currently open, then open the new hash (if any)
   if (typeof closeModal === 'function') closeModal();
   const wa = document.getElementById('viewall-overlay');
   const ga = document.getElementById('gallery-overlay');
   const ra = document.getElementById('reads-overlay');
+  const pa = document.getElementById('projects-overlay');
   if (wa) wa.classList.remove('open');
   if (ga) ga.classList.remove('open');
   if (ra) ra.classList.remove('open');
-  if (location.hash) _openFromHash(location.hash);
+  if (pa) pa.classList.remove('open');
+  if (hash) _openFromHash(hash);
 });
 </script>
 </body>
