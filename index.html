@@ -1000,20 +1000,29 @@ body.ui-ready #writings-section.ready {
   transition: opacity 0.3s ease, filter 0.3s ease, transform 0.35s cubic-bezier(0.4,0,0.2,1), border-color 0.35s cubic-bezier(0.4,0,0.2,1), background 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s cubic-bezier(0.4,0,0.2,1);
 }
 .article-card__thumb {
-  /* Absolute — overlays card from top, never changes card layout height */
+  /* Fills card as background layer — never changes card layout height */
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 140px;
+  top: 0; left: 0; right: 0; bottom: 0;
   object-fit: cover;
-  background: rgba(20,30,22,0.8);
-  filter: brightness(0.9);
   pointer-events: none;
-  z-index: 2;
-  clip-path: inset(0 0 100% 0);
-  transition: clip-path 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 0; /* behind body text */
+  opacity: 0;
+  transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .article-card.is-hovered .article-card__thumb {
-  clip-path: inset(0 0 0% 0);
+  opacity: 1;
+}
+/* Dark gradient over thumbnail so body text stays readable */
+.article-card.is-hovered::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(to top,
+    rgba(6,18,10,0.97) 25%,
+    rgba(6,18,10,0.72) 60%,
+    rgba(6,18,10,0.35) 100%);
+  pointer-events: none;
 }
 /* Hide nav when hovering carousel */
 .nav { transition: opacity 0.25s ease; }
@@ -1046,6 +1055,8 @@ body.strip-hovered .nav {
   color: rgba(184,240,210,0.6);
 }
 .article-card__body {
+  position: relative;
+  z-index: 2; /* above thumbnail (z:0) and gradient overlay (z:1) */
   padding: 9px 11px 11px;
 }
 .article-card__meta {
