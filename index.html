@@ -976,20 +976,12 @@ body.ui-ready #writings-section.ready {
   transform: scale(1.12) translateY(-5px);
   box-shadow: 0 16px 40px rgba(0,0,0,0.75);
   z-index: 20;
-  transition: border-color 0.3s cubic-bezier(0.4,0,0.2,1),
-              background 0.3s cubic-bezier(0.4,0,0.2,1),
-              transform 0.3s cubic-bezier(0.4,0,0.2,1),
-              box-shadow 0.3s cubic-bezier(0.4,0,0.2,1);
+  transition: border-color 0.15s cubic-bezier(0.16,1,0.3,1),
+              background 0.15s cubic-bezier(0.16,1,0.3,1),
+              transform 0.18s cubic-bezier(0.16,1,0.3,1),
+              box-shadow 0.15s cubic-bezier(0.16,1,0.3,1);
 }
-.article-card.is-new {
-  border-color: rgba(100, 255, 160, 0.22);
-  background: rgba(6, 18, 10, 0.72);
-  box-shadow: 0 0 18px rgba(100, 255, 160, 0.06), inset 0 0 0 1px rgba(100, 255, 160, 0.05);
-}
-.article-card.is-new.is-hovered {
-  border-color: rgba(100, 255, 160, 0.38);
-  background: rgba(8, 24, 14, 0.82);
-}
+/* is-new: no special card styling — the NEW badge is the only indicator */
 .article-card.is-hovered .article-card__title {
   color: rgba(232, 232, 226, 0.97);
 }
@@ -997,7 +989,7 @@ body.ui-ready #writings-section.ready {
 .articles-track.has-hover .article-card:not(.is-hovered) {
   opacity: 0.35;
   filter: grayscale(80%);
-  transition: opacity 0.3s ease, filter 0.3s ease, transform 0.35s cubic-bezier(0.4,0,0.2,1), border-color 0.35s cubic-bezier(0.4,0,0.2,1), background 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s cubic-bezier(0.4,0,0.2,1);
+  transition: opacity 0.15s ease, filter 0.15s ease;
 }
 .article-card__thumb {
   /* Fills card as background layer — never changes card layout height */
@@ -1007,7 +999,7 @@ body.ui-ready #writings-section.ready {
   pointer-events: none;
   z-index: 0; /* behind body text */
   opacity: 0;
-  transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .article-card.is-hovered .article-card__thumb {
   opacity: 1;
@@ -1326,6 +1318,301 @@ body.strip-hovered .nav {
   .nav-item { padding: 10px 10px; }
   .nav-link  { font-size: 11px; }
 }
+
+/* ── CONTACT TRIGGER ─────────────────────────────── */
+#contact-trigger {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: rgba(184,240,210,0.55);
+  background: none; border: none; cursor: pointer; padding: 0;
+  border-bottom: 1px solid rgba(184,240,210,0.18); padding-bottom: 1px;
+  transition: color 0.2s;
+}
+#contact-trigger:hover { color: rgba(100,255,160,0.9); }
+
+/* ── CONTACT MODAL ───────────────────────────────── */
+#contact-overlay {
+  position: fixed; inset: 0; z-index: 130;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(4,8,5,0.88);
+  backdrop-filter: blur(8px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+#contact-overlay.open { opacity: 1; pointer-events: all; }
+#contact-box {
+  width: 100%; max-width: 520px; margin: 16px;
+  background: rgba(6,12,8,0.97);
+  border: 1px solid rgba(100,255,160,0.18);
+  box-shadow: 0 0 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(100,255,160,0.06);
+  overflow: hidden;
+  animation: modal-scan-wipe 0.45s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes contact-flash {
+  0%   { border-color: rgba(100,255,160,0.55); box-shadow: 0 0 40px rgba(100,255,160,0.12); }
+  100% { border-color: rgba(100,255,160,0.18); box-shadow: 0 0 60px rgba(0,0,0,0.8); }
+}
+#contact-box { animation: contact-flash 0.9s ease-out both; }
+#contact-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; border-bottom: 1px solid rgba(184,240,210,0.08);
+}
+#contact-head-label {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(100,255,160,0.6);
+}
+#contact-close {
+  font-size: 18px; color: rgba(184,240,210,0.4); cursor: pointer;
+  line-height: 1; padding: 2px 6px; transition: color 0.15s;
+}
+#contact-close:hover { color: rgba(184,240,210,0.9); }
+#contact-body { padding: 24px 20px 20px; }
+.cf-field { margin-bottom: 16px; }
+.cf-field label {
+  display: block; font-family: var(--mono); font-size: 8px;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: rgba(184,240,210,0.38); margin-bottom: 6px;
+}
+.cf-field input, .cf-field textarea {
+  width: 100%; box-sizing: border-box;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(184,240,210,0.14);
+  color: rgba(232,232,226,0.85); font-family: var(--mono); font-size: 11px;
+  padding: 9px 11px; outline: none; resize: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cf-field input:focus, .cf-field textarea:focus {
+  border-color: rgba(100,255,160,0.38); background: rgba(100,255,160,0.03);
+}
+.cf-check {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 20px; cursor: pointer;
+}
+.cf-check input[type="checkbox"] { margin-top: 2px; accent-color: rgba(100,255,160,0.9); flex-shrink: 0; }
+.cf-check span {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em;
+  color: rgba(184,240,210,0.45); line-height: 1.5;
+}
+.cf-submit {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: rgba(100,255,160,0.85);
+  background: rgba(100,255,160,0.07); border: 1px solid rgba(100,255,160,0.28);
+  padding: 9px 20px; cursor: pointer; width: 100%;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.cf-submit:hover { background: rgba(100,255,160,0.13); border-color: rgba(100,255,160,0.5); color: rgb(100,255,160); }
+#contact-success {
+  padding: 12px 0 4px;
+}
+#contact-success .cf-success-title {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(100,255,160,0.7); margin-bottom: 12px;
+}
+#contact-success p {
+  font-family: var(--sans); font-size: 12px; color: rgba(184,240,210,0.5);
+  line-height: 1.7; margin: 0 0 8px;
+}
+
+/* Subscribe confirm dialog */
+#subscribe-confirm {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(4,8,5,0.75); backdrop-filter: blur(4px);
+  opacity: 0; pointer-events: none; transition: opacity 0.18s;
+  z-index: 5;
+}
+#subscribe-confirm.open { opacity: 1; pointer-events: all; }
+#subscribe-confirm-box {
+  background: rgba(6,14,9,0.98); border: 1px solid rgba(100,255,160,0.22);
+  padding: 22px 24px; max-width: 360px; margin: 16px;
+  box-shadow: 0 0 40px rgba(0,0,0,0.7);
+}
+#subscribe-confirm-box .sc-label {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(100,255,160,0.5); margin-bottom: 10px;
+}
+#subscribe-confirm-box p {
+  font-family: var(--sans); font-size: 11.5px; color: rgba(184,240,210,0.6);
+  line-height: 1.65; margin: 0 0 18px;
+}
+.sc-actions { display: flex; gap: 10px; }
+.sc-btn {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.14em;
+  text-transform: uppercase; padding: 7px 14px; cursor: pointer; border: 1px solid;
+  transition: background 0.15s, color 0.15s;
+}
+#sc-yes { color: rgba(100,255,160,0.85); border-color: rgba(100,255,160,0.3); background: rgba(100,255,160,0.07); }
+#sc-yes:hover { background: rgba(100,255,160,0.15); color: rgb(100,255,160); }
+#sc-no  { color: rgba(184,240,210,0.4); border-color: rgba(184,240,210,0.12); background: none; }
+#sc-no:hover { color: rgba(184,240,210,0.7); border-color: rgba(184,240,210,0.25); }
+
+/* ── GALLERY OVERLAY ─────────────────────────────── */
+#gallery-overlay {
+  position: fixed; inset: 0; z-index: 120;
+  background: rgba(4,8,5,0.97);
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.22s ease;
+  overflow: hidden;
+}
+#gallery-overlay.open { opacity: 1; pointer-events: all; }
+#gallery-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 32px; border-bottom: 1px solid rgba(184,240,210,0.08);
+  flex-shrink: 0;
+}
+#gallery-title {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.22em;
+  text-transform: uppercase; color: rgba(184,240,210,0.35);
+}
+#gallery-close {
+  font-size: 20px; color: rgba(184,240,210,0.4); cursor: pointer;
+  line-height: 1; padding: 2px 6px; transition: color 0.15s;
+}
+#gallery-close:hover { color: rgba(184,240,210,0.9); }
+#gallery-body {
+  flex: 1; overflow-y: auto; padding: 28px 32px 40px;
+  scrollbar-width: thin; scrollbar-color: rgba(100,255,160,0.15) transparent;
+}
+.gallery-section-label {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(184,240,210,0.3);
+  margin-bottom: 14px;
+}
+/* Recent grid — tight square thumbnails */
+#gallery-recent-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 4px; margin-bottom: 36px;
+}
+.gallery-recent-thumb {
+  aspect-ratio: 1; overflow: hidden; cursor: pointer;
+  background: rgba(10,18,12,0.9); position: relative;
+}
+.gallery-recent-thumb img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: opacity 0.15s, transform 0.2s;
+  display: block;
+}
+.gallery-recent-thumb:hover img { opacity: 0.75; transform: scale(1.04); }
+
+/* Albums grid */
+#gallery-albums-section { margin-bottom: 28px; }
+#gallery-albums-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+.gallery-album-card {
+  cursor: pointer; overflow: hidden; position: relative;
+  background: rgba(10,18,12,0.9); border: 1px solid rgba(184,240,210,0.06);
+  transition: border-color 0.15s;
+}
+.gallery-album-card:hover { border-color: rgba(100,255,160,0.25); }
+.gallery-album-cover {
+  aspect-ratio: 4/3; overflow: hidden;
+}
+.gallery-album-cover img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: opacity 0.15s, transform 0.22s;
+  display: block; filter: brightness(0.85);
+}
+.gallery-album-card:hover .gallery-album-cover img { opacity: 0.9; transform: scale(1.04); }
+.gallery-album-info {
+  padding: 9px 10px 10px;
+}
+.gallery-album-name {
+  font-family: var(--sans); font-size: 11px; font-weight: 500;
+  color: rgba(232,232,226,0.75); margin-bottom: 3px;
+}
+.gallery-album-count {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em;
+  color: rgba(184,240,210,0.3);
+}
+
+/* Album view */
+#gallery-album-view { display: none; }
+#gallery-album-head {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 20px;
+}
+#gallery-back {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(100,255,160,0.6);
+  background: none; border: 1px solid rgba(100,255,160,0.18);
+  padding: 5px 12px; cursor: pointer; transition: color 0.15s, border-color 0.15s;
+}
+#gallery-back:hover { color: rgb(100,255,160); border-color: rgba(100,255,160,0.4); }
+#gallery-album-title-text {
+  font-family: var(--sans); font-size: 14px; font-weight: 500;
+  color: rgba(232,232,226,0.75);
+}
+#gallery-album-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 4px;
+}
+.gallery-album-thumb {
+  aspect-ratio: 1; overflow: hidden; cursor: pointer;
+  background: rgba(10,18,12,0.9); position: relative;
+}
+.gallery-album-thumb img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: opacity 0.15s, transform 0.2s; display: block;
+}
+.gallery-album-thumb:hover img { opacity: 0.75; transform: scale(1.04); }
+
+/* Lightbox */
+#gallery-lightbox {
+  position: fixed; inset: 0; z-index: 150;
+  background: rgba(3,6,4,0.97);
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+#gallery-lightbox.open { display: flex; }
+#lb-close {
+  position: absolute; top: 20px; right: 24px;
+  font-size: 22px; color: rgba(184,240,210,0.45); background: none; border: none;
+  cursor: pointer; transition: color 0.15s; z-index: 2; line-height: 1;
+}
+#lb-close:hover { color: rgba(184,240,210,0.9); }
+#lb-img {
+  max-width: calc(100vw - 100px); max-height: calc(100vh - 160px);
+  object-fit: contain; display: block;
+  box-shadow: 0 0 80px rgba(0,0,0,0.9);
+}
+#lb-prev, #lb-next {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  font-size: 28px; color: rgba(184,240,210,0.3); background: none; border: none;
+  cursor: pointer; padding: 16px; transition: color 0.15s; z-index: 2;
+  user-select: none; line-height: 1;
+}
+#lb-prev:hover, #lb-next:hover { color: rgba(184,240,210,0.9); }
+#lb-prev { left: 8px; }
+#lb-next { right: 8px; }
+#lb-meta {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 18px 32px;
+  background: linear-gradient(to top, rgba(3,6,4,0.95) 60%, transparent);
+  text-align: center;
+}
+#lb-caption {
+  font-family: var(--sans); font-size: 12px; color: rgba(184,240,210,0.65);
+  line-height: 1.5; margin-bottom: 6px;
+}
+#lb-details {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+}
+.lb-chip {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(184,240,210,0.35);
+  border: 1px solid rgba(184,240,210,0.1); padding: 2px 8px;
+}
+
+@media (max-width: 768px) {
+  #gallery-body { padding: 20px 16px 32px; }
+  #gallery-head { padding: 14px 16px; }
+  #gallery-recent-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+  #gallery-albums-grid  { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  #lb-img { max-width: calc(100vw - 60px); max-height: calc(100vh - 140px); }
+  #lb-meta { padding: 14px 16px; }
+  #lb-prev { left: 2px; } #lb-next { right: 2px; }
+}
 </style>
 </head>
 <body>
@@ -1346,7 +1633,7 @@ body.strip-hovered .nav {
 </div>
 
 <div class="corner corner-bl">
-  <a href="mailto:v@pvt.is" style="color:inherit;text-decoration:none;border-bottom:1px solid rgba(232,232,226,0.15);padding-bottom:1px;">email: v@pvt.is</a>
+  <button id="contact-trigger">Contact Me</button>
 </div>
 
 <div class="corner corner-br">
@@ -1418,6 +1705,95 @@ body.strip-hovered .nav {
     <div id="viewall-tag-row" class="viewall-filter-row"></div>
   </div>
   <div id="viewall-grid"></div>
+</div>
+
+<!-- ── CONTACT OVERLAY ───────────────────────────────── -->
+<div id="contact-overlay">
+  <div id="contact-box">
+    <div id="contact-head">
+      <span id="contact-head-label">Get In Touch</span>
+      <span id="contact-close">×</span>
+    </div>
+    <div id="contact-body">
+      <form name="contact" method="POST" data-netlify="true" id="contact-form">
+        <input type="hidden" name="form-name" value="contact">
+        <div class="cf-field">
+          <label for="cf-name">Name</label>
+          <input type="text" id="cf-name" name="name" autocomplete="name" required>
+        </div>
+        <div class="cf-field">
+          <label for="cf-email">Email</label>
+          <input type="email" id="cf-email" name="email" autocomplete="email" required>
+        </div>
+        <div class="cf-field">
+          <label for="cf-message">Message</label>
+          <textarea id="cf-message" name="message" rows="5" required></textarea>
+        </div>
+        <label class="cf-check">
+          <input type="checkbox" name="subscribe" id="cf-subscribe">
+          <span>Send me a digest of your latest writing</span>
+        </label>
+        <button type="submit" class="cf-submit">Send Message →</button>
+      </form>
+      <div id="contact-success" style="display:none">
+        <div class="cf-success-title">Message received.</div>
+        <p>If it warrants a reply, I'll find my way back to you.</p>
+        <p style="color:rgba(184,240,210,0.3);font-size:11px;">I don't respond to spam or unsolicited service pitches — but if you're writing about something real, there's a good chance I'm paying attention.</p>
+      </div>
+    </div>
+  </div>
+  <!-- Subscribe confirm -->
+  <div id="subscribe-confirm">
+    <div id="subscribe-confirm-box">
+      <div class="sc-label">seldoncrisis.blog</div>
+      <p>This subscribes you to my writing digest — a curated feed of what I'm thinking and publishing, sent infrequently. No spam, no third-party tracking. You can unsubscribe any time.</p>
+      <p>You'll receive an email from seldoncrisis.blog confirming your subscription.</p>
+      <div class="sc-actions">
+        <button class="sc-btn" id="sc-yes">Subscribe →</button>
+        <button class="sc-btn" id="sc-no">No thanks</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── GALLERY OVERLAY ────────────────────────────────── -->
+<div id="gallery-overlay">
+  <div id="gallery-head">
+    <span id="gallery-title">Pics</span>
+    <span id="gallery-close">×</span>
+  </div>
+  <div id="gallery-body">
+    <div id="gallery-main-view">
+      <div id="gallery-recent-section">
+        <div class="gallery-section-label">Recent</div>
+        <div id="gallery-recent-grid"></div>
+      </div>
+      <div id="gallery-albums-section">
+        <div class="gallery-section-label">Albums</div>
+        <div id="gallery-albums-grid"></div>
+      </div>
+      <div id="gallery-empty" style="display:none;padding:40px 0;font-family:var(--mono);font-size:9px;letter-spacing:0.14em;color:rgba(184,240,210,0.25);">No photos yet. Add images to images/gallery/album-name/ and deploy.</div>
+    </div>
+    <div id="gallery-album-view">
+      <div id="gallery-album-head">
+        <button id="gallery-back">← Albums</button>
+        <span id="gallery-album-title-text"></span>
+      </div>
+      <div id="gallery-album-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox (outside gallery-overlay so it can sit above everything) -->
+<div id="gallery-lightbox">
+  <button id="lb-close">×</button>
+  <button id="lb-prev">‹</button>
+  <button id="lb-next">›</button>
+  <img id="lb-img" src="" alt="">
+  <div id="lb-meta">
+    <div id="lb-caption"></div>
+    <div id="lb-details"></div>
+  </div>
 </div>
 
 <!-- ════════════════════════════════════════════════════
@@ -2377,7 +2753,7 @@ const NAV_LABELS = {};  // key → display label
     let _hoveredCard   = null;
     let _candidateCard = null;
     let _hoverTimer    = null;
-    const DWELL_MS     = 130;
+    const DWELL_MS     = 40;
 
     const tooltip = document.createElement('div');
     tooltip.className = 'tag-tooltip';
@@ -2555,7 +2931,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     div.className   = 'nav-item';
     div.dataset.modal = key;
     div.innerHTML   = `<span class="nav-link">${label}</span>`;
-    div.addEventListener('click', () => openModal(key));
+    div.addEventListener('click', () => {
+      if (key === 'pics' && window._openGallery) { window._openGallery(); return; }
+      openModal(key);
+    });
     navEl.appendChild(div);
   });
 
@@ -2637,6 +3016,15 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       }
     });
     navEl.appendChild(articlesNavItem);
+
+    // Pics nav item — mobile only
+    const picsNavItem = document.createElement('div');
+    picsNavItem.className = 'nav-item';
+    picsNavItem.innerHTML = `<span class="nav-link">Pics</span>`;
+    picsNavItem.addEventListener('click', () => {
+      if (window._openGallery) window._openGallery();
+    });
+    navEl.appendChild(picsNavItem);
   }
 })();
 
@@ -2884,6 +3272,248 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
   drawNoise();
   setInterval(drawNoise, 150);
+})();
+
+// ── CONTACT MODAL ─────────────────────────────────────
+(function () {
+  const overlay  = document.getElementById('contact-overlay');
+  const trigger  = document.getElementById('contact-trigger');
+  const closeBtn = document.getElementById('contact-close');
+  const form     = document.getElementById('contact-form');
+  const success  = document.getElementById('contact-success');
+  const checkEl  = document.getElementById('cf-subscribe');
+  const subConf  = document.getElementById('subscribe-confirm');
+  const scYes    = document.getElementById('sc-yes');
+  const scNo     = document.getElementById('sc-no');
+
+  if (!overlay || !trigger) return;
+
+  function openContact() {
+    overlay.classList.add('open');
+    window._modalOpen = true;
+    document.body.style.overflow = 'hidden';
+  }
+  function closeContact() {
+    overlay.classList.remove('open');
+    subConf.classList.remove('open');
+    window._modalOpen = false;
+    document.body.style.overflow = '';
+  }
+
+  trigger.addEventListener('click', openContact);
+  closeBtn.addEventListener('click', closeContact);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeContact(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeContact(); });
+
+  // Subscribe checkbox — show confirm before allowing opt-in
+  checkEl.addEventListener('change', () => {
+    if (checkEl.checked) {
+      checkEl.checked = false; // hold off until confirmed
+      subConf.classList.add('open');
+    }
+  });
+  scYes.addEventListener('click', () => {
+    checkEl.checked = true;
+    subConf.classList.remove('open');
+  });
+  scNo.addEventListener('click', () => {
+    checkEl.checked = false;
+    subConf.classList.remove('open');
+  });
+
+  // Form submit → Netlify fetch
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const data = new FormData(form);
+    try {
+      const res = await fetch('/', { method: 'POST', body: data });
+      if (res.ok || res.status === 200 || res.redirected) {
+        form.style.display = 'none';
+        success.style.display = 'block';
+        setTimeout(closeContact, 6000);
+      }
+    } catch(err) {
+      // Still show success — Netlify may redirect on success which fetch treats as error
+      form.style.display = 'none';
+      success.style.display = 'block';
+      setTimeout(closeContact, 6000);
+    }
+  });
+})();
+
+// ── GALLERY ───────────────────────────────────────────
+(function () {
+  const overlay     = document.getElementById('gallery-overlay');
+  const closeBtn    = document.getElementById('gallery-close');
+  const mainView    = document.getElementById('gallery-main-view');
+  const albumView   = document.getElementById('gallery-album-view');
+  const recentGrid  = document.getElementById('gallery-recent-grid');
+  const albumsGrid  = document.getElementById('gallery-albums-grid');
+  const albumGrid   = document.getElementById('gallery-album-grid');
+  const albumTitle  = document.getElementById('gallery-album-title-text');
+  const backBtn     = document.getElementById('gallery-back');
+  const emptyMsg    = document.getElementById('gallery-empty');
+  const lightbox    = document.getElementById('gallery-lightbox');
+  const lbImg       = document.getElementById('lb-img');
+  const lbCaption   = document.getElementById('lb-caption');
+  const lbDetails   = document.getElementById('lb-details');
+  const lbClose     = document.getElementById('lb-close');
+  const lbPrev      = document.getElementById('lb-prev');
+  const lbNext      = document.getElementById('lb-next');
+
+  if (!overlay) return;
+
+  let galleryData  = null;
+  let lbPhotos     = [];
+  let lbIndex      = 0;
+
+  // ── Lightbox ──────────────────────────────────────
+  function openLightbox(photos, index) {
+    lbPhotos = photos;
+    lbIndex  = index;
+    showLbPhoto();
+    lightbox.classList.add('open');
+    window._modalOpen = true;
+  }
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    if (overlay.classList.contains('open')) {
+      window._modalOpen = true; // gallery still open
+    } else {
+      window._modalOpen = false;
+    }
+  }
+  function showLbPhoto() {
+    const p = lbPhotos[lbIndex];
+    if (!p) return;
+    lbImg.src = p.src;
+    lbImg.alt = p.caption || '';
+    lbCaption.textContent = p.caption || '';
+    lbCaption.style.display = p.caption ? 'block' : 'none';
+    lbDetails.innerHTML = '';
+    if (p.date) {
+      const chip = document.createElement('span');
+      chip.className = 'lb-chip'; chip.textContent = p.date;
+      lbDetails.appendChild(chip);
+    }
+    if (p.location) {
+      const chip = document.createElement('span');
+      chip.className = 'lb-chip'; chip.textContent = p.location;
+      lbDetails.appendChild(chip);
+    }
+    lbPrev.style.visibility = lbIndex > 0 ? 'visible' : 'hidden';
+    lbNext.style.visibility = lbIndex < lbPhotos.length - 1 ? 'visible' : 'hidden';
+  }
+  lbPrev.addEventListener('click', () => { if (lbIndex > 0) { lbIndex--; showLbPhoto(); } });
+  lbNext.addEventListener('click', () => { if (lbIndex < lbPhotos.length - 1) { lbIndex++; showLbPhoto(); } });
+  lbClose.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', e => { if (e.target === lightbox || e.target === lbImg) closeLightbox(); });
+  document.addEventListener('keydown', e => {
+    if (!lightbox.classList.contains('open')) return;
+    if (e.key === 'ArrowLeft')  { if (lbIndex > 0) { lbIndex--; showLbPhoto(); } }
+    if (e.key === 'ArrowRight') { if (lbIndex < lbPhotos.length - 1) { lbIndex++; showLbPhoto(); } }
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  // ── Build thumb elements ───────────────────────────
+  function makeThumb(photo, photos, index, cls) {
+    const div = document.createElement('div');
+    div.className = cls;
+    const img = document.createElement('img');
+    img.src = photo.src; img.alt = photo.caption || '';
+    img.loading = 'lazy';
+    div.appendChild(img);
+    div.addEventListener('click', () => openLightbox(photos, index));
+    return div;
+  }
+
+  // ── Render gallery ─────────────────────────────────
+  function renderGallery(data) {
+    recentGrid.innerHTML = '';
+    albumsGrid.innerHTML = '';
+
+    if (!data.albums.length && !data.recent.length) {
+      emptyMsg.style.display = 'block';
+      return;
+    }
+    emptyMsg.style.display = 'none';
+
+    // Recent photos
+    const recentSection = document.getElementById('gallery-recent-section');
+    if (data.recent && data.recent.length) {
+      recentSection.style.display = 'block';
+      data.recent.forEach((p, i) => {
+        recentGrid.appendChild(makeThumb(p, data.recent, i, 'gallery-recent-thumb'));
+      });
+    } else {
+      recentSection.style.display = 'none';
+    }
+
+    // Albums
+    data.albums.forEach(album => {
+      const card = document.createElement('div');
+      card.className = 'gallery-album-card';
+      card.innerHTML = `
+        <div class="gallery-album-cover">
+          <img src="${album.cover}" alt="${album.title}" loading="lazy">
+        </div>
+        <div class="gallery-album-info">
+          <div class="gallery-album-name">${album.title}</div>
+          <div class="gallery-album-count">${album.count} photo${album.count !== 1 ? 's' : ''}</div>
+        </div>`;
+      card.addEventListener('click', () => openAlbum(album));
+      albumsGrid.appendChild(card);
+    });
+  }
+
+  function openAlbum(album) {
+    albumTitle.textContent = album.title;
+    albumGrid.innerHTML = '';
+    album.photos.forEach((p, i) => {
+      albumGrid.appendChild(makeThumb(p, album.photos, i, 'gallery-album-thumb'));
+    });
+    mainView.style.display = 'none';
+    albumView.style.display = 'block';
+  }
+  backBtn.addEventListener('click', () => {
+    albumView.style.display = 'none';
+    mainView.style.display = 'block';
+  });
+
+  // ── Open/close overlay ─────────────────────────────
+  async function openGallery() {
+    overlay.classList.add('open');
+    window._modalOpen = true;
+    document.body.style.overflow = 'hidden';
+
+    if (!galleryData) {
+      try {
+        const res = await fetch('content/gallery.json');
+        galleryData = res.ok ? await res.json() : { albums: [], recent: [] };
+        // Normalise: recent may be array of strings or array of objects
+        if (galleryData.recent && galleryData.recent.length && typeof galleryData.recent[0] === 'string') {
+          galleryData.recent = galleryData.recent.map(src => ({ src, caption: '', date: '', location: '' }));
+        }
+      } catch(e) {
+        galleryData = { albums: [], recent: [] };
+      }
+      renderGallery(galleryData);
+    }
+  }
+  function closeGallery() {
+    overlay.classList.remove('open');
+    window._modalOpen = false;
+    document.body.style.overflow = '';
+  }
+
+  closeBtn.addEventListener('click', closeGallery);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeGallery(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.classList.contains('open') && !lightbox.classList.contains('open'))
+      closeGallery();
+  });
+
+  window._openGallery = openGallery;
 })();
 </script>
 </body>
