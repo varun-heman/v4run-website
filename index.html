@@ -1850,8 +1850,8 @@ body.strip-hovered .nav {
 <nav class="nav" id="nav"></nav>
 
 <!-- ── MODAL ──────────────────────────────────────── -->
+<div class="modal-scrim" id="modal-scrim"></div>
 <div class="modal-overlay" id="modal">
-  <div class="modal-scrim" id="modal-scrim"></div>
   <div class="modal-box">
     <div class="modal-head">
       <span class="modal-section" id="modal-section">—</span>
@@ -3057,6 +3057,8 @@ async function openModal(key) {
   // Show section label immediately from nav config
   modalSection.textContent = (NAV_LABELS[key] || key).toUpperCase();
   overlay.classList.add('open');
+  scrim.classList.add('open');
+  if (window.innerWidth > 768) document.body.classList.add('modal-sphere-up');
   escHint.textContent = window.innerWidth <= 768 ? '[ tap outside to close ]' : '[ ESC to close ]';
   escHint.classList.add('visible');
   document.querySelectorAll('.nav-item').forEach(el =>
@@ -3092,13 +3094,15 @@ async function openModal(key) {
 
 function closeModal() {
   overlay.classList.remove('open');
+  scrim.classList.remove('open');
+  document.body.classList.remove('modal-sphere-up');
   escHint.classList.remove('visible');
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   if (window._setModalOpen) window._setModalOpen(false);
 }
 
 closeBtn.addEventListener('click', closeModal);
-scrim.addEventListener('click', closeModal);
+overlay.addEventListener('click', e => { if (!e.target.closest('.modal-box')) closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 // ═══════════════════════════════════════════════════
