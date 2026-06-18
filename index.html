@@ -417,20 +417,18 @@ body.ui-ready #writings-section.ready {
 }
 .sphere-label.visible { opacity: 1; }
 
-/* Quote mode — smaller, dimmer, wrappable */
+/* Quote mode — smaller, wrappable, same brightness as nav hints */
 .sphere-label.quote-mode {
   font-size: 13px;
   letter-spacing: 0.10em;
-  color: rgba(184, 240, 210, 0.42);
+  color: rgba(184, 240, 210, 0.82);
   text-transform: none;
   white-space: normal;
   max-width: min(420px, 55vw);
-  line-height: 1.2;
+  line-height: 1.5;
   font-weight: 400;
-  text-shadow: none;
+  text-shadow: 0 0 20px rgba(100, 255, 160, 0.18);
 }
-.sphere-label.quote-mode::before,
-.sphere-label.quote-mode::after { display: none; }
 
 /* Typewriter cursor */
 .tw-cursor {
@@ -2801,7 +2799,8 @@ const NAV_LABELS = {};  // key → display label
 
         _twTimer = setTimeout(typeChar, humanDelay());
       } else {
-        // Fully typed — pause at end before holding
+        // Fully typed — set data-text so glitch pseudo-elements have content
+        lbl.dataset.text = text;
         _twTimer = setTimeout(() => {
           _twTimer = setTimeout(deleteChar, HOLD_MS);
         }, 120 + Math.random() * 180);
@@ -2811,7 +2810,8 @@ const NAV_LABELS = {};  // key → display label
     // --- DELETE OUT ---
     let delIdx = text.length;
     function deleteChar() {
-      if (isNavHover) { lbl.classList.remove('quote-mode', 'visible'); return; }
+      if (isNavHover) { lbl.dataset.text = ''; lbl.classList.remove('quote-mode', 'visible'); return; }
+      lbl.dataset.text = ''; // clear glitch content before deleting
       if (delIdx >= 0) {
         textSpan.textContent = text.slice(0, delIdx);
         delIdx--;
