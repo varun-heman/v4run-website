@@ -1939,6 +1939,7 @@ body.strip-hovered .nav {
     }
 
     document.addEventListener('mousemove', e => {
+      if (!document.body.classList.contains('ui-ready')) { hide(); return; }
       if (window._modalOpen) { hide(); return; }
       logoAnchor = getLogoCenter();
       const dx = e.clientX - logoAnchor.x, dy = e.clientY - logoAnchor.y;
