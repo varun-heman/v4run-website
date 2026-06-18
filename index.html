@@ -111,37 +111,36 @@ body.ui-ready .corner {
 .corner-bl { bottom: 28px; left: 32px; z-index: 20; } /* above carousel */
 .corner-br { bottom: 28px; right: 32px; text-align: right; text-transform: uppercase; letter-spacing: 0.12em; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 
-#music-toggle {
-  background: none; border: none; cursor: pointer;
-  font-size: 13px; color: rgba(232,232,226,0.45);
-  padding: 0; line-height: 1;
+/* ─── AUDIO VISUALISER / CONTROL ────────────────────── */
+#music-control {
+  display: flex; align-items: center; gap: 7px; justify-content: flex-end;
+  cursor: pointer; background: none; border: none; padding: 0;
+  color: rgba(232,232,226,0.45);
   transition: color 0.2s ease;
-  font-family: var(--mono);
-  letter-spacing: 0;
-  text-transform: none;
 }
-#music-toggle:hover { color: rgba(232,232,226,0.85); }
-#music-toggle.muted { color: rgba(232,232,226,0.2); text-decoration: line-through; }
-
-/* ─── AUDIO VISUALISER ───────────────────────────────── */
+#music-control:hover { color: rgba(232,232,226,0.85); }
+#music-control:hover #music-viz span { opacity: 1; }
+#music-label {
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.18em; text-transform: uppercase;
+}
 #music-viz {
-  display: flex; align-items: flex-end; gap: 2px;
-  height: 10px;
+  display: flex; align-items: flex-end; gap: 2px; height: 10px;
 }
 #music-viz span {
   display: block; width: 2px; border-radius: 1px;
-  background: var(--accent);
-  transform-origin: bottom;
+  background: currentColor; transform-origin: bottom;
 }
-#music-viz span:nth-child(1) { animation: viz-bar 0.9s ease-in-out infinite alternate; }
-#music-viz span:nth-child(2) { animation: viz-bar 0.65s ease-in-out 0.15s infinite alternate; }
-#music-viz span:nth-child(3) { animation: viz-bar 0.8s ease-in-out 0.05s infinite alternate; }
-#music-viz span:nth-child(4) { animation: viz-bar 0.55s ease-in-out 0.3s infinite alternate; }
+#music-viz span:nth-child(1) { animation: viz-bar 0.9s  ease-in-out         infinite alternate; }
+#music-viz span:nth-child(2) { animation: viz-bar 0.65s ease-in-out 0.15s   infinite alternate; }
+#music-viz span:nth-child(3) { animation: viz-bar 0.8s  ease-in-out 0.05s   infinite alternate; }
+#music-viz span:nth-child(4) { animation: viz-bar 0.55s ease-in-out 0.3s    infinite alternate; }
 @keyframes viz-bar {
-  0%   { height: 2px;  opacity: 0.4; }
-  100% { height: 10px; opacity: 0.9; }
+  0%   { height: 2px;  opacity: 0.5; }
+  100% { height: 10px; opacity: 1;   }
 }
-#music-viz.paused span { animation-play-state: paused; height: 2px; opacity: 0.2; }
+#music-control.muted { color: rgba(232,232,226,0.25); }
+#music-control.muted #music-viz span { animation-play-state: paused; height: 2px; }
 
 /* ─── GLITCH LOGO ────────────────────────────────────── */
 .logo {
@@ -463,6 +462,27 @@ body.ui-ready #writings-section.ready {
   font-weight: 400;
   text-shadow: 0 0 20px rgba(100, 255, 160, 0.18);
 }
+/* Press V prompt */
+#press-v-prompt {
+  position: fixed; inset: 0; z-index: 12;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+  opacity: 0; transition: opacity 0.8s ease;
+}
+#press-v-prompt.visible { opacity: 1; }
+#press-v-prompt span {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.35em;
+  color: rgba(232,232,226,0.35);
+  text-transform: uppercase;
+  animation: press-v-pulse 2s ease-in-out infinite;
+}
+@keyframes press-v-pulse {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.75; }
+}
+
 /* Intro mode — larger than quotes */
 .sphere-label.intro-mode {
   font-size: clamp(20px, 2.4vw, 28px);
@@ -2178,13 +2198,14 @@ body.strip-hovered .nav {
   </div>
 </div>
 
+<div id="press-v-prompt"><span id="press-v-text">press V</span></div>
 <audio id="bg-music" src="audio/bg_score.mp3" loop preload="auto"></audio>
 
 <div class="corner corner-br">
-  <div style="display:flex;align-items:center;gap:7px;justify-content:flex-end;">
-    <div id="music-viz" class="paused"><span></span><span></span><span></span><span></span></div>
-    <button id="music-toggle" aria-label="Toggle music" title="Mute music">♫</button>
-  </div>
+  <button id="music-control" class="muted" aria-label="Toggle music">
+    <div id="music-viz"><span></span><span></span><span></span><span></span></div>
+    <span id="music-label">Music Off</span>
+  </button>
   <span>©2026 Varun Hemachandran</span>
 </div>
 
@@ -3324,58 +3345,88 @@ const NAV_LABELS = {};  // key → display label
     quotes = JSON.parse(document.getElementById('quotes-data').textContent);
   } catch(e) {}
 
+  function waitForV(onDone) {
+    const prompt = document.getElementById('press-v-prompt');
+    const promptText = document.getElementById('press-v-text');
+    // Show touch-friendly label on mobile
+    if (promptText && 'ontouchstart' in window) promptText.textContent = 'tap to begin';
+    if (prompt) prompt.classList.add('visible');
+    function onKey(e) {
+      if (e.key.toLowerCase() !== 'v') return;
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('touchstart', onTouch);
+      if (prompt) { prompt.classList.remove('visible'); }
+      // Start music immediately — keydown is a valid user gesture
+      const music = document.getElementById('bg-music');
+      if (music) { music.volume = 0.35; music.play().catch(() => {}); }
+      onDone();
+    }
+    function onTouch() {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('touchstart', onTouch);
+      if (prompt) { prompt.classList.remove('visible'); }
+      const music = document.getElementById('bg-music');
+      if (music) { music.volume = 0.35; music.play().catch(() => {}); }
+      onDone();
+    }
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('touchstart', onTouch, { once: true });
+  }
+
   if (hasVisited()) {
-    // Return visitor — skip intro, fire bang immediately
+    // Return visitor — skip intro and V prompt, fire bang immediately
     if (window._triggerBigBang) window._triggerBigBang();
     setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9200);
   } else {
     setVisited();
-    // First visit — play intro, then bang, then quotes
+    // First visit — play intro, then wait for V, then bang
     runIntro(() => {
-      if (window._triggerBigBang) window._triggerBigBang();
-      setTimeout(() => { if (!isNavHover) showNextQuote(); }, 7800);
+      waitForV(() => {
+        if (window._triggerBigBang) window._triggerBigBang();
+        setTimeout(() => { if (!isNavHover) showNextQuote(); }, 7800);
+      });
     });
   }
 
   // ── MUSIC TOGGLE ────────────────────────────────────────────────────────
   (function() {
-    const btn = document.getElementById('music-toggle');
+    const ctrl  = document.getElementById('music-control');
+    const label = document.getElementById('music-label');
     const music = document.getElementById('bg-music');
-    const viz = document.getElementById('music-viz');
-    if (!btn || !music) return;
+    if (!ctrl || !music) return;
     let muted = false;
 
-    function setViz(playing) {
-      if (!viz) return;
-      viz.classList.toggle('paused', !playing);
+    function setPlaying(playing) {
+      muted = !playing;
+      ctrl.classList.toggle('muted', muted);
+      if (label) label.textContent = muted ? 'Music Off' : 'Music On';
     }
 
-    btn.addEventListener('click', () => {
-      muted = !muted;
+    ctrl.addEventListener('click', () => {
       if (muted) {
-        music.pause();
-        btn.classList.add('muted');
-        btn.title = 'Unmute music';
-        setViz(false);
-      } else {
         music.play().catch(() => {});
-        btn.classList.remove('muted');
-        btn.title = 'Mute music';
-        setViz(true);
+        setPlaying(true);
+      } else {
+        music.pause();
+        setPlaying(false);
       }
     });
 
-    // Start visualiser when music actually begins playing
-    music.addEventListener('play', () => { if (!muted) setViz(true); });
-    music.addEventListener('pause', () => setViz(false));
+    // Sync state when music actually starts/stops (e.g. triggered by V press)
+    music.addEventListener('play',  () => setPlaying(true));
+    music.addEventListener('pause', () => setPlaying(false));
 
-    // If autoplay was blocked, start music on first user interaction
-    document.addEventListener('click', function startOnInteract() {
-      if (!muted && music.paused && music.readyState > 0) {
-        music.play().catch(() => {});
+    // For return visitors (no V prompt), start music on first interaction
+    function tryStartMusic() {
+      if (!muted && music.paused) {
+        music.play().then(() => {
+          ['click','keydown','touchstart'].forEach(e => document.removeEventListener(e, tryStartMusic));
+        }).catch(() => {});
       }
-      document.removeEventListener('click', startOnInteract);
-    }, { once: true });
+    }
+    if (hasVisited()) {
+      ['click','keydown','touchstart'].forEach(e => document.addEventListener(e, tryStartMusic));
+    }
   })();
 
   // ── ARTICLES — fetched from content/articles.md ─────────────────────────
