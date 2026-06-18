@@ -782,6 +782,11 @@ body.ui-ready #writings-section.ready {
   gap: 6px;
   align-items: center;
 }
+@media (max-width: 768px) {
+  #viewall-head, #viewall-filters { padding-left: 20px; padding-right: 20px; }
+  #viewall-grid { padding: 16px 20px 32px; grid-template-columns: 1fr; }
+  .viewall-filter-row { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+}
 .filter-pill {
   font-family: var(--mono);
   font-size: 8px;
@@ -2471,7 +2476,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     const articlesNavItem = document.createElement('div');
     articlesNavItem.className = 'nav-item';
     articlesNavItem.innerHTML = `<span class="nav-link">Writings</span>`;
-    articlesNavItem.addEventListener('click', openArticlesOverlay);
+    articlesNavItem.addEventListener('click', () => {
+      // Use the full View All overlay if available, else fall back to simple list
+      if (window._openViewAll) {
+        window._openViewAll();
+      } else {
+        openArticlesOverlay();
+      }
+    });
     navEl.appendChild(articlesNavItem);
   }
 })();
@@ -2646,12 +2658,17 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     }
     overlay.classList.add('open');
     document.body.style.overflow = 'hidden';
+    window._modalOpen = true; // disable logo photo popup
   }
 
   function closeOverlay() {
     overlay.classList.remove('open');
     document.body.style.overflow = '';
+    window._modalOpen = false;
   }
+
+  // Expose so mobile Writings nav can open it directly
+  window._openViewAll = openOverlay;
 
   openBtn.addEventListener('click', openOverlay);
   closeBtn.addEventListener('click', closeOverlay);
