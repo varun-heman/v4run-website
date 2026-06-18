@@ -1494,11 +1494,11 @@ body.strip-hovered .nav {
 }
 /* Recent grid — tight square thumbnails */
 #gallery-recent-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 4px; margin-bottom: 36px;
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 10px; margin-bottom: 44px;
 }
 .gallery-recent-thumb {
-  aspect-ratio: 1; overflow: hidden; cursor: pointer;
+  aspect-ratio: 4/3; overflow: hidden; cursor: pointer;
   background: rgba(10,18,12,0.9); position: relative;
 }
 .gallery-recent-thumb img {
@@ -1559,11 +1559,11 @@ body.strip-hovered .nav {
   color: rgba(232,232,226,0.75);
 }
 #gallery-album-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 4px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
 }
 .gallery-album-thumb {
-  aspect-ratio: 1; overflow: hidden; cursor: pointer;
+  aspect-ratio: 4/3; overflow: hidden; cursor: pointer;
   background: rgba(10,18,12,0.9); position: relative;
 }
 .gallery-album-thumb img {
@@ -1622,7 +1622,7 @@ body.strip-hovered .nav {
 @media (max-width: 768px) {
   #gallery-body { padding: 20px 16px 32px; }
   #gallery-head { padding: 14px 16px; }
-  #gallery-recent-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+  #gallery-recent-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
   #gallery-albums-grid  { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
   #lb-img { max-width: calc(100vw - 60px); max-height: calc(100vh - 140px); }
   #lb-meta { padding: 14px 16px; }
