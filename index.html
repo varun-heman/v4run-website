@@ -2712,7 +2712,13 @@ const NAV_LABELS = {};  // key → display label
     const NOW = Date.now();
     const SIXTY_DAYS = 60 * 24 * 60 * 60 * 1000;
     articles.forEach(a => { a._isNew = (NOW - parseArticleDate(a.date).getTime()) < SIXTY_DAYS; });
-    if (window._setNavBadge) window._setNavBadge('writing', articles.some(a => a._isNew));
+    // Queue badge update — _setNavBadge may not exist yet if nav.md hasn't loaded
+    const _writingHasNew = articles.some(a => a._isNew);
+    if (window._setNavBadge) {
+      window._setNavBadge('writing', _writingHasNew);
+    } else {
+      (window._navBadgeQueue = window._navBadgeQueue || []).push(['writing', _writingHasNew]);
+    }
 
     window._articles = articles; // expose for mobile overlay
 
@@ -3043,6 +3049,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       }
     });
   };
+  // Drain any badge calls that arrived before _setNavBadge was ready
+  (window._navBadgeQueue || []).forEach(([k, v]) => window._setNavBadge(k, v));
+  window._navBadgeQueue = [];
 
   // Wire sphere-label hover listeners (defined in sphere IIFE above)
   if (window._wireNavHoverListeners) window._wireNavHoverListeners();
