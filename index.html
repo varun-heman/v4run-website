@@ -1686,7 +1686,29 @@ body.strip-hovered .nav {
     align-items: center;
     gap: 0;
   }
-  body.logo-tapped #mobile-logo-panel { display: flex; }
+  body.logo-tapped #mobile-logo-panel { display: flex; animation: panel-glitch-in 0.45s steps(1, end) forwards; }
+  body.logo-tapped #mobile-logo-backdrop { animation: backdrop-glitch-in 0.45s ease forwards; }
+
+  @keyframes backdrop-glitch-in {
+    0%   { opacity: 0; }
+    40%  { opacity: 0; }
+    55%  { opacity: 0.6; }
+    65%  { opacity: 0.2; }
+    80%  { opacity: 0.7; }
+    100% { opacity: 1; }
+  }
+  @keyframes panel-glitch-in {
+    0%   { opacity: 0; clip-path: inset(0 0 100% 0); transform: translateX(0); }
+    10%  { opacity: 1; clip-path: inset(40% 0 30% 0); transform: translateX(-6px); }
+    20%  { opacity: 0; clip-path: inset(60% 0 5%  0); transform: translateX(4px); }
+    30%  { opacity: 1; clip-path: inset(10% 0 55% 0); transform: translateX(-3px); }
+    40%  { opacity: 0; clip-path: inset(25% 0 25% 0); transform: translateX(6px); }
+    55%  { opacity: 1; clip-path: inset(5%  0 10% 0); transform: translateX(-2px); }
+    65%  { opacity: 1; clip-path: inset(0   0 30% 0); transform: translateX(2px); }
+    75%  { opacity: 0; clip-path: inset(0   0 5%  0); transform: translateX(0); }
+    85%  { opacity: 1; clip-path: inset(0);            transform: translateX(-1px); }
+    100% { opacity: 1; clip-path: inset(0);            transform: translateX(0); }
+  }
 
   #mobile-logo-panel .mobile-photo {
     width: 120px; height: 120px;
