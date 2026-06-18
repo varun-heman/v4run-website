@@ -1029,6 +1029,11 @@ body.ui-ready #writings-section.ready {
   white-space: nowrap;
   flex-shrink: 0;
 }
+.article-card__tag--more {
+  border-color: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.18);
+  cursor: default;
+}
 .article-card__title {
   font-family: var(--sans);
   font-size: 11px;
@@ -2194,8 +2199,12 @@ const NAV_LABELS = {};  // key → display label
       card.className = 'article-card' + (a._isNew ? ' is-new' : '');
       card.href = a.url || '#';
       if (a.url && a.url !== '#') card.target = '_blank';
-      const cardTags = (a.tags || []).slice(0, 2)
-        .map(t => `<span class="article-card__tag">${t}</span>`).join('');
+      const tags = a.tags || [];
+      const visibleTags = tags.slice(0, 2).map(t => `<span class="article-card__tag">${t}</span>`).join('');
+      const hiddenTags = tags.slice(2);
+      const overflowTag = hiddenTags.length
+        ? `<span class="article-card__tag article-card__tag--more" title="${hiddenTags.join(', ')}">+${hiddenTags.length}</span>`
+        : '';
       card.innerHTML = `
         <img class="article-card__thumb" src="${a.thumb || 'images/thumbs/placeholder.jpg'}" alt="" onerror="this.style.opacity='0'">
         <div class="article-card__body">
@@ -2204,7 +2213,7 @@ const NAV_LABELS = {};  // key → display label
             <span class="article-card__date">${a.date || ''}</span>
             ${a._isNew ? '<span class="article-card__new">NEW</span>' : ''}
           </div>
-          ${cardTags ? `<div class="article-card__tags">${cardTags}</div>` : ''}
+          ${(visibleTags || overflowTag) ? `<div class="article-card__tags">${visibleTags}${overflowTag}</div>` : ''}
           <div class="article-card__title">${a.title}</div>
           <div class="article-card__desc">${a.desc || ''}</div>
         </div>`;
