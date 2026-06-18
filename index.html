@@ -1533,8 +1533,11 @@ body.ui-ready #writings-section.ready {
     let tugTargetX = 0, tugTargetY = 0;
 
     function getLogoCenter() {
-      const r = logoEl2.getBoundingClientRect();
-      return { x: r.right + 6, y: r.top + r.height / 2 };
+      // logoTugEl is .logo (inline-block) — its right edge = end of visible text
+      // DOT_OFFSET=15 pushes the visual dot 15px along the path, so subtract that
+      // so the dot lands right at the text end
+      const r = logoTugEl.getBoundingClientRect();
+      return { x: r.right - 10, y: r.top + r.height / 2 };
     }
 
     function buildElbowPath(bx, by) {
