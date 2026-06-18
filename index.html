@@ -431,6 +431,11 @@ body.ui-ready #writings-section.ready {
   font-weight: 400;
   text-shadow: 0 0 20px rgba(100, 255, 160, 0.18);
 }
+/* Intro mode — larger than quotes */
+.sphere-label.intro-mode {
+  font-size: clamp(20px, 2.4vw, 28px);
+  letter-spacing: 0.18em;
+}
 
 /* Typewriter cursor */
 .tw-cursor {
@@ -3058,7 +3063,7 @@ const NAV_LABELS = {};  // key → display label
         _twTimer = setTimeout(step, d);
       } else {
         if (cursor) cursor.style.display = 'none';
-        lbl.classList.remove('visible');
+        lbl.classList.remove('visible', 'intro-mode');
         _twTimer = setTimeout(onDone, 550);
       }
     }
@@ -3081,7 +3086,7 @@ const NAV_LABELS = {};  // key → display label
   function typePhrase(text, holdMs, onDone) {
     cancelTypewriter();
     active = false; clearTimeout(timeoutId); cancelAnimationFrame(rafId);
-    lbl.classList.add('quote-mode', 'visible');
+    lbl.classList.add('quote-mode', 'intro-mode', 'visible');
     lbl.innerHTML = '';
     const textSpan = document.createElement('span');
     const cursor   = document.createElement('span');
@@ -3244,13 +3249,13 @@ const NAV_LABELS = {};  // key → display label
   if (hasVisited()) {
     // Return visitor — skip intro, fire bang immediately
     if (window._triggerBigBang) window._triggerBigBang();
-    setTimeout(() => { if (!isNavHover) showNextQuote(); }, 6200);
+    setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9200);
   } else {
     setVisited();
     // First visit — play intro, then bang, then quotes
     runIntro(() => {
       if (window._triggerBigBang) window._triggerBigBang();
-      setTimeout(() => { if (!isNavHover) showNextQuote(); }, 4800);
+      setTimeout(() => { if (!isNavHover) showNextQuote(); }, 7800);
     });
   }
 
