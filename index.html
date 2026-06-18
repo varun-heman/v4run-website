@@ -1306,15 +1306,19 @@ body.ui-ready #writings-section.ready {
 }
 .reads-card__footer {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
 }
 .reads-card__tags {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.reads-card__footer .site-btn {
+  flex-shrink: 0;
 }
 .reads-card__tag {
   font-family: var(--mono);

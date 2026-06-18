@@ -1,16 +1,6 @@
 # Recommended Reads
 # Format: title | url | source | date (YYYY-MM-DD) | tags (comma-separated) | thumb | description
 
-title: The Collapse of the Indus Valley Civilisation and What It Means for State-Building
-url: https://aeon.co
-source: Aeon
-date: 2026-05-20
-tags: history, governance
-thumb: https://picsum.photos/seed/indus/400/300
-description: A fascinating re-examination of why the Indus civilisation didn't collapse so much as transform — and what that tells us about how complex societies actually change. The argument that decentralisation was a feature, not a failure, has stuck with me.
-
----
-
 title: Indic Voice Technologies for an Inclusive Digital India: Toolkit for Developers
 url: pdfs/Indic-Voice-Technologies-For-An-Inclusive-Digital-India_Toolkit-for-Developers.pdf
 source: Bhashini / GIZ FAIR Forward
