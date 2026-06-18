@@ -3,7 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>V4run</title>
+<title>V4run | Varun Hemachandran</title>
+<meta name="description" content="The personal site of Varun Hemachandran: work, writing, photography, and experiments around courts, AI, and civic technology.">
+<meta name="theme-color" content="#080808">
+<link rel="canonical" href="https://v4.run/">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="V4run">
+<meta property="og:title" content="V4run | Varun Hemachandran">
+<meta property="og:description" content="The personal site of Varun Hemachandran: work, writing, photography, and experiments around courts, AI, and civic technology.">
+<meta property="og:url" content="https://v4.run/">
+<meta property="og:image" content="https://v4.run/social-banner.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="V4run, the personal site of Varun Hemachandran.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="V4run | Varun Hemachandran">
+<meta name="twitter:description" content="The personal site of Varun Hemachandran: work, writing, photography, and experiments around courts, AI, and civic technology.">
+<meta name="twitter:image" content="https://v4.run/social-banner.png">
+<meta name="twitter:image:alt" content="V4run, the personal site of Varun Hemachandran.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -473,10 +494,30 @@ body.ui-ready #writings-section.ready {
 .nav-item.active .nav-link { color: var(--fg); }
 
 /* ─── MODAL ──────────────────────────────────────────── */
+/* Scrim: separate layer so sphere can float above it on desktop */
+.modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 97;
+  background: rgba(4, 4, 4, 0.72);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.modal-scrim.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* On desktop: raise canvas above scrim when modal is open so sphere is visible */
+@media (min-width: 769px) {
+  body.modal-sphere-up #bg-canvas { z-index: 98; }
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 99;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -488,20 +529,6 @@ body.ui-ready #writings-section.ready {
 .modal-overlay.open {
   opacity: 1;
   pointer-events: all;
-}
-
-.modal-scrim {
-  position: absolute;
-  inset: 0;
-  background: rgba(4, 4, 4, 0.28);
-  backdrop-filter: blur(0px) saturate(100%);
-  -webkit-backdrop-filter: blur(0px) saturate(100%);
-  transition: backdrop-filter 0.45s ease, -webkit-backdrop-filter 0.45s ease;
-}
-
-.modal-overlay.open .modal-scrim {
-  backdrop-filter: blur(8px) saturate(120%);
-  -webkit-backdrop-filter: blur(8px) saturate(120%);
 }
 
 @keyframes modal-scan {

@@ -87,6 +87,22 @@ Quotes are embedded in `index.html` in a `<script id="quotes-data" type="applica
 
 **Images** — `images/varun.jpg` is the photo used in the popup box. `images/gallery/` holds photo albums.
 
+## Site metadata and sharing
+
+The homepage pulls browser/social metadata from `index.html`.
+
+Add these files at the project root:
+
+| File | Used for | Recommended size |
+|------|----------|------------------|
+| `favicon.png` | Browser tab favicon | 32×32 or 48×48 PNG |
+| `social-banner.png` | Link previews on iMessage, Slack, X/Twitter, LinkedIn, etc. | 1200×630 PNG |
+| `apple-touch-icon.png` | iOS home screen icon | 180×180 PNG |
+| `icon-192.png` | Web app manifest icon | 192×192 PNG |
+| `icon-512.png` | Web app manifest icon | 512×512 PNG |
+
+The canonical URL and share image URL are configured for `https://v4.run/`, hosted on Netlify from the GitHub repo `varun-heman/v4run-website`.
+
 ### MD preloading
 
 All nav modal content (about, work, writing) is pre-fetched in the background right after the nav is built, so modals open instantly with a smooth fade-in rather than showing a "Loading…" flash.
@@ -130,5 +146,8 @@ On screens ≤ 768px:
 | Quotes | `index.html` → `<script id="quotes-data">` |
 | Bio text | `index.html` → `.corner-bio` paragraph |
 | Photo | `images/varun.jpg` |
+| Browser/social title and description | `index.html` → `<head>` metadata |
+| Favicon | `favicon.png` in the project root |
+| Social share banner | `social-banner.png` in the project root |
 | Contact Me button | `index.html` → `.corner-bl` |
 | Photo albums | `images/gallery/<album-name>/` + optional `meta.md` |
