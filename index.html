@@ -462,25 +462,25 @@ body.ui-ready #writings-section.ready {
   font-weight: 400;
   text-shadow: 0 0 20px rgba(100, 255, 160, 0.18);
 }
-/* Press V prompt */
+/* Press any key prompt */
 #press-v-prompt {
   position: fixed; inset: 0; z-index: 12;
   display: flex; align-items: center; justify-content: center;
   pointer-events: none;
-  opacity: 0; transition: opacity 0.8s ease;
+  opacity: 0; transition: opacity 1s ease;
 }
 #press-v-prompt.visible { opacity: 1; }
 #press-v-prompt span {
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.35em;
-  color: rgba(232,232,226,0.35);
+  font-size: clamp(13px, 1.4vw, 17px);
+  letter-spacing: 0.25em;
+  color: rgba(232,232,226,0.6);
   text-transform: uppercase;
-  animation: press-v-pulse 2s ease-in-out infinite;
+  animation: press-v-pulse 2.2s ease-in-out infinite;
 }
 @keyframes press-v-pulse {
-  0%, 100% { opacity: 0.35; }
-  50%       { opacity: 0.75; }
+  0%, 100% { opacity: 0.45; }
+  50%       { opacity: 1; }
 }
 
 /* Intro mode — larger than quotes */
@@ -1615,18 +1615,29 @@ body.strip-hovered .nav {
 
   /* ── Nav — horizontal strip at bottom ───────── */
   .nav {
-    left: 50%;
+    left: 0;
+    right: 0;
     top: auto;
-    bottom: 24px;
-    transform: translateX(-50%);
+    bottom: 0;
+    transform: none;
     flex-direction: row;
     gap: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 10px 12px 20px; /* extra bottom for home indicator */
+    background: linear-gradient(to top, rgba(8,8,8,0.92) 60%, transparent);
+    backdrop-filter: none;
+    justify-content: center;
   }
+  .nav::-webkit-scrollbar { display: none; }
   .nav-item {
-    padding: 10px 14px;
+    padding: 6px 11px;
+    flex-shrink: 0;
   }
   .nav-link {
-    font-size: 12px;
+    font-size: 11px;
     letter-spacing: 0.03em;
   }
   /* Hide slide-out hint — no room horizontally */
@@ -2198,7 +2209,7 @@ body.strip-hovered .nav {
   </div>
 </div>
 
-<div id="press-v-prompt"><span id="press-v-text">press V</span></div>
+<div id="press-v-prompt"><span id="press-v-text">press any key to continue</span></div>
 <audio id="bg-music" src="audio/bg_score.mp3" loop preload="auto"></audio>
 
 <div class="corner corner-br">
@@ -3349,10 +3360,10 @@ const NAV_LABELS = {};  // key → display label
     const prompt = document.getElementById('press-v-prompt');
     const promptText = document.getElementById('press-v-text');
     // Show touch-friendly label on mobile
-    if (promptText && 'ontouchstart' in window) promptText.textContent = 'tap to begin';
+    if (promptText && 'ontouchstart' in window) promptText.textContent = 'tap anywhere to continue';
     if (prompt) prompt.classList.add('visible');
     function onKey(e) {
-      if (e.key.toLowerCase() !== 'v') return;
+      if (e.key === 'Tab' || e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') return;
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('touchstart', onTouch);
       if (prompt) { prompt.classList.remove('visible'); }
