@@ -2651,6 +2651,8 @@ body.strip-hovered .nav {
   });
 
   const clock = new THREE.Clock();
+  let bangStartT = null; // set by _triggerBigBang(); null = bang hasn't fired yet
+
   (function frame() {
     requestAnimationFrame(frame);
     const t = clock.getElapsedTime();
@@ -2661,7 +2663,7 @@ body.strip-hovered .nav {
     active += (targetActive - active) * 0.04;
     uni.uTime.value   = t;
     uni.uActive.value = active;
-    uni.uBang.value   = Math.min(1.0, t / 2.2);
+    uni.uBang.value   = bangStartT !== null ? Math.min(1.0, (t - bangStartT) / 2.2) : 0;
     const spd = Math.hypot(rawMx - lastMx, rawMy - lastMy);
     lastMx = rawMx; lastMy = rawMy;
     if (t > nextIdleGlitch) {
@@ -2909,9 +2911,12 @@ body.strip-hovered .nav {
     })();
   })();
 
-  // expose for modal dimming (CSS approach)
-  // Fade in all UI after bang animation settles (~2.2s)
-  setTimeout(() => document.body.classList.add('ui-ready'), 2600);
+  // Called by intro sequence (or immediately for return visitors)
+  window._triggerBigBang = function () {
+    if (bangStartT !== null) return; // already fired
+    bangStartT = clock.getElapsedTime();
+    setTimeout(() => document.body.classList.add('ui-ready'), 2700);
+  };
 
   window._setModalOpen = v => {
     window._modalOpen = v;
@@ -3000,6 +3005,145 @@ const NAV_LABELS = {};  // key → display label
     });
   };
 
+  // ── SHARED HELPERS ──────────────────────────────────────────────────────
+
+  function humanDelay() {
+    const r = Math.random();
+    if (r < 0.04) return 280 + Math.random() * 300;
+    if (r < 0.12) return 90  + Math.random() * 120;
+    if (r < 0.30) return 55  + Math.random() * 55;
+    return 18 + Math.random() * 30;
+  }
+
+  const NEARBY = { a:'sq',s:'adw',d:'sef',f:'dg',g:'fh',h:'gj',j:'hk',k:'jl',l:'k',
+                   e:'wr',r:'et',t:'ry',y:'tu',u:'yi',i:'uo',o:'ip',p:'o',
+                   n:'bm',m:'n',b:'vn',v:'bc',c:'vx',x:'cz',z:'x',
+                   A:'S',S:'AD',D:'SE',E:'WR',R:'ET',T:'RY' };
+
+  function shouldMistype(ch) { return /[a-zA-Z]/.test(ch) && Math.random() < 0.07; }
+
+  // Smoothly glitch-morph a span's text from one string to another over ~dur ms
+  function morphSpan(span, fromStr, toStr, dur, onDone) {
+    const t0 = performance.now();
+    (function tick(now) {
+      const p = Math.min(1, (now - t0) / dur);
+      if (p >= 1) { span.textContent = toStr; if (onDone) onDone(); return; }
+      let out = '';
+      const len = Math.max(fromStr.length, toStr.length);
+      for (let i = 0; i < len; i++) {
+        const fc = fromStr[i] || '', tc = toStr[i] || '';
+        if (fc === tc) { out += tc; }
+        else if (Math.random() < p * 1.4) { out += tc || ''; }
+        else { out += GLITCH[Math.floor(Math.random() * GLITCH.length)]; }
+      }
+      span.textContent = out;
+      requestAnimationFrame(tick);
+    })(t0);
+  }
+
+  // Delete chars from a span, then call onDone
+  function deleteSpan(span, cursor, onDone) {
+    function step() {
+      const s = span.textContent;
+      if (s.length > 0) {
+        span.textContent = s.slice(0, -1);
+        const d = Math.random() < 0.08 ? 80 + Math.random() * 80 : 14 + Math.random() * 18;
+        _twTimer = setTimeout(step, d);
+      } else {
+        if (cursor) cursor.style.display = 'none';
+        lbl.classList.remove('visible');
+        _twTimer = setTimeout(onDone, 550);
+      }
+    }
+    _twTimer = setTimeout(step, 120);
+  }
+
+  // ── INTRO SEQUENCE ───────────────────────────────────────────────────────
+
+  function hasVisited() {
+    return document.cookie.split(';').some(c => c.trim().startsWith('v4run_v='));
+  }
+  function setVisited() {
+    const exp = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+    document.cookie = 'v4run_v=1; expires=' + exp + '; path=/; SameSite=Lax';
+  }
+
+  // Type a plain string into a freshly built span+cursor inside lbl, then call onDone
+  function typePhrase(text, holdMs, onDone) {
+    cancelTypewriter();
+    active = false; clearTimeout(timeoutId); cancelAnimationFrame(rafId);
+    lbl.classList.add('quote-mode', 'visible');
+    lbl.innerHTML = '';
+    const textSpan = document.createElement('span');
+    const cursor   = document.createElement('span');
+    cursor.className = 'tw-cursor';
+    lbl.appendChild(textSpan);
+    lbl.appendChild(cursor);
+
+    let charIdx = 0, mistypeActive = false, mistypeChar = '';
+
+    function typeChar() {
+      if (mistypeActive) {
+        mistypeActive = false;
+        textSpan.textContent = text.slice(0, charIdx - 1) + mistypeChar;
+        _twTimer = setTimeout(() => {
+          textSpan.textContent = text.slice(0, charIdx - 1);
+          _twTimer = setTimeout(typeChar, 40 + Math.random() * 60);
+        }, 60 + Math.random() * 100);
+        return;
+      }
+      if (charIdx <= text.length) {
+        textSpan.textContent = text.slice(0, charIdx);
+        charIdx++;
+        if (charIdx <= text.length) {
+          const nc = text[charIdx - 1];
+          if (shouldMistype(nc)) {
+            const pool = NEARBY[nc] || 'qwerty';
+            mistypeChar = pool[Math.floor(Math.random() * pool.length)];
+            mistypeActive = true;
+          }
+        }
+        _twTimer = setTimeout(typeChar, humanDelay());
+      } else {
+        // fully typed — hold, then pass span+cursor to caller's afterType
+        _twTimer = setTimeout(() => onDone(textSpan, cursor), holdMs);
+      }
+    }
+    _twTimer = setTimeout(typeChar, 300 + Math.random() * 250);
+  }
+
+  function runIntro(onAllDone) {
+    // Step 1 — “Hi!”
+    typePhrase('Hi!', 1200, (span, cur) => {
+      deleteSpan(span, cur, () => {
+
+        // Step 2 — “My name is Varun!” → glitch Varun → v4run → v4.run
+        typePhrase('My name is Varun!', 350, (span2, cur2) => {
+          // morph Varun → v4run
+          const base = 'My name is ';
+          morphSpan(span2, 'My name is Varun!', 'My name is v4run!', 340, () => {
+            _twTimer = setTimeout(() => {
+              // morph v4run → v4.run
+              morphSpan(span2, 'My name is v4run!', 'My name is v4.run!', 340, () => {
+                _twTimer = setTimeout(() => {
+                  deleteSpan(span2, cur2, () => {
+
+                    // Step 3 — “Welcome to my universe.”
+                    typePhrase('Welcome to my universe.', 1800, (span3, cur3) => {
+                      deleteSpan(span3, cur3, onAllDone);
+                    });
+
+                  });
+                }, 700);
+              });
+            }, 500);
+          });
+        });
+
+      });
+    });
+  }
+
   // ── QUOTES ──────────────────────────────────────────────────────────────
   let quotes = [], lastQuoteIdx = -1;
 
@@ -3011,14 +3155,13 @@ const NAV_LABELS = {};  // key → display label
     do { idx = Math.floor(Math.random() * quotes.length); }
     while (idx === lastQuoteIdx && quotes.length > 1);
     lastQuoteIdx = idx;
-    const text = '“' + quotes[idx] + '”'; // curly quotes
+    const text = '“' + quotes[idx] + '”';
 
     active = false;
     clearTimeout(timeoutId);
     cancelAnimationFrame(rafId);
     lbl.classList.add('quote-mode', 'visible');
 
-    // Build DOM: text span + cursor span
     lbl.innerHTML = '';
     const textSpan = document.createElement('span');
     const cursor = document.createElement('span');
@@ -3026,52 +3169,23 @@ const NAV_LABELS = {};  // key → display label
     lbl.appendChild(textSpan);
     lbl.appendChild(cursor);
 
-    // --- TYPE IN ---
     const HOLD_MS = 5500;
-
-    // Human typing: variable delay per character
-    function humanDelay() {
-      const r = Math.random();
-      if (r < 0.04) return 280 + Math.random() * 300; // long pause (thinking)
-      if (r < 0.12) return 90  + Math.random() * 120;  // brief hesitation
-      if (r < 0.30) return 55  + Math.random() * 55;   // slightly slow
-      return 18 + Math.random() * 30;                   // normal fast burst
-    }
-
-    // Occasionally mistype and correct (only on "real" word chars)
-    function shouldMistype(ch) {
-      return /[a-zA-Z]/.test(ch) && Math.random() < 0.07;
-    }
-    const NEARBY = { a:'sq',s:'adw',d:'sef',f:'dg',g:'fh',h:'gj',j:'hk',k:'jl',l:'k',
-                     e:'wr',r:'et',t:'ry',y:'tu',u:'yi',i:'uo',o:'ip',p:'o',
-                     n:'bm',m:'n',b:'vn',v:'bc',c:'vx',x:'cz',z:'x',
-                     A:'S',S:'AD',D:'SE',E:'WR',R:'ET',T:'RY' };
-
-    let charIdx = 0;
-    let mistypeActive = false, mistypeChar = '';
+    let charIdx = 0, mistypeActive = false, mistypeChar = '';
 
     function typeChar() {
       if (isNavHover) { lbl.classList.remove('quote-mode', 'visible'); return; }
-
-      // Resolve a pending mistype: show wrong char briefly, then delete it
       if (mistypeActive) {
         mistypeActive = false;
-        // show mistype char
         textSpan.textContent = text.slice(0, charIdx - 1) + mistypeChar;
-        // brief pause then backspace
         _twTimer = setTimeout(() => {
-          textSpan.textContent = text.slice(0, charIdx - 1); // backspace
-          _twTimer = setTimeout(typeChar, 40 + Math.random() * 60); // re-type
+          textSpan.textContent = text.slice(0, charIdx - 1);
+          _twTimer = setTimeout(typeChar, 40 + Math.random() * 60);
         }, 60 + Math.random() * 100);
         return;
       }
-
       if (charIdx <= text.length) {
-        const ch = text[charIdx - 1] || '';
         textSpan.textContent = text.slice(0, charIdx);
         charIdx++;
-
-        // Maybe mistype the next character
         if (charIdx <= text.length) {
           const nextCh = text[charIdx - 1];
           if (shouldMistype(nextCh)) {
@@ -3080,15 +3194,12 @@ const NAV_LABELS = {};  // key → display label
             mistypeActive = true;
           }
         }
-
         _twTimer = setTimeout(typeChar, humanDelay());
       } else {
-        // Fully typed — start letter-scramble on textSpan + CSS RGB glitch
         lbl.dataset.text = text;
         active = true;
         doGlitchBurst(text, textSpan);
         _twTimer = setTimeout(() => {
-          // Stop scramble, restore clean text, then delete
           active = false;
           clearTimeout(timeoutId);
           cancelAnimationFrame(rafId);
@@ -3098,38 +3209,42 @@ const NAV_LABELS = {};  // key → display label
       }
     }
 
-    // --- DELETE OUT ---
     let delIdx = text.length;
     function deleteChar() {
       if (isNavHover) { lbl.dataset.text = ''; lbl.classList.remove('quote-mode', 'visible'); return; }
-      lbl.dataset.text = ''; // clear glitch content before deleting
+      lbl.dataset.text = '';
       if (delIdx >= 0) {
         textSpan.textContent = text.slice(0, delIdx);
         delIdx--;
-        // Deleting is faster but slightly variable, with occasional micro-pause
-        const d = Math.random() < 0.08
-          ? 80 + Math.random() * 80   // brief delete hesitation
-          : 14 + Math.random() * 18;
+        const d = Math.random() < 0.08 ? 80 + Math.random() * 80 : 14 + Math.random() * 18;
         _twTimer = setTimeout(deleteChar, d);
       } else {
         cursor.style.display = 'none';
         lbl.classList.remove('visible');
-        _twTimer = setTimeout(() => {
-          if (!isNavHover) showNextQuote();
-        }, 600);
+        _twTimer = setTimeout(() => { if (!isNavHover) showNextQuote(); }, 600);
       }
     }
 
-    // Small random pause before starting to type (like a person gathering thoughts)
     _twTimer = setTimeout(typeChar, 200 + Math.random() * 400);
   }
 
-  // ── QUOTES — reads from inline <script id="quotes-data"> block ──────────
+  // ── STARTUP ─────────────────────────────────────────────────────────────
   try {
     quotes = JSON.parse(document.getElementById('quotes-data').textContent);
-    // Delay first quote until bang animation has settled (bang runs ~2.2s, wait 2s more)
-    setTimeout(() => { if (!isNavHover) showNextQuote(); }, 4200);
   } catch(e) {}
+
+  if (hasVisited()) {
+    // Return visitor — skip intro, fire bang immediately
+    if (window._triggerBigBang) window._triggerBigBang();
+    setTimeout(() => { if (!isNavHover) showNextQuote(); }, 4200);
+  } else {
+    setVisited();
+    // First visit — play intro, then bang, then quotes
+    runIntro(() => {
+      if (window._triggerBigBang) window._triggerBigBang();
+      setTimeout(() => { if (!isNavHover) showNextQuote(); }, 2800);
+    });
+  }
 
   // ── ARTICLES — fetched from content/articles.md ─────────────────────────
   (async function initCarousel() {
