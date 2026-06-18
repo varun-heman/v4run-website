@@ -73,9 +73,11 @@ body::after {
   position: fixed;
   inset: 0;
   z-index: 0;
-  transition: opacity 0.6s ease;
+  opacity: 0;
+  transition: opacity 0.9s ease;
 }
-#bg-canvas.dimmed { opacity: 0.55; }
+body.bang-ready #bg-canvas { opacity: 1; }
+body.bang-ready #bg-canvas.dimmed { opacity: 0.55; }
 
 /* ─── CORNER UI ──────────────────────────────────────── */
 .corner {
@@ -2915,6 +2917,7 @@ body.strip-hovered .nav {
   window._triggerBigBang = function () {
     if (bangStartT !== null) return; // already fired
     bangStartT = clock.getElapsedTime();
+    document.body.classList.add('bang-ready');
     setTimeout(() => document.body.classList.add('ui-ready'), 2700);
   };
 
@@ -3064,8 +3067,10 @@ const NAV_LABELS = {};  // key → display label
     return document.cookie.split(';').some(c => c.trim().startsWith('v4run_v='));
   }
   function setVisited() {
-    const exp = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
-    document.cookie = 'v4run_v=1; expires=' + exp + '; path=/; SameSite=Lax';
+    // TODO: change to 7-day expiry before launch
+    // const exp = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString();
+    // document.cookie = 'v4run_v=1; expires=' + exp + '; path=/; SameSite=Lax';
+    document.cookie = 'v4run_v=1; path=/; SameSite=Lax'; // session cookie — expires on tab close
   }
 
   // Type a plain string into a freshly built span+cursor inside lbl, then call onDone
