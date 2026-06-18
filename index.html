@@ -109,7 +109,39 @@ body.ui-ready .corner {
 }
 .corner-tr { top: 28px; right: 32px; text-align: right; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.12em; }
 .corner-bl { bottom: 28px; left: 32px; z-index: 20; } /* above carousel */
-.corner-br { bottom: 28px; right: 32px; text-align: right; text-transform: uppercase; letter-spacing: 0.12em; }
+.corner-br { bottom: 28px; right: 32px; text-align: right; text-transform: uppercase; letter-spacing: 0.12em; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+
+#music-toggle {
+  background: none; border: none; cursor: pointer;
+  font-size: 13px; color: rgba(232,232,226,0.45);
+  padding: 0; line-height: 1;
+  transition: color 0.2s ease;
+  font-family: var(--mono);
+  letter-spacing: 0;
+  text-transform: none;
+}
+#music-toggle:hover { color: rgba(232,232,226,0.85); }
+#music-toggle.muted { color: rgba(232,232,226,0.2); text-decoration: line-through; }
+
+/* ─── AUDIO VISUALISER ───────────────────────────────── */
+#music-viz {
+  display: flex; align-items: flex-end; gap: 2px;
+  height: 10px;
+}
+#music-viz span {
+  display: block; width: 2px; border-radius: 1px;
+  background: var(--accent);
+  transform-origin: bottom;
+}
+#music-viz span:nth-child(1) { animation: viz-bar 0.9s ease-in-out infinite alternate; }
+#music-viz span:nth-child(2) { animation: viz-bar 0.65s ease-in-out 0.15s infinite alternate; }
+#music-viz span:nth-child(3) { animation: viz-bar 0.8s ease-in-out 0.05s infinite alternate; }
+#music-viz span:nth-child(4) { animation: viz-bar 0.55s ease-in-out 0.3s infinite alternate; }
+@keyframes viz-bar {
+  0%   { height: 2px;  opacity: 0.4; }
+  100% { height: 10px; opacity: 0.9; }
+}
+#music-viz.paused span { animation-play-state: paused; height: 2px; opacity: 0.2; }
 
 /* ─── GLITCH LOGO ────────────────────────────────────── */
 .logo {
@@ -2146,7 +2178,13 @@ body.strip-hovered .nav {
   </div>
 </div>
 
+<audio id="bg-music" src="audio/bg_score.mp3" loop preload="auto"></audio>
+
 <div class="corner corner-br">
+  <div style="display:flex;align-items:center;gap:7px;justify-content:flex-end;">
+    <div id="music-viz" class="paused"><span></span><span></span><span></span><span></span></div>
+    <button id="music-toggle" aria-label="Toggle music" title="Mute music">♫</button>
+  </div>
   <span>©2026 Varun Hemachandran</span>
 </div>
 
@@ -2928,6 +2966,12 @@ body.strip-hovered .nav {
     document.body.classList.add('bang-ready');
     setTimeout(() => {
       bangStartT = clock.getElapsedTime();
+      // Start bg music
+      const music = document.getElementById('bg-music');
+      if (music) {
+        music.volume = 0.35;
+        music.play().catch(() => {}); // autoplay blocked — toggle handles it
+      }
       setTimeout(() => document.body.classList.add('ui-ready'), 2700);
     }, 1000);
   };
@@ -3292,6 +3336,47 @@ const NAV_LABELS = {};  // key → display label
       setTimeout(() => { if (!isNavHover) showNextQuote(); }, 7800);
     });
   }
+
+  // ── MUSIC TOGGLE ────────────────────────────────────────────────────────
+  (function() {
+    const btn = document.getElementById('music-toggle');
+    const music = document.getElementById('bg-music');
+    const viz = document.getElementById('music-viz');
+    if (!btn || !music) return;
+    let muted = false;
+
+    function setViz(playing) {
+      if (!viz) return;
+      viz.classList.toggle('paused', !playing);
+    }
+
+    btn.addEventListener('click', () => {
+      muted = !muted;
+      if (muted) {
+        music.pause();
+        btn.classList.add('muted');
+        btn.title = 'Unmute music';
+        setViz(false);
+      } else {
+        music.play().catch(() => {});
+        btn.classList.remove('muted');
+        btn.title = 'Mute music';
+        setViz(true);
+      }
+    });
+
+    // Start visualiser when music actually begins playing
+    music.addEventListener('play', () => { if (!muted) setViz(true); });
+    music.addEventListener('pause', () => setViz(false));
+
+    // If autoplay was blocked, start music on first user interaction
+    document.addEventListener('click', function startOnInteract() {
+      if (!muted && music.paused && music.readyState > 0) {
+        music.play().catch(() => {});
+      }
+      document.removeEventListener('click', startOnInteract);
+    }, { once: true });
+  })();
 
   // ── ARTICLES — fetched from content/articles.md ─────────────────────────
   (async function initCarousel() {
