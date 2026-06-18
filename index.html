@@ -2656,16 +2656,17 @@ const NAV_LABELS = {};  // key → display label
     if (_twTimer) { clearTimeout(_twTimer); _twTimer = null; }
   }
 
-  function doGlitchBurst(orig) {
+  function doGlitchBurst(orig, target) {
+    target = target || lbl;
     const dur = 180 + Math.random() * 140;
     const t0  = performance.now();
     function tick(now) {
       if (!active) return;
       if (now - t0 > dur) {
-        lbl.textContent = orig;
+        target.textContent = orig;
         // next burst in 0.6–1.8 s
         timeoutId = setTimeout(() => {
-          if (active) doGlitchBurst(orig);
+          if (active) doGlitchBurst(orig, target);
         }, 600 + Math.random() * 1200);
         return;
       }
@@ -2676,7 +2677,7 @@ const NAV_LABELS = {};  // key → display label
           ? GLITCH[Math.floor(Math.random() * GLITCH.length)]
           : orig[i];
       }
-      lbl.textContent = out;
+      target.textContent = out;
       rafId = requestAnimationFrame(tick);
     }
     rafId = requestAnimationFrame(tick);
@@ -2799,11 +2800,18 @@ const NAV_LABELS = {};  // key → display label
 
         _twTimer = setTimeout(typeChar, humanDelay());
       } else {
-        // Fully typed — set data-text so glitch pseudo-elements have content
+        // Fully typed — start letter-scramble on textSpan + CSS RGB glitch
         lbl.dataset.text = text;
+        active = true;
+        doGlitchBurst(text, textSpan);
         _twTimer = setTimeout(() => {
-          _twTimer = setTimeout(deleteChar, HOLD_MS);
-        }, 120 + Math.random() * 180);
+          // Stop scramble, restore clean text, then delete
+          active = false;
+          clearTimeout(timeoutId);
+          cancelAnimationFrame(rafId);
+          textSpan.textContent = text;
+          _twTimer = setTimeout(deleteChar, 150);
+        }, HOLD_MS);
       }
     }
 
