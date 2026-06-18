@@ -144,7 +144,8 @@ body.ui-ready .corner {
 
 /* Mobile-only elements — hidden everywhere by default */
 #mobile-logo-backdrop,
-#mobile-logo-panel { display: none; }
+#mobile-logo-panel,
+.nav-fade { display: none; }
 
 /* ─── GLITCH LOGO ────────────────────────────────────── */
 .logo {
@@ -1618,56 +1619,37 @@ body.strip-hovered .nav {
   .corner-bio { display: none; }
 
   /* ── Nav — horizontal strip at bottom ───────── */
-  /* Wrapper is the fixed element; nav sits inside it */
   #nav-scroll-wrap {
     position: fixed; bottom: 0; left: 0; right: 0;
-    z-index: 11;
-    pointer-events: auto;
+    z-index: 11; pointer-events: auto;
     background: linear-gradient(to top, rgba(8,8,8,0.95) 55%, transparent);
+    opacity: 0; transition: opacity 1.6s ease;
   }
+  body.ui-ready #nav-scroll-wrap { opacity: 1; }
   .nav {
-    position: relative; /* no longer fixed — wrapper handles positioning */
+    position: relative;
     left: auto; right: auto; top: auto; bottom: auto;
-    transform: none;
-    flex-direction: row;
-    gap: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    transform: none; flex-direction: row; gap: 0;
+    overflow-x: auto; overflow-y: hidden;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
     padding: 10px 12px 20px;
-    background: none; /* background now on wrapper */
-    backdrop-filter: none;
+    background: none; backdrop-filter: none;
     justify-content: flex-start;
-    opacity: 1; /* always visible — wrapper inherits ui-ready fade */
-    pointer-events: auto;
+    opacity: 1; pointer-events: auto;
   }
   .nav::-webkit-scrollbar { display: none; }
-  body.ui-ready #nav-scroll-wrap { opacity: 1; }
-  #nav-scroll-wrap { opacity: 0; transition: opacity 1.6s ease; }
-  body.ui-ready #nav-scroll-wrap .nav { pointer-events: auto; }
 
-  /* Scroll-hint fades on wrapper edges */
-  #nav-scroll-wrap::before,
-  #nav-scroll-wrap::after {
-    content: '';
-    position: absolute; top: 0; bottom: 0; width: 48px;
-    pointer-events: none;
+  /* Scroll-hint fade divs — real elements, not pseudo */
+  .nav-fade {
+    display: block;
+    position: fixed; bottom: 0; width: 56px;
+    pointer-events: none; z-index: 12;
     transition: opacity 0.3s ease;
-    z-index: 2;
   }
-  #nav-scroll-wrap::before {
-    left: 0;
-    background: linear-gradient(to right, rgba(8,8,8,0.92), transparent);
-    opacity: 0; /* appears once user scrolls right */
-  }
-  #nav-scroll-wrap::after {
-    right: 0;
-    background: linear-gradient(to left, rgba(8,8,8,0.92), transparent);
-    opacity: 1; /* always on — fades out only when fully scrolled to end */
-  }
-  #nav-scroll-wrap.can-scroll-left::before { opacity: 1; }
-  #nav-scroll-wrap.at-scroll-end::after    { opacity: 0; }
+  #nav-fade-left  { left: 0;  background: linear-gradient(to right, rgba(8,8,8,0.92), transparent); opacity: 0; }
+  #nav-fade-right { right: 0; background: linear-gradient(to left,  rgba(8,8,8,0.92), transparent); opacity: 1; }
+  #nav-fade-left.visible  { opacity: 1; }
+  #nav-fade-right.hidden  { opacity: 0; }
   .nav-item {
     padding: 6px 11px;
     flex-shrink: 0;
@@ -2340,6 +2322,8 @@ body.strip-hovered .nav {
 <div id="nav-scroll-wrap">
   <nav class="nav" id="nav"></nav>
 </div>
+<div class="nav-fade" id="nav-fade-left"></div>
+<div class="nav-fade" id="nav-fade-right"></div>
 
 <!-- ── MODAL ──────────────────────────────────────── -->
 <div class="modal-scrim" id="modal-scrim"></div>
@@ -4082,14 +4066,22 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   if (window.innerWidth <= 768) {
     const wrap = document.getElementById('nav-scroll-wrap');
     if (wrap && navEl) {
+      const fadeL = document.getElementById('nav-fade-left');
+      const fadeR = document.getElementById('nav-fade-right');
+
+      function syncFadeHeight() {
+        const h = navEl.getBoundingClientRect().height;
+        if (fadeL) fadeL.style.height = h + 'px';
+        if (fadeR) fadeR.style.height = h + 'px';
+      }
       function updateFades() {
-        wrap.classList.toggle('can-scroll-left', navEl.scrollLeft > 2);
-        wrap.classList.toggle('at-scroll-end',   navEl.scrollLeft >= navEl.scrollWidth - navEl.clientWidth - 2);
+        syncFadeHeight();
+        if (fadeL) fadeL.classList.toggle('visible', navEl.scrollLeft > 2);
+        if (fadeR) fadeR.classList.toggle('hidden',  navEl.scrollLeft >= navEl.scrollWidth - navEl.clientWidth - 2);
       }
       navEl.addEventListener('scroll', updateFades, { passive: true });
       window.addEventListener('resize', updateFades);
-      // Delay to ensure layout is fully calculated after all nav items are appended
-      setTimeout(updateFades, 100);
+      setTimeout(updateFades, 150);
     }
   }
 })();
