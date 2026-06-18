@@ -3062,15 +3062,42 @@ const NAV_LABELS = {};  // key → display label
       if (s.length > 0) {
         span.textContent = s.slice(0, -1);
         const d = Math.random() < 0.08 ? 80 + Math.random() * 80 : 14 + Math.random() * 18;
-        _twTimer = setTimeout(step, d);
+        _introNext(d, step);
       } else {
         if (cursor) cursor.style.display = 'none';
         lbl.classList.remove('visible', 'intro-mode');
-        _twTimer = setTimeout(onDone, 550);
+        _introNext(550, onDone);
       }
     }
-    _twTimer = setTimeout(step, 120);
+    _introNext(120, step);
   }
+
+  // ── INTRO PAUSE / RESUME ────────────────────────────────────────────────
+
+  let _introActive = false;
+  let _introResume = null; // callback to fire when tab regains focus
+
+  // Drop-in replacement for _twTimer = setTimeout inside intro functions.
+  // If the tab is already hidden, saves fn and waits; otherwise behaves like setTimeout.
+  function _introNext(ms, fn) {
+    _introResume = fn; // save as resume point in case tab hides before timer fires
+    _twTimer = setTimeout(() => {
+      if (!_introActive) return;
+      if (document.hidden) return; // visibilitychange will call _introResume
+      _introResume = null;
+      fn();
+    }, ms);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (!_introActive || document.hidden) return;
+    // Tab just became visible — resume wherever we paused
+    if (_introResume) {
+      const fn = _introResume;
+      _introResume = null;
+      fn();
+    }
+  });
 
   // ── INTRO SEQUENCE ───────────────────────────────────────────────────────
 
@@ -3102,10 +3129,10 @@ const NAV_LABELS = {};  // key → display label
       if (mistypeActive) {
         mistypeActive = false;
         textSpan.textContent = text.slice(0, charIdx - 1) + mistypeChar;
-        _twTimer = setTimeout(() => {
+        _introNext(60 + Math.random() * 100, () => {
           textSpan.textContent = text.slice(0, charIdx - 1);
-          _twTimer = setTimeout(typeChar, 40 + Math.random() * 60);
-        }, 60 + Math.random() * 100);
+          _introNext(40 + Math.random() * 60, typeChar);
+        });
         return;
       }
       if (charIdx <= text.length) {
@@ -3119,39 +3146,43 @@ const NAV_LABELS = {};  // key → display label
             mistypeActive = true;
           }
         }
-        _twTimer = setTimeout(typeChar, humanDelay());
+        _introNext(humanDelay(), typeChar);
       } else {
         // fully typed — hold, then pass span+cursor to caller's afterType
-        _twTimer = setTimeout(() => onDone(textSpan, cursor), holdMs);
+        _introNext(holdMs, () => onDone(textSpan, cursor));
       }
     }
-    _twTimer = setTimeout(typeChar, 300 + Math.random() * 250);
+    _introNext(300 + Math.random() * 250, typeChar);
   }
 
   function runIntro(onAllDone) {
+    _introActive = true;
     // Step 1 — “Hi!”
     typePhrase('Hi!', 1200, (span, cur) => {
       deleteSpan(span, cur, () => {
 
-        // Step 2 — “My name is Varun!” → glitch Varun → v4run → v4.run
+        // Step 2 — “My name is varun!” → glitch varun → v4run → v4.run
         typePhrase('My name is varun!', 350, (span2, cur2) => {
           // morph varun → v4run
           morphSpan(span2, 'My name is varun!', 'My name is v4run!', 340, () => {
-            _twTimer = setTimeout(() => {
+            _introNext(500, () => {
               // morph v4run → v4.run
               morphSpan(span2, 'My name is v4run!', 'My name is v4.run!', 340, () => {
-                _twTimer = setTimeout(() => {
+                _introNext(700, () => {
                   deleteSpan(span2, cur2, () => {
 
                     // Step 3 — “Welcome to my universe.”
                     typePhrase('Welcome to my universe.', 1800, (span3, cur3) => {
-                      deleteSpan(span3, cur3, onAllDone);
+                      deleteSpan(span3, cur3, () => {
+                        _introActive = false;
+                        onAllDone();
+                      });
                     });
 
                   });
-                }, 700);
+                });
               });
-            }, 500);
+            });
           });
         });
 
