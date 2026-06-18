@@ -538,6 +538,13 @@ body.ui-ready #writings-section.ready {
   clip-path: inset(0 0 0% 0);
   animation: modal-border-flash 0.9s ease-out forwards;
 }
+@keyframes modal-body-fadein {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: none; }
+}
+.modal-body-loaded {
+  animation: modal-body-fadein 0.22s ease forwards;
+}
 
 .modal-head {
   display: flex;
@@ -1081,6 +1088,21 @@ body.strip-hovered .nav {
   border-radius: 2px;
   flex-shrink: 0;
 }
+/* Nav NEW badge */
+.nav-new {
+  font-family: var(--mono);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: rgb(100, 255, 160);
+  border: 1px solid rgba(100,255,160,0.45);
+  padding: 1px 4px;
+  border-radius: 2px;
+  margin-left: 7px;
+  flex-shrink: 0;
+  vertical-align: middle;
+  opacity: 0.9;
+}
 .article-card__tags {
   display: flex;
   gap: 4px;
@@ -1503,10 +1525,43 @@ body.strip-hovered .nav {
 }
 .gallery-recent-thumb img {
   width: 100%; height: 100%; object-fit: cover;
-  transition: opacity 0.15s, transform 0.2s;
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
   display: block;
 }
-.gallery-recent-thumb:hover img { opacity: 0.75; transform: scale(1.04); }
+.gallery-recent-thumb:hover img { transform: scale(1.05); }
+.gallery-recent-thumb .thumb-info,
+.gallery-album-thumb .thumb-info {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(3,8,5,0.92) 0%, rgba(3,8,5,0.4) 50%, transparent 100%);
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 12px 10px 10px;
+  opacity: 0; transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+.gallery-recent-thumb:hover .thumb-info,
+.gallery-album-thumb:hover .thumb-info { opacity: 1; transform: translateY(0); }
+.thumb-caption {
+  font-family: var(--sans); font-size: 10px; font-weight: 400;
+  color: rgba(232,232,226,0.88); line-height: 1.4; margin-bottom: 5px;
+}
+.thumb-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.thumb-chip {
+  font-family: var(--mono); font-size: 7px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: rgba(184,240,210,0.55);
+  background: rgba(0,0,0,0.4); border: 1px solid rgba(184,240,210,0.15);
+  padding: 1px 6px; white-space: nowrap;
+}
+/* Thumbnail NEW badge — always visible, top-right corner */
+.thumb-new {
+  position: absolute; top: 6px; right: 6px;
+  font-family: var(--mono); font-size: 7px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgb(100, 255, 160); border: 1px solid rgba(100,255,160,0.5);
+  padding: 1px 5px; border-radius: 2px;
+  background: rgba(3,8,5,0.75); z-index: 3;
+  pointer-events: none;
+}
 
 /* Albums grid */
 #gallery-albums-section { margin-bottom: 28px; }
@@ -1568,55 +1623,60 @@ body.strip-hovered .nav {
 }
 .gallery-album-thumb img {
   width: 100%; height: 100%; object-fit: cover;
-  transition: opacity 0.15s, transform 0.2s; display: block;
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1); display: block;
 }
-.gallery-album-thumb:hover img { opacity: 0.75; transform: scale(1.04); }
+.gallery-album-thumb:hover img { transform: scale(1.05); }
 
 /* Lightbox */
 #gallery-lightbox {
   position: fixed; inset: 0; z-index: 150;
-  background: rgba(3,6,4,0.97);
-  display: none; flex-direction: column;
-  align-items: center; justify-content: center;
+  background: #000;
+  display: none; align-items: center; justify-content: center;
 }
 #gallery-lightbox.open { display: flex; }
-#lb-close {
-  position: absolute; top: 20px; right: 24px;
-  font-size: 22px; color: rgba(184,240,210,0.45); background: none; border: none;
-  cursor: pointer; transition: color 0.15s; z-index: 2; line-height: 1;
+#lb-wrap {
+  position: relative; width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
 }
-#lb-close:hover { color: rgba(184,240,210,0.9); }
+#lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font-size: 24px; color: rgba(255,255,255,0.35); background: none; border: none;
+  cursor: pointer; transition: color 0.15s; z-index: 4; line-height: 1;
+}
+#lb-close:hover { color: rgba(255,255,255,0.85); }
 #lb-img {
-  max-width: calc(100vw - 100px); max-height: calc(100vh - 160px);
+  max-width: 100vw; max-height: 100vh;
+  width: 100%; height: 100%;
   object-fit: contain; display: block;
-  box-shadow: 0 0 80px rgba(0,0,0,0.9);
+  position: relative; z-index: 1;
 }
 #lb-prev, #lb-next {
   position: absolute; top: 50%; transform: translateY(-50%);
-  font-size: 28px; color: rgba(184,240,210,0.3); background: none; border: none;
-  cursor: pointer; padding: 16px; transition: color 0.15s; z-index: 2;
+  font-size: 32px; color: rgba(255,255,255,0.25); background: none; border: none;
+  cursor: pointer; padding: 20px 16px; transition: color 0.15s; z-index: 4;
   user-select: none; line-height: 1;
 }
-#lb-prev:hover, #lb-next:hover { color: rgba(184,240,210,0.9); }
-#lb-prev { left: 8px; }
-#lb-next { right: 8px; }
+#lb-prev:hover, #lb-next:hover { color: rgba(255,255,255,0.8); }
+#lb-prev { left: 0; }
+#lb-next { right: 0; }
 #lb-meta {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  padding: 18px 32px;
-  background: linear-gradient(to top, rgba(3,6,4,0.95) 60%, transparent);
-  text-align: center;
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 3;
+  padding: 60px 32px 28px;
+  background: linear-gradient(to top, rgba(0,0,0,0.78) 40%, transparent);
+  text-align: center; pointer-events: none;
 }
 #lb-caption {
-  font-family: var(--sans); font-size: 12px; color: rgba(184,240,210,0.65);
-  line-height: 1.5; margin-bottom: 6px;
+  font-family: var(--sans); font-size: 13px; color: rgba(255,255,255,0.8);
+  line-height: 1.5; margin-bottom: 8px; font-weight: 300;
 }
 #lb-details {
-  display: flex; align-items: center; justify-content: center; gap: 16px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
 }
 .lb-chip {
   font-family: var(--mono); font-size: 8px; letter-spacing: 0.12em;
-  text-transform: uppercase; color: rgba(184,240,210,0.35);
-  border: 1px solid rgba(184,240,210,0.1); padding: 2px 8px;
+  text-transform: uppercase; color: rgba(255,255,255,0.4);
+  background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.12);
+  padding: 3px 9px;
 }
 
 @media (max-width: 768px) {
@@ -1800,13 +1860,15 @@ body.strip-hovered .nav {
 
 <!-- Lightbox (outside gallery-overlay so it can sit above everything) -->
 <div id="gallery-lightbox">
-  <button id="lb-close">×</button>
-  <button id="lb-prev">‹</button>
-  <button id="lb-next">›</button>
-  <img id="lb-img" src="" alt="">
-  <div id="lb-meta">
-    <div id="lb-caption"></div>
-    <div id="lb-details"></div>
+  <div id="lb-wrap">
+    <button id="lb-close">×</button>
+    <button id="lb-prev">‹</button>
+    <button id="lb-next">›</button>
+    <img id="lb-img" src="" alt="">
+    <div id="lb-meta">
+      <div id="lb-caption"></div>
+      <div id="lb-details"></div>
+    </div>
   </div>
 </div>
 
@@ -2653,6 +2715,7 @@ const NAV_LABELS = {};  // key → display label
     const NOW = Date.now();
     const SIXTY_DAYS = 60 * 24 * 60 * 60 * 1000;
     articles.forEach(a => { a._isNew = (NOW - parseArticleDate(a.date).getTime()) < SIXTY_DAYS; });
+    if (window._setNavBadge) window._setNavBadge('writing', articles.some(a => a._isNew));
 
     window._articles = articles; // expose for mobile overlay
 
@@ -2870,7 +2933,6 @@ async function openModal(key) {
 
   // Show section label immediately from nav config
   modalSection.textContent = (NAV_LABELS[key] || key).toUpperCase();
-  modalBody.innerHTML = '<p style="opacity:0.25;font-size:11px;">Loading…</p>';
   overlay.classList.add('open');
   escHint.textContent = window.innerWidth <= 768 ? '[ tap outside to close ]' : '[ ESC to close ]';
   escHint.classList.add('visible');
@@ -2881,6 +2943,8 @@ async function openModal(key) {
 
   // Fetch + parse markdown (cached)
   if (!_mdCache[key]) {
+    // Only show loading indicator if not yet preloaded
+    modalBody.innerHTML = '<p style="opacity:0.25;font-size:11px;">Loading…</p>';
     try {
       const res = await fetch(`content/${key}.md`);
       if (!res.ok) throw new Error(res.status);
@@ -2894,7 +2958,11 @@ async function openModal(key) {
     }
   }
 
+  // Animate content in
+  modalBody.classList.remove('modal-body-loaded');
+  void modalBody.offsetWidth; // force reflow to restart animation
   modalBody.innerHTML = _mdCache[key];
+  modalBody.classList.add('modal-body-loaded');
   // Stamp data-text on links for CSS glitch hover effect
   modalBody.querySelectorAll('a').forEach(a => a.dataset.text = a.textContent);
 }
@@ -2947,6 +3015,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   });
 
   // Build nav DOM
+  window._navItemMap = {};
   navItems.forEach(({ key, label }) => {
     const div = document.createElement('div');
     div.className   = 'nav-item';
@@ -2954,13 +3023,41 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     div.innerHTML   = `<span class="nav-link">${label}</span>`;
     div.addEventListener('click', () => {
       if (key === 'pics' && window._openGallery) { window._openGallery(); return; }
+      if (key === 'writing' && window._openViewAll) { window._openViewAll(); return; }
       openModal(key);
     });
+    window._navItemMap[key] = div;
     navEl.appendChild(div);
   });
 
+  // Expose badge setter — adds/removes .nav-new badge on a nav item
+  window._setNavBadge = function(key, show) {
+    const items = [window._navItemMap[key]].filter(Boolean);
+    // Also include mobile items with data-modal
+    document.querySelectorAll(`.nav-item[data-nav-key="${key}"]`).forEach(el => items.push(el));
+    items.forEach(item => {
+      const existing = item.querySelector('.nav-new');
+      if (show && !existing) {
+        const badge = document.createElement('span');
+        badge.className = 'nav-new';
+        badge.textContent = 'NEW';
+        item.appendChild(badge);
+      } else if (!show && existing) {
+        existing.remove();
+      }
+    });
+  };
+
   // Wire sphere-label hover listeners (defined in sphere IIFE above)
   if (window._wireNavHoverListeners) window._wireNavHoverListeners();
+
+  // Pre-warm MD cache in background so modals open instantly
+  navItems.forEach(({ key }) => {
+    if (key === 'pics' || _mdCache[key]) return;
+    fetch(`content/${key}.md`).then(r => r.ok ? r.text() : null).then(md => {
+      if (md && !_mdCache[key] && window.marked) _mdCache[key] = marked.parse(md);
+    }).catch(() => {});
+  });
 
   // Stamp corner links for glitch hover
   document.querySelectorAll('.corner a').forEach(a => a.dataset.text = a.textContent);
@@ -3027,6 +3124,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     // Articles nav item — appended last, mobile only
     const articlesNavItem = document.createElement('div');
     articlesNavItem.className = 'nav-item';
+    articlesNavItem.dataset.navKey = 'writing';
     articlesNavItem.innerHTML = `<span class="nav-link">Writings</span>`;
     articlesNavItem.addEventListener('click', () => {
       // Use the full View All overlay if available, else fall back to simple list
@@ -3041,6 +3139,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     // Pics nav item — mobile only
     const picsNavItem = document.createElement('div');
     picsNavItem.className = 'nav-item';
+    picsNavItem.dataset.navKey = 'pics';
     picsNavItem.innerHTML = `<span class="nav-link">Pics</span>`;
     picsNavItem.addEventListener('click', () => {
       if (window._openGallery) window._openGallery();
@@ -3444,6 +3543,36 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     img.src = photo.src; img.alt = photo.caption || '';
     img.loading = 'lazy';
     div.appendChild(img);
+    // NEW badge — always visible, top-right
+    if (photo._isNew) {
+      const badge = document.createElement('span');
+      badge.className = 'thumb-new';
+      badge.textContent = 'NEW';
+      div.appendChild(badge);
+    }
+    // Hover info overlay (caption + date/location chips)
+    if (photo.caption || photo.date || photo.location) {
+      const info = document.createElement('div');
+      info.className = 'thumb-info';
+      if (photo.caption) {
+        const cap = document.createElement('div');
+        cap.className = 'thumb-caption';
+        cap.textContent = photo.caption;
+        info.appendChild(cap);
+      }
+      const chips = document.createElement('div');
+      chips.className = 'thumb-chips';
+      [photo.date, photo.location].forEach(val => {
+        if (val) {
+          const c = document.createElement('span');
+          c.className = 'thumb-chip';
+          c.textContent = val;
+          chips.appendChild(c);
+        }
+      });
+      if (chips.children.length) info.appendChild(chips);
+      div.appendChild(info);
+    }
     div.addEventListener('click', () => openLightbox(photos, index));
     return div;
   }
@@ -3515,6 +3644,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
         if (galleryData.recent && galleryData.recent.length && typeof galleryData.recent[0] === 'string') {
           galleryData.recent = galleryData.recent.map(src => ({ src, caption: '', date: '', location: '' }));
         }
+        // Mark photos within 60 days as new
+        const _NOW = Date.now(), _SIXTY = 60*24*60*60*1000;
+        function markPhotoNew(p) { p._isNew = p.date ? ((_NOW - new Date(p.date).getTime()) < _SIXTY) : false; }
+        galleryData.recent.forEach(markPhotoNew);
+        galleryData.albums.forEach(a => a.photos.forEach(markPhotoNew));
+        const hasNewPic = galleryData.recent.some(p => p._isNew) ||
+                          galleryData.albums.some(a => a.photos.some(p => p._isNew));
+        if (window._setNavBadge) window._setNavBadge('pics', hasNewPic);
       } catch(e) {
         galleryData = { albums: [], recent: [] };
       }
