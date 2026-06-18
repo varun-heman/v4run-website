@@ -945,7 +945,7 @@ body.ui-ready #writings-section.ready {
   transform-origin: bottom center;
   z-index: 1;
 }
-.article-card:hover {
+.article-card.is-hovered {
   border-color: rgba(184, 240, 210, 0.28);
   background: rgba(12, 22, 14, 0.82);
   transform: scale(1.12) translateY(-5px);
@@ -958,15 +958,15 @@ body.ui-ready #writings-section.ready {
   background: rgba(6, 18, 10, 0.72);
   box-shadow: 0 0 18px rgba(100, 255, 160, 0.06), inset 0 0 0 1px rgba(100, 255, 160, 0.05);
 }
-.article-card.is-new:hover {
+.article-card.is-new.is-hovered {
   border-color: rgba(100, 255, 160, 0.38);
   background: rgba(8, 24, 14, 0.82);
 }
-.article-card:hover .article-card__title {
+.article-card.is-hovered .article-card__title {
   color: rgba(232, 232, 226, 0.97);
 }
 /* Dim all other cards when one is hovered */
-.articles-track:hover .article-card:not(:hover) {
+.articles-track.has-hover .article-card:not(.is-hovered) {
   opacity: 0.35;
   filter: grayscale(80%);
   transition: opacity 0.3s ease, filter 0.3s ease, transform 0.35s cubic-bezier(0.4,0,0.2,1), border-color 0.35s cubic-bezier(0.4,0,0.2,1), background 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s cubic-bezier(0.4,0,0.2,1);
@@ -981,8 +981,38 @@ body.ui-ready #writings-section.ready {
   pointer-events: none;
   transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.article-card:hover .article-card__thumb {
+.article-card.is-hovered .article-card__thumb {
   height: 140px;
+}
+/* Hide nav when hovering carousel */
+.nav { transition: opacity 0.25s ease; }
+body.strip-hovered .nav {
+  opacity: 0;
+  pointer-events: none;
+}
+/* Custom tooltip for +N pill */
+.tag-tooltip {
+  position: fixed;
+  z-index: 200;
+  background: rgba(8,8,8,0.95);
+  border: 1px solid rgba(184,240,210,0.15);
+  padding: 6px 10px;
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  max-width: 200px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.tag-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.tag-tooltip .article-card__tag {
+  border-color: rgba(184,240,210,0.2);
+  color: rgba(184,240,210,0.6);
 }
 .article-card__body {
   padding: 9px 11px 11px;
@@ -2214,7 +2244,7 @@ const NAV_LABELS = {};  // key → display label
       const visibleTags = tags.slice(0, 2).map(t => `<span class="article-card__tag">${t}</span>`).join('');
       const hiddenTags = tags.slice(2);
       const overflowTag = hiddenTags.length
-        ? `<span class="article-card__tag article-card__tag--more" title="${hiddenTags.join(', ')}">+${hiddenTags.length}</span>`
+        ? `<span class="article-card__tag article-card__tag--more" data-tags="${hiddenTags.join(',')}">+${hiddenTags.length}</span>`
         : '';
       card.innerHTML = `
         <img class="article-card__thumb" src="${a.thumb || 'images/thumbs/placeholder.jpg'}" alt="" onerror="this.style.opacity='0'">
@@ -2287,8 +2317,62 @@ const NAV_LABELS = {};  // key → display label
       carouselVel = Math.max(-18, Math.min(18, carouselVel));
     });
     strip.addEventListener('pointercancel', () => { isDragging = false; carouselVel = 0; });
-    strip.addEventListener('mouseenter', () => { isHovered = true; });
-    strip.addEventListener('mouseleave', () => { isHovered = false; });
+    strip.addEventListener('mouseenter', () => {
+      isHovered = true;
+      document.body.classList.add('strip-hovered');
+    });
+    strip.addEventListener('mouseleave', () => {
+      isHovered = false;
+      document.body.classList.remove('strip-hovered');
+      // clear any lingering hovered card
+      track.querySelectorAll('.is-hovered').forEach(c => c.classList.remove('is-hovered'));
+      track.classList.remove('has-hover');
+    });
+
+    // ── JS-managed card hover (avoids CSS :hover on transformed elements) ──
+    track.addEventListener('mouseover', e => {
+      const card = e.target.closest('.article-card');
+      if (!card) return;
+      track.querySelectorAll('.is-hovered').forEach(c => c.classList.remove('is-hovered'));
+      card.classList.add('is-hovered');
+      track.classList.add('has-hover');
+    });
+    track.addEventListener('mouseout', e => {
+      const card = e.target.closest('.article-card');
+      if (!card) return;
+      // only remove if mouse truly left the card (not entering a child)
+      if (!card.contains(e.relatedTarget)) {
+        card.classList.remove('is-hovered');
+        if (!track.querySelector('.is-hovered')) track.classList.remove('has-hover');
+      }
+    });
+
+    // ── +N pill tooltip ────────────────────────────────────────────────────
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tag-tooltip';
+    document.body.appendChild(tooltip);
+
+    track.addEventListener('mouseover', e => {
+      const pill = e.target.closest('.article-card__tag--more');
+      if (!pill) return;
+      const tags = (pill.dataset.tags || '').split(',').filter(Boolean);
+      tooltip.innerHTML = tags.map(t =>
+        `<span class="article-card__tag">${t.trim().toUpperCase()}</span>`
+      ).join('');
+      tooltip.classList.add('visible');
+    });
+    track.addEventListener('mouseout', e => {
+      if (e.target.closest('.article-card__tag--more')) {
+        tooltip.classList.remove('visible');
+      }
+    });
+    track.addEventListener('mousemove', e => {
+      if (tooltip.classList.contains('visible')) {
+        tooltip.style.left = (e.clientX + 12) + 'px';
+        tooltip.style.top  = (e.clientY - tooltip.offsetHeight / 2) + 'px';
+      }
+    });
+
     strip.addEventListener('click', e => {
       if (Math.abs(e.clientX - dragStartX) > 5) e.preventDefault();
     });
