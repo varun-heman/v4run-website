@@ -1135,30 +1135,62 @@ body.ui-ready #writings-section.ready {
   #reads-list { padding: 16px 20px 40px; }
 }
 .reads-card {
-  display: block;
-  padding: 22px 0;
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  padding: 24px 0;
   border-bottom: 1px solid rgba(255,255,255,0.06);
-  text-decoration: none;
   color: inherit;
   position: relative;
   clip-path: inset(0 0 100% 0);
-  transition: background 0.18s;
 }
 .reads-card.card-visible {
   clip-path: inset(0 0 0% 0);
-  transition: background 0.18s, clip-path 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: clip-path 0.42s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .reads-card.card-exit {
   clip-path: inset(100% 0 0% 0);
   transition: clip-path 0.22s cubic-bezier(0.4, 0, 1, 1);
 }
 .reads-card:last-child { border-bottom: none; }
+
+/* Thumbnail — fixed 4:3 ratio, always same size */
+.reads-card__thumb-wrap {
+  flex-shrink: 0;
+  width: 168px;
+  height: 126px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(20,35,22,0.8);
+}
+.reads-card__thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: grayscale(1) brightness(0.55) sepia(1) hue-rotate(85deg) saturate(6);
+  transition: filter 0.35s ease;
+}
+.reads-card:hover .reads-card__thumb {
+  filter: brightness(1.0) saturate(1.05);
+}
+@media (max-width: 768px) {
+  .reads-card__thumb-wrap { width: 100px; height: 75px; }
+}
+
+/* Content column */
+.reads-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
 .reads-card__meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 7px;
 }
 .reads-card__source {
   font-family: var(--mono);
@@ -1182,39 +1214,30 @@ body.ui-ready #writings-section.ready {
   border-radius: 2px;
   padding: 1px 5px;
 }
-.reads-card__title-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
 .reads-card__title {
   font-family: var(--sans);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
   color: rgba(232,232,226,0.88);
   line-height: 1.4;
+  margin-bottom: 9px;
   transition: color 0.18s;
 }
 .reads-card:hover .reads-card__title { color: rgba(184,240,210,0.95); }
-.reads-card__arrow {
-  font-size: 11px;
-  color: rgba(100,255,160,0.35);
-  flex-shrink: 0;
-  margin-top: 3px;
-  transition: color 0.18s, transform 0.18s;
-}
-.reads-card:hover .reads-card__arrow {
-  color: rgba(100,255,160,0.8);
-  transform: translate(2px, -2px);
-}
 .reads-card__desc {
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.75;
-  color: rgba(232,232,226,0.52);
-  margin-bottom: 12px;
+  color: rgba(232,232,226,0.48);
+  margin-bottom: 14px;
+  flex: 1;
+}
+.reads-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .reads-card__tags {
   display: flex;
@@ -2138,6 +2161,7 @@ body.strip-hovered .nav {
     <span id="reads-close">×</span>
   </div>
   <div id="reads-filters">
+    <div id="reads-year-row" class="viewall-filter-row"></div>
     <div id="reads-tag-row" class="viewall-filter-row"></div>
   </div>
   <div id="reads-list"></div>
@@ -4188,12 +4212,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 (function () {
   const overlay  = document.getElementById('reads-overlay');
   const closeBtn = document.getElementById('reads-close');
+  const yearRow  = document.getElementById('reads-year-row');
   const tagRow   = document.getElementById('reads-tag-row');
   const list     = document.getElementById('reads-list');
   if (!overlay) return;
 
   const NOW = Date.now(), TWO_MONTHS = 61 * 24 * 60 * 60 * 1000;
-  let allReads = [], activeTag = null, built = false;
+  let allReads = [], activeYear = null, activeTag = null, built = false;
 
   function parseReadsMd(text) {
     return text.split(/\n---/)
@@ -4214,34 +4239,60 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       .filter(r => r.title && r.url);
   }
 
-  function buildTagFilters(reads) {
-    tagRow.innerHTML = '';
+  function makePill(container, text, onClick) {
+    const pill = document.createElement('button');
+    pill.className = 'filter-pill';
+    pill.textContent = text;
+    pill.addEventListener('click', () => onClick(pill));
+    container.appendChild(pill);
+    return pill;
+  }
+
+  function buildFilters(reads) {
+    yearRow.innerHTML = '';
+    tagRow.innerHTML  = '';
+
+    // Year pills
+    const yearSet = new Set();
+    reads.forEach(r => {
+      if (r.date) { const d = new Date(r.date); if (!isNaN(d)) yearSet.add(d.getFullYear().toString()); }
+    });
+    if (yearSet.size) {
+      const lbl = document.createElement('span');
+      lbl.className = 'filter-label'; lbl.textContent = 'Year';
+      yearRow.appendChild(lbl);
+      [...yearSet].sort((a,b) => b - a).forEach(y => {
+        makePill(yearRow, y, pill => {
+          if (activeYear === y) { activeYear = null; pill.classList.remove('active'); }
+          else {
+            activeYear = y;
+            yearRow.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+          }
+          renderList();
+        });
+      });
+    }
+
+    // Tag pills
     const tagSet = new Set();
     reads.forEach(r => (r.tags || []).forEach(t => tagSet.add(t)));
-    if (!tagSet.size) return;
-
-    const lbl = document.createElement('span');
-    lbl.className = 'filter-label';
-    lbl.textContent = 'Tag';
-    tagRow.appendChild(lbl);
-
-    [...tagSet].sort().forEach(t => {
-      const pill = document.createElement('button');
-      pill.className = 'filter-pill';
-      pill.textContent = t;
-      pill.addEventListener('click', () => {
-        if (activeTag === t) {
-          activeTag = null;
-          pill.classList.remove('active');
-        } else {
-          activeTag = t;
-          tagRow.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-          pill.classList.add('active');
-        }
-        renderList();
+    if (tagSet.size) {
+      const lbl = document.createElement('span');
+      lbl.className = 'filter-label'; lbl.textContent = 'Tag';
+      tagRow.appendChild(lbl);
+      [...tagSet].sort().forEach(t => {
+        makePill(tagRow, t, pill => {
+          if (activeTag === t) { activeTag = null; pill.classList.remove('active'); }
+          else {
+            activeTag = t;
+            tagRow.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+          }
+          renderList();
+        });
       });
-      tagRow.appendChild(pill);
-    });
+    }
   }
 
   function buildCards(filtered) {
@@ -4254,11 +4305,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       return;
     }
     filtered.forEach((r, i) => {
-      const card = document.createElement('a');
+      const card = document.createElement('div');
       card.className = 'reads-card';
-      card.href = r.url;
-      card.target = '_blank';
-      card.rel = 'noopener noreferrer';
 
       const tagHtml = (r.tags || []).map(t =>
         `<span class="reads-card__tag">${t}</span>`
@@ -4266,21 +4314,30 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       const newBadge = r._isNew ? '<span class="reads-card__new">NEW</span>' : '';
       const dateDisplay = r.date ? (() => {
         const d = new Date(r.date + 'T00:00:00');
-        return isNaN(d) ? r.date : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+        return isNaN(d) ? r.date : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
       })() : '';
+      const thumbSrc = r.thumb || '';
+      const thumbHtml = `<div class="reads-card__thumb-wrap">
+        ${thumbSrc ? `<img class="reads-card__thumb" src="${thumbSrc}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">` : ''}
+      </div>`;
 
       card.innerHTML = `
-        <div class="reads-card__meta">
-          ${r.source ? `<span class="reads-card__source">${r.source}</span>` : ''}
-          ${dateDisplay ? `<span class="reads-card__date">${dateDisplay}</span>` : ''}
-          ${newBadge}
-        </div>
-        <div class="reads-card__title-row">
-          <span class="reads-card__title">${r.title}</span>
-          <i class="fa-solid fa-arrow-up-right-from-square reads-card__arrow"></i>
-        </div>
-        ${r.description ? `<div class="reads-card__desc">${r.description}</div>` : ''}
-        ${tagHtml ? `<div class="reads-card__tags">${tagHtml}</div>` : ''}`;
+        ${thumbHtml}
+        <div class="reads-card__body">
+          <div class="reads-card__meta">
+            ${r.source ? `<span class="reads-card__source">${r.source}</span>` : ''}
+            ${dateDisplay ? `<span class="reads-card__date">${dateDisplay}</span>` : ''}
+            ${newBadge}
+          </div>
+          <div class="reads-card__title">${r.title}</div>
+          ${r.description ? `<div class="reads-card__desc">${r.description}</div>` : ''}
+          <div class="reads-card__footer">
+            ${tagHtml ? `<div class="reads-card__tags">${tagHtml}</div>` : '<div></div>'}
+            <a class="site-btn" href="${r.url}" target="_blank" rel="noopener noreferrer">
+              Open Link <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            </a>
+          </div>
+        </div>`;
 
       list.appendChild(card);
       setTimeout(() => card.classList.add('card-visible'), i * 55);
@@ -4288,9 +4345,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   }
 
   function renderList() {
-    const filtered = allReads.filter(r =>
-      !activeTag || (r.tags || []).includes(activeTag)
-    );
+    const filtered = allReads.filter(r => {
+      if (activeYear) {
+        const d = new Date(r.date);
+        if (isNaN(d) || d.getFullYear().toString() !== activeYear) return false;
+      }
+      if (activeTag && !(r.tags || []).includes(activeTag)) return false;
+      return true;
+    });
     const existing = [...list.querySelectorAll('.card-visible')];
     if (existing.length) {
       existing.forEach((c, i) => setTimeout(() => c.classList.add('card-exit'), i * 20));
@@ -4310,7 +4372,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
           allReads.sort((a, b) => new Date(b.date) - new Date(a.date));
         }
       } catch(e) {}
-      buildTagFilters(allReads);
+      buildFilters(allReads);
       built = true;
 
       // Nav badge
