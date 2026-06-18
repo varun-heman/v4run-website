@@ -3131,6 +3131,7 @@ async function openModal(key) {
   overlay.classList.add('open');
   scrim.classList.add('open');
   if (window.innerWidth > 768) document.body.classList.add('modal-sphere-up');
+  history.pushState({ panel: key }, '', '#' + key);
   escHint.textContent = window.innerWidth <= 768 ? '[ tap outside to close ]' : '[ ESC to close ]';
   escHint.classList.add('visible');
   document.querySelectorAll('.nav-item').forEach(el =>
@@ -3171,6 +3172,7 @@ function closeModal() {
   escHint.classList.remove('visible');
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   if (window._setModalOpen) window._setModalOpen(false);
+  if (location.hash) history.replaceState(null, '', location.pathname);
 }
 
 closeBtn.addEventListener('click', closeModal);
@@ -3557,10 +3559,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     overlay.classList.remove('open');
     document.body.style.overflow = '';
     window._modalOpen = false;
+    if (location.hash) history.replaceState(null, '', location.pathname);
   }
 
   // Expose so mobile Writings nav can open it directly
-  window._openViewAll = openOverlay;
+  window._openViewAll = function(skipHash) {
+    openOverlay();
+    if (!skipHash) history.pushState({ panel: 'writing' }, '', '#writing');
+  };
 
   openBtn.addEventListener('click', openOverlay);
   closeBtn.addEventListener('click', closeOverlay);
@@ -3885,6 +3891,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     overlay.classList.remove('open');
     window._modalOpen = false;
     document.body.style.overflow = '';
+    if (location.hash) history.replaceState(null, '', location.pathname);
   }
 
   closeBtn.addEventListener('click', closeGallery);
@@ -3894,7 +3901,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       closeGallery();
   });
 
-  window._openGallery = openGallery;
+  window._openGallery = function(skipHash) {
+    openGallery();
+    if (!skipHash) history.pushState({ panel: 'pics' }, '', '#pics');
+  };
 })();
 
 // ── SOCIAL DOCK ───────────────────────────────────────
@@ -3984,6 +3994,33 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     allIcons().forEach(el => { el.style.transitionDelay = '0ms'; });
   });
 })();
+
+// ── DEEP LINKS — hash → open the right panel ──────────
+function _openFromHash(hash) {
+  const key = (hash || '').replace('#', '').toLowerCase();
+  if (!key) return;
+  if (key === 'writing' && window._openViewAll) { window._openViewAll(true); return; }
+  if (key === 'pics'    && window._openGallery) { window._openGallery(true); return; }
+  // Modal keys (about, work, etc.) — openModal is defined in this scope
+  if (typeof openModal === 'function') openModal(key);
+}
+
+// On initial load — defer until after IIFEs + bootNav have run
+if (location.hash) {
+  const _initHash = location.hash;
+  setTimeout(() => _openFromHash(_initHash), 100);
+}
+
+// Browser back / forward
+window.addEventListener('popstate', () => {
+  // Close whatever is currently open, then open the new hash (if any)
+  if (typeof closeModal === 'function') closeModal();
+  const wa = document.getElementById('viewall-overlay');
+  const ga = document.getElementById('gallery-overlay');
+  if (wa) wa.classList.remove('open');
+  if (ga) ga.classList.remove('open');
+  if (location.hash) _openFromHash(location.hash);
+});
 </script>
 </body>
 </html>
