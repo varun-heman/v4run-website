@@ -5,4 +5,5 @@
 about   | About   | WHO I AM
 work    | Work    | WHAT I'M UP TO
 writing | Writing | WHAT I THINK
+reads   | Reads   | RECOMMENDED READS
 pics    | Pics    | PHOTOGRAPHY

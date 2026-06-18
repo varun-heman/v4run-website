@@ -838,26 +838,41 @@ body.ui-ready #writings-section.ready {
   color: rgba(184, 240, 210, 0.30);
   user-select: none;
 }
-#viewall-btn {
+/* Shared site button — sweep-fill hover, used for View All, Albums back, etc. */
+.site-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-family: var(--mono);
   font-size: 8px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(100, 255, 160, 0.7);
-  background: rgba(100, 255, 160, 0.06);
-  border: 1px solid rgba(100, 255, 160, 0.22);
-  cursor: pointer;
-  padding: 5px 12px;
+  color: rgba(184, 240, 210, 0.7);
+  background: transparent;
+  border: 1px solid rgba(100, 255, 160, 0.28);
   border-radius: 2px;
-  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease,
-              box-shadow 0.2s ease;
+  padding: 7px 13px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  text-decoration: none;
 }
-#viewall-btn:hover {
-  color: rgb(100, 255, 160);
-  background: rgba(100, 255, 160, 0.12);
-  border-color: rgba(100, 255, 160, 0.5);
-  box-shadow: 0 0 12px rgba(100, 255, 160, 0.1);
+.site-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(100, 255, 160, 0.1);
+  transform: translateX(-100%);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
 }
+.site-btn:hover {
+  color: rgba(184, 240, 210, 1);
+  border-color: rgba(100, 255, 160, 0.55);
+  box-shadow: 0 0 14px rgba(100, 255, 160, 0.08);
+}
+.site-btn:hover::before { transform: translateX(0); }
 
 /* ── VIEW ALL OVERLAY ──────────────────────────────── */
 #viewall-overlay {
@@ -1058,6 +1073,173 @@ body.ui-ready #writings-section.ready {
   padding: 60px 0;
   letter-spacing: 0.1em;
 }
+/* ─── READS OVERLAY ──────────────────────────────────── */
+#reads-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  background: rgba(4,4,4,0.96);
+  backdrop-filter: blur(16px) saturate(110%);
+  -webkit-backdrop-filter: blur(16px) saturate(110%);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+#reads-overlay.open { opacity: 1; pointer-events: auto; }
+#reads-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 40px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+#reads-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+}
+#reads-close {
+  font-size: 22px;
+  color: rgba(224,48,48,0.6);
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+#reads-close:hover { color: #e03030; }
+#reads-filters {
+  padding: 12px 40px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  flex-shrink: 0;
+}
+#reads-list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 28px 40px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px; /* hairline dividers between cards */
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+@media (max-width: 768px) {
+  #reads-head, #reads-filters { padding-left: 20px; padding-right: 20px; }
+  #reads-list { padding: 16px 20px 40px; }
+}
+.reads-card {
+  display: block;
+  padding: 22px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  clip-path: inset(0 0 100% 0);
+  transition: background 0.18s;
+}
+.reads-card.card-visible {
+  clip-path: inset(0 0 0% 0);
+  transition: background 0.18s, clip-path 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reads-card.card-exit {
+  clip-path: inset(100% 0 0% 0);
+  transition: clip-path 0.22s cubic-bezier(0.4, 0, 1, 1);
+}
+.reads-card:last-child { border-bottom: none; }
+.reads-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.reads-card__source {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(100,255,160,0.5);
+}
+.reads-card__date {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: rgba(255,255,255,0.22);
+}
+.reads-card__new {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(100,255,160,0.9);
+  border: 1px solid rgba(100,255,160,0.4);
+  border-radius: 2px;
+  padding: 1px 5px;
+}
+.reads-card__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.reads-card__title {
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(232,232,226,0.88);
+  line-height: 1.4;
+  transition: color 0.18s;
+}
+.reads-card:hover .reads-card__title { color: rgba(184,240,210,0.95); }
+.reads-card__arrow {
+  font-size: 11px;
+  color: rgba(100,255,160,0.35);
+  flex-shrink: 0;
+  margin-top: 3px;
+  transition: color 0.18s, transform 0.18s;
+}
+.reads-card:hover .reads-card__arrow {
+  color: rgba(100,255,160,0.8);
+  transform: translate(2px, -2px);
+}
+.reads-card__desc {
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.75;
+  color: rgba(232,232,226,0.52);
+  margin-bottom: 12px;
+}
+.reads-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.reads-card__tag {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 10px;
+  color: rgba(255,255,255,0.28);
+}
+.reads-empty {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: rgba(255,255,255,0.2);
+  padding: 60px 0;
+  letter-spacing: 0.1em;
+}
+
 #articles-strip {
   overflow: visible;
   padding-top: 16px;
@@ -1770,13 +1952,7 @@ body.strip-hovered .nav {
   display: flex; align-items: center; gap: 16px;
   margin-bottom: 20px;
 }
-#gallery-back {
-  font-family: var(--mono); font-size: 8px; letter-spacing: 0.14em;
-  text-transform: uppercase; color: rgba(100,255,160,0.6);
-  background: none; border: 1px solid rgba(100,255,160,0.18);
-  padding: 5px 12px; cursor: pointer; transition: color 0.15s, border-color 0.15s;
-}
-#gallery-back:hover { color: rgb(100,255,160); border-color: rgba(100,255,160,0.4); }
+/* gallery-back inherits .site-btn — no extra rules needed */
 #gallery-album-title-text {
   font-family: var(--sans); font-size: 14px; font-weight: 500;
   color: rgba(232,232,226,0.75);
@@ -1937,7 +2113,7 @@ body.strip-hovered .nav {
 <div id="writings-section">
   <div id="writings-header">
     <div id="writings-label">Writings</div>
-    <button id="viewall-btn">View All →</button>
+    <button id="viewall-btn" class="site-btn">View All <i class="fa-solid fa-arrow-right"></i></button>
   </div>
   <div id="articles-strip"></div>
 </div>
@@ -1953,6 +2129,18 @@ body.strip-hovered .nav {
     <div id="viewall-tag-row" class="viewall-filter-row"></div>
   </div>
   <div id="viewall-grid"></div>
+</div>
+
+<!-- ── READS OVERLAY ─────────────────────────────────── -->
+<div id="reads-overlay">
+  <div id="reads-head">
+    <span id="reads-title">Recommended Reads</span>
+    <span id="reads-close">×</span>
+  </div>
+  <div id="reads-filters">
+    <div id="reads-tag-row" class="viewall-filter-row"></div>
+  </div>
+  <div id="reads-list"></div>
 </div>
 
 <!-- ── CONTACT OVERLAY ───────────────────────────────── -->
@@ -2023,7 +2211,7 @@ body.strip-hovered .nav {
     </div>
     <div id="gallery-album-view">
       <div id="gallery-album-head">
-        <button id="gallery-back"><i class="fa-solid fa-arrow-left"></i> Albums</button>
+        <button id="gallery-back" class="site-btn"><i class="fa-solid fa-arrow-left"></i> Albums</button>
         <span id="gallery-album-title-text"></span>
       </div>
       <div id="gallery-album-grid"></div>
@@ -3223,8 +3411,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     div.dataset.modal = key;
     div.innerHTML   = `<span class="nav-link">${label}</span>`;
     div.addEventListener('click', () => {
-      if (key === 'pics' && window._openGallery) { window._openGallery(); return; }
-      if (key === 'writing' && window._openViewAll) { window._openViewAll(); return; }
+      if (key === 'pics'    && window._openGallery)   { window._openGallery();   return; }
+      if (key === 'writing' && window._openViewAll)   { window._openViewAll();   return; }
+      if (key === 'reads'   && window._openReads)     { window._openReads();     return; }
       openModal(key);
     });
     window._navItemMap[key] = div;
@@ -3995,12 +4184,182 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   });
 })();
 
+// ── READS OVERLAY ─────────────────────────────────────
+(function () {
+  const overlay  = document.getElementById('reads-overlay');
+  const closeBtn = document.getElementById('reads-close');
+  const tagRow   = document.getElementById('reads-tag-row');
+  const list     = document.getElementById('reads-list');
+  if (!overlay) return;
+
+  const NOW = Date.now(), TWO_MONTHS = 61 * 24 * 60 * 60 * 1000;
+  let allReads = [], activeTag = null, built = false;
+
+  function parseReadsMd(text) {
+    return text.split(/\n---/)
+      .map(block => {
+        const obj = {};
+        block.split('\n').forEach(line => {
+          const m = line.match(/^(\w+)\s*:\s*(.+)/);
+          if (m) {
+            const key = m[1].trim(), val = m[2].trim();
+            obj[key] = key === 'tags'
+              ? val.split(',').map(t => t.trim()).filter(Boolean)
+              : val;
+          }
+        });
+        if (!obj.tags) obj.tags = [];
+        return obj;
+      })
+      .filter(r => r.title && r.url);
+  }
+
+  function buildTagFilters(reads) {
+    tagRow.innerHTML = '';
+    const tagSet = new Set();
+    reads.forEach(r => (r.tags || []).forEach(t => tagSet.add(t)));
+    if (!tagSet.size) return;
+
+    const lbl = document.createElement('span');
+    lbl.className = 'filter-label';
+    lbl.textContent = 'Tag';
+    tagRow.appendChild(lbl);
+
+    [...tagSet].sort().forEach(t => {
+      const pill = document.createElement('button');
+      pill.className = 'filter-pill';
+      pill.textContent = t;
+      pill.addEventListener('click', () => {
+        if (activeTag === t) {
+          activeTag = null;
+          pill.classList.remove('active');
+        } else {
+          activeTag = t;
+          tagRow.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+        }
+        renderList();
+      });
+      tagRow.appendChild(pill);
+    });
+  }
+
+  function buildCards(filtered) {
+    list.innerHTML = '';
+    if (!filtered.length) {
+      const empty = document.createElement('div');
+      empty.className = 'reads-empty';
+      empty.textContent = 'No reads match this filter.';
+      list.appendChild(empty);
+      return;
+    }
+    filtered.forEach((r, i) => {
+      const card = document.createElement('a');
+      card.className = 'reads-card';
+      card.href = r.url;
+      card.target = '_blank';
+      card.rel = 'noopener noreferrer';
+
+      const tagHtml = (r.tags || []).map(t =>
+        `<span class="reads-card__tag">${t}</span>`
+      ).join('');
+      const newBadge = r._isNew ? '<span class="reads-card__new">NEW</span>' : '';
+      const dateDisplay = r.date ? (() => {
+        const d = new Date(r.date + 'T00:00:00');
+        return isNaN(d) ? r.date : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+      })() : '';
+
+      card.innerHTML = `
+        <div class="reads-card__meta">
+          ${r.source ? `<span class="reads-card__source">${r.source}</span>` : ''}
+          ${dateDisplay ? `<span class="reads-card__date">${dateDisplay}</span>` : ''}
+          ${newBadge}
+        </div>
+        <div class="reads-card__title-row">
+          <span class="reads-card__title">${r.title}</span>
+          <i class="fa-solid fa-arrow-up-right-from-square reads-card__arrow"></i>
+        </div>
+        ${r.description ? `<div class="reads-card__desc">${r.description}</div>` : ''}
+        ${tagHtml ? `<div class="reads-card__tags">${tagHtml}</div>` : ''}`;
+
+      list.appendChild(card);
+      setTimeout(() => card.classList.add('card-visible'), i * 55);
+    });
+  }
+
+  function renderList() {
+    const filtered = allReads.filter(r =>
+      !activeTag || (r.tags || []).includes(activeTag)
+    );
+    const existing = [...list.querySelectorAll('.card-visible')];
+    if (existing.length) {
+      existing.forEach((c, i) => setTimeout(() => c.classList.add('card-exit'), i * 20));
+      setTimeout(() => buildCards(filtered), existing.length * 20 + 220);
+    } else {
+      buildCards(filtered);
+    }
+  }
+
+  async function openReads() {
+    if (!built) {
+      try {
+        const res = await fetch('content/reads.md');
+        if (res.ok) {
+          allReads = parseReadsMd(await res.text());
+          allReads.forEach(r => { r._isNew = r.date ? (NOW - new Date(r.date + 'T00:00:00').getTime()) < TWO_MONTHS : false; });
+          allReads.sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
+      } catch(e) {}
+      buildTagFilters(allReads);
+      built = true;
+
+      // Nav badge
+      const hasNew = allReads.some(r => r._isNew);
+      if (window._setNavBadge) window._setNavBadge('reads', hasNew);
+      else (window._navBadgeQueue = window._navBadgeQueue || []).push(['reads', hasNew]);
+    }
+    renderList();
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    window._modalOpen = true;
+  }
+
+  function closeReads() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    window._modalOpen = false;
+    if (location.hash) history.replaceState(null, '', location.pathname);
+  }
+
+  closeBtn.addEventListener('click', closeReads);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeReads(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) closeReads();
+  });
+
+  window._openReads = function(skipHash) {
+    openReads();
+    if (!skipHash) history.pushState({ panel: 'reads' }, '', '#reads');
+  };
+
+  // Pre-fetch in background for nav badge
+  fetch('content/reads.md').then(r => r.ok ? r.text() : null).then(text => {
+    if (!text || built) return;
+    const reads = parseReadsMd(text);
+    reads.forEach(r => { r._isNew = r.date ? (NOW - new Date(r.date + 'T00:00:00').getTime()) < TWO_MONTHS : false; });
+    const hasNew = reads.some(r => r._isNew);
+    if (window._setNavBadge) window._setNavBadge('reads', hasNew);
+    else (window._navBadgeQueue = window._navBadgeQueue || []).push(['reads', hasNew]);
+  }).catch(() => {});
+})();
+
 // ── DEEP LINKS — hash → open the right panel ──────────
 function _openFromHash(hash) {
   const key = (hash || '').replace('#', '').toLowerCase();
   if (!key) return;
   if (key === 'writing' && window._openViewAll) { window._openViewAll(true); return; }
   if (key === 'pics'    && window._openGallery) { window._openGallery(true); return; }
+  if (key === 'reads'   && window._openReads)   { window._openReads(true);   return; }
   // Modal keys (about, work, etc.) — openModal is defined in this scope
   if (typeof openModal === 'function') openModal(key);
 }
@@ -4017,8 +4376,10 @@ window.addEventListener('popstate', () => {
   if (typeof closeModal === 'function') closeModal();
   const wa = document.getElementById('viewall-overlay');
   const ga = document.getElementById('gallery-overlay');
+  const ra = document.getElementById('reads-overlay');
   if (wa) wa.classList.remove('open');
   if (ga) ga.classList.remove('open');
+  if (ra) ra.classList.remove('open');
   if (location.hash) _openFromHash(location.hash);
 });
 </script>
