@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dot Sphere</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      background: #080808;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    #sw {
+      width: min(95vw, 95vh);
+      aspect-ratio: 1 / 1;
+      background: #080808;
+    }
+    #sw canvas { display: block; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="sw"><canvas id="sc"></canvas></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+  (function () {
+
+    const wrap = document.getElementById('sw');
+    const cv   = document.getElementById('sc');
+    const W = () => wrap.clientWidth;
+    const H = () => wrap.clientHeight;
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas: cv,
+      antialias: false,
+      powerPreference: 'high-performance'
+    });
+    renderer.setClearColor(0x080808, 1);
+    renderer.setPixelRatio(1); // 1× so dots stay 1 physical pixel, no retina upscaling
+    renderer.setSize(W(), H());
+
+    const scene = new THREE.Scene();
+    const cam   = new THREE.PerspectiveCamera(55, W() / H(), 0.1, 100);
+    cam.position.z = 3.0;
+
+    /* ── Shared deformation GLSL ─────────────────────────────────────────────
+       Trig-wave organic displacement: 12 sin() calls per vertex.
+       Replaces FBM (which needed ~72 hash ops per vertex) — ~6× faster.     */
+    const DEFORM = `
+      vec3 _def(vec3 b, float t) {
+        vec3 n = normalize(b);
+        vec3 d = vec3(
+          sin(n.y*5.1 + n.z*3.7 + t*.31) + sin(n.x*2.9 + n.z*6.3 + t*.19)*.6,
+          sin(n.z*4.7 + n.x*3.1 + t*.23) + sin(n.y*6.1 + n.x*2.7 + t*.17)*.6,
+          sin(n.x*4.3 + n.y*5.7 + t*.27) + sin(n.z*3.3 + n.y*4.1 + t*.21)*.6
+        ) * .28;
+        vec3 tang = d - dot(d, n) * n;
+        return normalize(b + tang * .30) * (1. + dot(d, n) * .08);
+      }
+      /* cosine-space mouse zone — avoids expensive acos() per vertex */
+      float _zone(vec3 bn, vec3 mDir) {
+        return pow(max(0., (dot(bn, mDir) + .10) / 1.10), 2.);
+      }
+    `;
+
+    /* ── DOTS ────────────────────────────────────────────────────────────── */
+    const N = 5000;
+    const base  = new Float32Array(N * 3);
+    const seed  = new Float32Array(N);
+    const seed2 = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      const u = Math.random() * Math.PI * 2;
+      const v = Math.acos(2 * Math.random() - 1);
+      const sv = Math.sin(v);
+      base[i*3]   = sv * Math.cos(u);
+      base[i*3+1] = sv * Math.sin(u);
+      base[i*3+2] = Math.cos(v);
+      seed[i]  = Math.random();
+      seed2[i] = Math.random();
+    }
+
+    const dGeo = new THREE.BufferGeometry();
+    dGeo.setAttribute('position', new THREE.BufferAttribute(base.slice(), 3));
+    dGeo.setAttribute('aBase',    new THREE.BufferAttribute(base,  3));
+    dGeo.setAttribute('aSeed',    new THREE.BufferAttribute(seed,  1));
+    dGeo.setAttribute('aSeed2',   new THREE.BufferAttribute(seed2, 1));
+
+    const uni = {
+      uTime:   { value: 0 },
+      uMouse:  { value: new THREE.Vector3(0, 0, 10) },
+      uActive: { value: 0 },
+      uBang:   { value: 0 }, // 0 = singularity, 1 = fully expanded
+      uGlitch: { value: 0 }  // 0 = clean, 1 = full chromatic glitch
+    };
+
+    const dMat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.NormalBlending,
+      uniforms: uni,
+      vertexShader: DEFORM + `
+        attribute vec3 aBase; attribute float aSeed, aSeed2;
+        uniform float uTime, uActive, uBang, uGlitch; uniform vec3 uMouse;
+        varying float vRim, vWhite, vAM, vBang, vSeed;
+        void main() {
+          vec3 p   = _def(aBase, uTime);
+          vec3 bn  = normalize(aBase);
+          vec3 mDir = normalize(uMouse);
+          float cosA = dot(bn, mDir);
+          p += normalize(bn - cosA*mDir + vec3(.0001)) * _zone(bn, mDir) * .75 * uActive;
+
+          /* Big bang: staggered ease-out expansion from origin */
+          float bDelay = aSeed2 * .40;
+          float bT     = clamp((uBang - bDelay) / max(1. - bDelay, .001), 0., 1.);
+          float bEase  = 1. - pow(1. - bT, 3.); // ease-out cubic
+          p   *= bEase;
+          vBang = bEase;
+
+          vec4 clip = projectionMatrix * modelViewMatrix * vec4(p, 1.);
+          vRim = clamp(length(clip.xy / clip.w) * 1.08, 0., 1.);
+
+          /* RGB chromatic split: R shifts right, B shifts left, G stays */
+          float gDir = aSeed > .66 ? 1. : aSeed > .33 ? 0. : -1.;
+          float scanY = (fract(aSeed * 7.3) - .5) * uGlitch * .10;
+          clip.x += gDir * uGlitch * .12 * clip.w;
+          clip.y += scanY * clip.w;
+          /* Chaos scatter: ~25% of dots get random teleport at peak glitch */
+          float chaos = step(.75, fract(aSeed * 13.7)) * uGlitch * uGlitch;
+          clip.x += (fract(aSeed2 * 31.1) - .5) * chaos * .30 * clip.w;
+          clip.y += (fract(aSeed2 * 17.3) - .5) * chaos * .20 * clip.w;
+
+          vWhite = step(.88, aSeed);
+          vAM    = .45 + .55 * (sin(uTime*(.6 + aSeed2*1.2) + aSeed2*6.283) * .5 + .5);
+          vSeed  = aSeed;
+
+          gl_PointSize = 1.0;
+          gl_Position  = clip;
+        }
+      `,
+      fragmentShader: `
+        varying float vRim, vWhite, vAM, vBang, vSeed;
+        uniform float uGlitch;
+        void main() {
+          float a = mix(.45 + vRim*.30, .95, vWhite) * vAM;
+          vec3  c = mix(mix(vec3(0.,.68,.12), vec3(.08,1.,.24), vRim),
+                        vec3(1.,1.,1.), vWhite);
+          /* White flash at birth, settle to normal colour */
+          c = mix(vec3(1.,1.,1.), c, vBang);
+          a = clamp(mix(1., a, vBang), 0., 1.);
+          /* RGB glitch tint: hard R/G/B per dot-third, full takeover */
+          vec3 gc = vSeed > .66 ? vec3(1., .0, .02)
+                  : vSeed > .33 ? vec3(.0, 1., .18)
+                  :               vec3(.0, .15, 1.);
+          c = mix(c, gc, min(1., uGlitch * 1.3));
+          /* Strobe dropout: ~15% of dots flicker out during glitch */
+          float dropout = step(.85, fract(vSeed * 23.7));
+          a *= 1. - dropout * uGlitch;
+          /* Brightness punch on onset */
+          a = min(1., a * (1. + uGlitch * 1.2));
+          gl_FragColor = vec4(c, a);
+        }
+      `
+    });
+
+    /* ── LINES (fully GPU — zero CPU work per frame) ─────────────────────── */
+    const NODES = 80;
+    const nIdx  = Array.from({ length: NODES }, (_, i) => Math.floor(i * N / NODES));
+    const nv    = nIdx.map(i =>
+      new THREE.Vector3(base[i*3], base[i*3+1], base[i*3+2]).normalize()
+    );
+
+    const K = 4, edges = [];
+    for (let a = 0; a < NODES; a++) {
+      const ds = [];
+      for (let b = 0; b < NODES; b++) if (b !== a) ds.push({ b, cos: nv[a].dot(nv[b]) });
+      ds.sort((x, y) => y.cos - x.cos);
+      for (let k = 0; k < K; k++) { const b = ds[k].b; if (a < b) edges.push([a, b]); }
+    }
+    const E = edges.length;
+
+    const lBase  = new Float32Array(E * 6);
+    const lSeedL = new Float32Array(E * 2);
+    for (let e = 0; e < E; e++) {
+      const [a, b] = edges[e], ia = nIdx[a], ib = nIdx[b];
+      lBase[e*6]   = base[ia*3];   lBase[e*6+1] = base[ia*3+1]; lBase[e*6+2] = base[ia*3+2];
+      lBase[e*6+3] = base[ib*3];   lBase[e*6+4] = base[ib*3+1]; lBase[e*6+5] = base[ib*3+2];
+      const s = Math.random();
+      lSeedL[e*2] = lSeedL[e*2+1] = s;
+    }
+
+    const lGeo = new THREE.BufferGeometry();
+    lGeo.setAttribute('position', new THREE.BufferAttribute(lBase,  3));
+    lGeo.setAttribute('aSeedL',   new THREE.BufferAttribute(lSeedL, 1));
+
+    const lMat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      uniforms: uni,
+      vertexShader: DEFORM + `
+        attribute float aSeedL;
+        uniform float uTime, uActive, uBang; uniform vec3 uMouse;
+        varying float vW;
+        void main() {
+          vec3 p   = _def(position, uTime);
+          vec3 bn  = normalize(position);
+          vec3 mDir = normalize(uMouse);
+          float pulse = .55 + .45 * sin(uTime*(.8 + aSeedL*1.4) + aSeedL*6.283);
+          vW = _zone(bn, mDir) * uActive * max(0., pulse) * uBang;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.);
+        }
+      `,
+      fragmentShader: `
+        varying float vW;
+        void main() {
+          if (vW < .01) discard;
+          gl_FragColor = vec4(.05, .92, .22, vW * .35);
+        }
+      `
+    });
+
+    const group = new THREE.Group();
+    const pts   = new THREE.Points(dGeo, dMat);
+    pts.frustumCulled = false;
+    const lines = new THREE.LineSegments(lGeo, lMat);
+    lines.frustumCulled = false;
+    group.add(pts);
+    group.add(lines);
+    scene.add(group);
+
+    /* ── MOUSE ───────────────────────────────────────────────────────────── */
+    let rawMx = 0, rawMy = 0, mouseOver = false;
+    const sm = new THREE.Vector3(0, 0, 10);
+    let targetActive = 0, active = 0;
+    const _tmp = new THREE.Vector3();
+    /* Parallax: smooth offset of the whole sphere toward mouse */
+    let pxTarget = 0, pyTarget = 0, pxCur = 0, pyCur = 0;
+    /* Glitch */
+    let glitchVal = 0, nextIdleGlitch = 3 + Math.random() * 4;
+    let lastMx = 0, lastMy = 0;
+
+    function projectMouse() {
+      const tHF = Math.tan(55 * Math.PI / 360);
+      const asp = W() / H();
+      const rdx = rawMx * tHF * asp, rdy = rawMy * tHF;
+      const rL  = Math.sqrt(rdx*rdx + rdy*rdy + 1);
+      const rx = rdx/rL, ry = rdy/rL, rz = -1/rL;
+      const oz = 3.0, b = 2*oz*rz, c = oz*oz - 1, disc = b*b - 4*c;
+      let v;
+      if (disc >= 0) {
+        const t = (-b - Math.sqrt(disc)) / 2;
+        v = new THREE.Vector3(rx*t, ry*t, oz + rz*t);
+      } else {
+        const tc = -oz*rz, px = rx*tc, py = ry*tc, pz = oz + rz*tc;
+        const l = Math.sqrt(px*px + py*py + pz*pz);
+        v = new THREE.Vector3(px/l, py/l, pz/l);
+      }
+      v.applyQuaternion(group.quaternion.clone().invert());
+      return v;
+    }
+
+    wrap.addEventListener('mousemove', e => {
+      const r = wrap.getBoundingClientRect();
+      rawMx =  ((e.clientX - r.left) / r.width  - 0.5) * 2;
+      rawMy = -((e.clientY - r.top)  / r.height - 0.5) * 2;
+      mouseOver = true; targetActive = 1;
+      pxTarget = rawMx * 0.13;
+      pyTarget = rawMy * 0.13;
+    });
+    wrap.addEventListener('mouseleave', () => {
+      mouseOver = false; targetActive = 0;
+      pxTarget = 0; pyTarget = 0;
+    });
+    window.addEventListener('resize', () => {
+      renderer.setSize(W(), H());
+      cam.aspect = W() / H();
+      cam.updateProjectionMatrix();
+    });
+
+    /* ── RENDER LOOP ─────────────────────────────────────────────────────── */
+    const clock = new THREE.Clock();
+    (function frame() {
+      requestAnimationFrame(frame);
+      const t = clock.getElapsedTime();
+      group.rotation.y = t * 0.09;
+      /* Parallax drift */
+      pxCur += (pxTarget - pxCur) * 0.04;
+      pyCur += (pyTarget - pyCur) * 0.04;
+      group.position.set(pxCur, pyCur, 0);
+      active += (targetActive - active) * 0.04;
+      uni.uTime.value   = t;
+      uni.uActive.value = active;
+      uni.uBang.value   = Math.min(1.0, t / 2.2); // 2.2s expansion
+
+      /* Glitch: idle burst + mouse-velocity spike */
+      const spd = Math.hypot(rawMx - lastMx, rawMy - lastMy);
+      lastMx = rawMx; lastMy = rawMy;
+      if (t > nextIdleGlitch) {
+        glitchVal = 1.0;
+        // double-tap: fire a second hit after 160ms
+        setTimeout(() => { glitchVal = Math.max(glitchVal, 0.9); }, 160);
+        nextIdleGlitch = t + 2 + Math.random() * 3;
+      }
+      // Mouse speed also triggers — sensitive to fast swipes
+      glitchVal = Math.max(glitchVal, Math.min(1.0, spd * 12));
+      glitchVal *= 0.88; // slower decay (~350ms) so it's unmissable
+      if (glitchVal < 0.005) glitchVal = 0;
+      uni.uGlitch.value = glitchVal;
+
+      if (mouseOver) sm.lerp(projectMouse(), 0.07);
+      else           sm.lerp(_tmp.set(0, 0, 10), 0.05);
+      uni.uMouse.value.copy(sm);
+      renderer.render(scene, cam);
+    })();
+
+  })();
+  </script>
+</body>
+</html>

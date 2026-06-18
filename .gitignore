@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor junk
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# If you ever add a build step
+node_modules/
+dist/

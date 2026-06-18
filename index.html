@@ -1,0 +1,1839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V4run</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #080808;
+  --fg: #e8e8e2;
+  --fg-dim: rgba(232, 232, 226, 0.38);
+  --fg-dimmer: rgba(232, 232, 226, 0.18);
+  --accent: #b8f0d2;
+  --mono: 'Space Mono', 'Courier New', monospace;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  overflow: hidden;
+}
+
+/* subtle scanline overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ─── CANVAS ─────────────────────────────────────────── */
+#bg-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  transition: opacity 0.6s ease;
+}
+#bg-canvas.dimmed { opacity: 0.55; }
+
+/* ─── CORNER UI ──────────────────────────────────────── */
+.corner {
+  position: fixed;
+  z-index: 10;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  line-height: 1.7;
+  color: rgba(232, 232, 226, 0.72);
+}
+
+.corner-tl { top: 28px; left: 32px; }
+.corner-tr { top: 28px; right: 32px; text-align: right; line-height: 1.2; }
+.corner-bl { bottom: 28px; left: 32px; }
+.corner-br { bottom: 28px; right: 32px; text-align: right; }
+
+/* ─── GLITCH LOGO ────────────────────────────────────── */
+.logo {
+  font-size: 17px;
+  font-family: var(--mono);
+  font-weight: bold;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+  position: relative;
+  display: inline-block;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* Scan lines overlay on logo */
+.logo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.18) 2px,
+    rgba(0, 0, 0, 0.18) 4px
+  );
+}
+/* rolling bright band on logo */
+.logo::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 28px;
+  pointer-events: none;
+  z-index: 4;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(232, 232, 226, 0.04) 40%,
+    rgba(232, 232, 226, 0.07) 50%,
+    rgba(232, 232, 226, 0.04) 60%,
+    transparent 100%
+  );
+  animation: logo-scan 3.5s linear infinite;
+}
+@keyframes logo-scan {
+  0%   { top: -28px; }
+  100% { top: 100%; }
+}
+
+.logo-ghost {
+  position: relative;
+  display: inline-block;
+}
+
+.logo-ghost::before,
+.logo-ghost::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: bold;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+}
+
+.logo-ghost::before {
+  color: rgba(0,255,200,0.55);
+  animation: glitch-a 8s infinite;
+}
+.logo-ghost::after {
+  color: rgba(255,0,120,0.45);
+  animation: glitch-b 8s infinite;
+}
+
+/* subtle RGB split — fires briefly once every 8s */
+@keyframes glitch-a {
+  0%, 92%  { opacity: 0; transform: translate(0); }
+  93%      { opacity: 1; transform: translate(-2px, 0); clip-path: inset(15% 0 65% 0); }
+  94%      { transform: translate(1px, 0); clip-path: inset(55% 0 15% 0); }
+  95%      { opacity: 0; }
+  100%     { opacity: 0; }
+}
+@keyframes glitch-b {
+  0%, 93.5%  { opacity: 0; transform: translate(0); }
+  94.5%      { opacity: 1; transform: translate(2px, -1px); clip-path: inset(40% 0 30% 0); }
+  95.5%      { transform: translate(-1px, 0); clip-path: inset(70% 0 5% 0); }
+  96.5%      { opacity: 0; }
+  100%       { opacity: 0; }
+}
+
+/* Vivid RGB burst triggered by JS .rgb-burst class */
+@keyframes burst-r {
+  0%   { opacity: 1; transform: translate(-8px, 1px);  clip-path: inset(0 0 55% 0); }
+  20%  { transform: translate(-11px, -1px); clip-path: inset(45% 0 10% 0); }
+  40%  { transform: translate(-7px, 2px);  clip-path: inset(70% 0 0 0); }
+  65%  { transform: translate(-9px, 0px);  clip-path: inset(20% 0 50% 0); }
+  85%  { opacity: 0.6; transform: translate(-5px, 1px); clip-path: inset(60% 0 5% 0); }
+  100% { opacity: 0; transform: translate(0); }
+}
+@keyframes burst-b {
+  0%   { opacity: 1; transform: translate(9px, -2px);  clip-path: inset(35% 0 30% 0); }
+  20%  { transform: translate(12px, 0px);  clip-path: inset(65% 0 5% 0); }
+  40%  { transform: translate(8px, 1px);   clip-path: inset(5% 0 65% 0); }
+  65%  { transform: translate(11px, -1px); clip-path: inset(50% 0 20% 0); }
+  85%  { opacity: 0.5; transform: translate(6px, 0px); clip-path: inset(80% 0 0 0); }
+  100% { opacity: 0; transform: translate(0); }
+}
+.logo-ghost.rgb-burst::before {
+  color: rgba(255, 20, 60, 1) !important;
+  animation: burst-r 0.30s steps(1, end) forwards !important;
+}
+.logo-ghost.rgb-burst::after {
+  color: rgba(0, 220, 255, 1) !important;
+  animation: burst-b 0.30s steps(1, end) forwards !important;
+}
+
+/* ─── PHOTO POPUP ────────────────────────────────────── */
+#logo-photo-wrap {
+  position: fixed;
+  top: 0; left: 0;
+  pointer-events: none;
+  z-index: 200;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+#logo-photo-wrap.visible { opacity: 1; }
+
+#logo-photo-svg {
+  position: fixed;
+  top: 0; left: 0;
+  pointer-events: none;
+  z-index: 199;
+  overflow: visible;
+}
+
+#logo-photo-box {
+  width: 88px;
+  height: 88px;
+  border: 1px solid rgba(184,240,210,0.45);
+  box-shadow: 0 0 18px rgba(100,255,160,0.1), inset 0 0 8px rgba(0,0,0,0.6);
+  overflow: hidden;
+  background: #0d0d0d;
+  position: absolute;
+}
+#logo-photo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  /* matrix green: fully desaturate then tint green like a phosphor CRT */
+  filter: grayscale(100%) sepia(100%) hue-rotate(82deg) saturate(3) brightness(0.72) contrast(1.2);
+  animation: tv-flicker 7s linear infinite;
+}
+@keyframes tv-flicker {
+  0%,  42%,  44%,  61%,  63%,  79.5%, 80.5%, 95%, 96.2%, 100% {
+    opacity: 1;
+    filter: grayscale(100%) sepia(100%) hue-rotate(82deg) saturate(3) brightness(0.72) contrast(1.2);
+  }
+  43%  { opacity: 0.75; filter: grayscale(100%) sepia(100%) hue-rotate(82deg) saturate(3) brightness(0.45) contrast(1.2); }
+  62%  { opacity: 0.88; filter: grayscale(100%) sepia(100%) hue-rotate(82deg) saturate(3) brightness(0.55) contrast(1.2); }
+  80%  { opacity: 0.65; filter: grayscale(100%) sepia(100%) hue-rotate(82deg) saturate(3) brightness(0.38) contrast(1.2); }
+  95.6%{ opacity: 0.82; filter: grayscale(100%) sepia(100%) hue-rotate(82deg) saturate(3) brightness(0.50) contrast(1.2); }
+}
+/* CRT scan lines on photo box */
+#logo-photo-box::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.22) 2px,
+    rgba(0, 0, 0, 0.22) 4px
+  );
+}
+/* rolling scan band on photo box */
+#logo-photo-box::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 36px;
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 200, 80, 0.05) 35%,
+    rgba(0, 255, 100, 0.12) 50%,
+    rgba(0, 200, 80, 0.05) 65%,
+    transparent 100%
+  );
+  animation: box-scan 4s linear infinite;
+}
+@keyframes box-scan {
+  0%   { top: -36px; }
+  100% { top: 100%; }
+}
+
+/* ─── NAVIGATION ─────────────────────────────────────── */
+.nav {
+  position: fixed;
+  left: 32px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  cursor: pointer;
+  padding: 7px 0;
+  position: relative;
+  overflow: visible;
+}
+
+.nav-link {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--fg-dim);
+  transition: color 0.2s ease, letter-spacing 0.2s ease;
+  font-family: var(--sans);
+  font-weight: 400;
+  position: relative;
+  white-space: nowrap;
+}
+
+.nav-link::before {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--fg);
+  transition: width 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+
+.nav-hint {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgba(184, 240, 210, 0.7);
+  font-family: var(--mono);
+  opacity: 0;
+  max-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 0.25s ease, max-width 0.3s cubic-bezier(0.16,1,0.3,1), margin 0.25s ease;
+  pointer-events: none;
+  text-transform: lowercase;
+  margin-left: 0;
+}
+
+.nav-item:hover .nav-link {
+  color: var(--fg);
+  letter-spacing: 0.06em;
+}
+.nav-item:hover .nav-link::before { width: 100%; }
+.nav-item:hover .nav-hint {
+  opacity: 1;
+  max-width: 180px;
+  margin-left: 14px;
+}
+
+/* ─── SPHERE CENTRE LABEL ────────────────────────── */
+.sphere-label {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  font-family: var(--mono);
+  font-size: clamp(16px, 2.8vw, 34px);
+  font-weight: bold;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(184, 240, 210, 0.92);
+  text-shadow: 0 0 30px rgba(100, 255, 160, 0.35), 0 0 60px rgba(100, 255, 160, 0.1);
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.sphere-label.visible { opacity: 1; }
+
+/* Quote mode — smaller, dimmer, wrappable */
+.sphere-label.quote-mode {
+  font-size: 13px;
+  letter-spacing: 0.10em;
+  color: rgba(184, 240, 210, 0.42);
+  text-transform: none;
+  white-space: normal;
+  max-width: min(420px, 55vw);
+  line-height: 1.2;
+  font-weight: 400;
+  text-shadow: none;
+}
+.sphere-label.quote-mode::before,
+.sphere-label.quote-mode::after { display: none; }
+
+/* Typewriter cursor */
+.tw-cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  background: rgba(100, 255, 160, 0.85);
+  vertical-align: text-bottom;
+  margin-left: 1px;
+  animation: tw-blink 0.7s steps(1, end) infinite;
+}
+@keyframes tw-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* RGB chromatic aberration layers */
+.sphere-label::before,
+.sphere-label::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: inherit;
+  white-space: inherit;
+  pointer-events: none;
+  opacity: 0;
+}
+.sphere-label::before {
+  color: rgba(255, 30, 80, 0.9);
+  animation: rgb-r 3.2s infinite;
+}
+.sphere-label::after {
+  color: rgba(0, 210, 255, 0.9);
+  animation: rgb-b 3.2s infinite;
+}
+@keyframes rgb-r {
+  0%,  78% { opacity: 0; transform: translate(0); }
+  79%       { opacity: 1; transform: translate(-7px, 0);  clip-path: inset(0 0 55% 0); }
+  80%       { transform: translate(-4px, 1px); clip-path: inset(45% 0 15% 0); }
+  81%       { transform: translate(-8px, -1px); clip-path: inset(75% 0 0 0); }
+  82%       { transform: translate(-3px, 0); clip-path: inset(15% 0 60% 0); }
+  83%       { opacity: 0; }
+  100%      { opacity: 0; }
+}
+@keyframes rgb-b {
+  0%,  80% { opacity: 0; transform: translate(0); }
+  81%       { opacity: 1; transform: translate(7px, -1px); clip-path: inset(35% 0 35% 0); }
+  82%       { transform: translate(5px, 0); clip-path: inset(68% 0 5% 0); }
+  83%       { transform: translate(9px, 1px); clip-path: inset(0 0 72% 0); }
+  84%       { opacity: 0; }
+  100%      { opacity: 0; }
+}
+
+/* active state */
+.nav-item.active .nav-link { color: var(--fg); }
+
+/* ─── MODAL ──────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 4, 4, 0.28);
+  backdrop-filter: blur(0px) saturate(100%);
+  -webkit-backdrop-filter: blur(0px) saturate(100%);
+  transition: backdrop-filter 0.45s ease, -webkit-backdrop-filter 0.45s ease;
+}
+
+.modal-overlay.open .modal-scrim {
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+}
+
+@keyframes modal-scan {
+  0%   { clip-path: inset(0 0 100% 0); }
+  100% { clip-path: inset(0 0 0% 0); }
+}
+@keyframes modal-border-flash {
+  0%   { border-color: rgba(100, 255, 160, 0.55); box-shadow: 0 0 24px rgba(100,255,160,0.12), inset 0 0 12px rgba(100,255,160,0.04); }
+  100% { border-color: rgba(255, 255, 255, 0.07); box-shadow: none; }
+}
+
+.modal-box {
+  position: relative;
+  z-index: 1;
+  width: min(580px, 88vw);
+  max-height: 72vh;
+  background: rgba(10, 10, 10, 0.60);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 36px 44px 44px;
+  overflow-y: auto;
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
+}
+
+.modal-box::-webkit-scrollbar { width: 3px; }
+.modal-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
+
+.modal-overlay.open .modal-box {
+  clip-path: inset(0 0 0% 0);
+  animation: modal-border-flash 0.9s ease-out forwards;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.modal-section {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-dimmer);
+  font-family: var(--mono);
+}
+
+.modal-x {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-dimmer);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 18px;
+  line-height: 1;
+  transition: color 0.15s;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 2px;
+}
+.modal-x:hover { color: var(--fg); border-color: rgba(255,255,255,0.15); }
+
+.modal-body h2 {
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: -0.025em;
+  color: var(--fg);
+  margin-bottom: 20px;
+  line-height: 1.25;
+}
+
+.modal-body p {
+  font-size: 13px;
+  line-height: 1.85;
+  color: rgba(232, 232, 226, 0.62);
+  letter-spacing: 0.01em;
+  margin-bottom: 14px;
+}
+
+/* Non-nav text links — glitch + green glow on hover */
+.modal-body a,
+.corner a {
+  color: var(--fg);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  transition: color 0.1s, border-color 0.1s;
+  position: relative;
+}
+.modal-body a::before, .modal-body a::after,
+.corner a::before, .corner a::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  font: inherit;
+  border-bottom: inherit;
+}
+.modal-body a:hover,
+.corner a:hover {
+  color: rgba(184, 240, 210, 0.95);
+  border-color: rgba(100, 255, 160, 0.5);
+  animation: link-glow-pulse 1.4s ease-in-out infinite;
+}
+.modal-body a:hover::before,
+.corner a:hover::before {
+  content: attr(data-text);
+  color: rgba(255, 30, 80, 0.7);
+  opacity: 1;
+  animation: link-glitch-r 0.22s steps(1, end) infinite;
+}
+.modal-body a:hover::after,
+.corner a:hover::after {
+  content: attr(data-text);
+  color: rgba(0, 200, 255, 0.7);
+  opacity: 1;
+  animation: link-glitch-b 0.22s steps(1, end) infinite 0.06s;
+}
+@keyframes link-glow-pulse {
+  0%, 100% { text-shadow: 0 0 6px rgba(100,255,160,0.0); }
+  50%       { text-shadow: 0 0 10px rgba(100,255,160,0.55), 0 0 20px rgba(100,255,160,0.2); }
+}
+@keyframes link-glitch-r {
+  0%  { transform: translate(-2px, 0);  clip-path: inset(20% 0 60% 0); }
+  25% { transform: translate(-3px, 1px); clip-path: inset(55% 0 10% 0); }
+  50% { transform: translate(-1px, 0);  clip-path: inset(5% 0 80% 0); }
+  75% { transform: translate(-2px,-1px); clip-path: inset(70% 0 5% 0); }
+  100%{ transform: translate(-2px, 0);  clip-path: inset(30% 0 40% 0); }
+}
+@keyframes link-glitch-b {
+  0%  { transform: translate(2px, 0);  clip-path: inset(60% 0 10% 0); }
+  25% { transform: translate(3px,-1px); clip-path: inset(10% 0 55% 0); }
+  50% { transform: translate(1px, 0);  clip-path: inset(80% 0 5% 0); }
+  75% { transform: translate(2px, 1px); clip-path: inset(5% 0 70% 0); }
+  100%{ transform: translate(2px, 0);  clip-path: inset(40% 0 30% 0); }
+}
+
+.modal-body .label {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-dimmer);
+  font-family: var(--mono);
+  margin-top: 28px;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.modal-body .item {
+  display: flex;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  cursor: pointer;
+}
+
+.modal-body .item:last-child { border-bottom: none; }
+
+.item-title {
+  font-size: 13px;
+  color: var(--fg);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.item-meta {
+  font-size: 11px;
+  color: var(--fg-dimmer);
+  font-family: var(--mono);
+  letter-spacing: 0.05em;
+  margin-top: 3px;
+}
+
+/* ─── ARTICLE CAROUSEL ───────────────────────────────── */
+/* ── WRITINGS SECTION ─────────────────────────────────── */
+#writings-section {
+  position: fixed;
+  bottom: 58px;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  pointer-events: none;
+}
+#writings-section.ready {
+  opacity: 1;
+  pointer-events: auto;
+}
+#writings-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: rgba(184, 240, 210, 0.30);
+  text-align: left;
+  padding-left: 32px;
+  margin-bottom: 8px;
+  user-select: none;
+}
+#articles-strip {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right,
+    transparent 0%, rgba(0,0,0,0.6) 5%, black 13%,
+    black 87%, rgba(0,0,0,0.6) 95%, transparent 100%);
+  mask-image: linear-gradient(to right,
+    transparent 0%, rgba(0,0,0,0.6) 5%, black 13%,
+    black 87%, rgba(0,0,0,0.6) 95%, transparent 100%);
+  cursor: grab;
+}
+#articles-strip:active { cursor: grabbing; }
+.articles-track {
+  display: flex;
+  gap: 14px;
+  width: max-content;
+  padding: 4px 0;
+  will-change: transform;
+  user-select: none;
+}
+.article-card {
+  flex-shrink: 0;
+  width: 230px;
+  background: rgba(8, 8, 8, 0.60);
+  border: 1px solid rgba(184, 240, 210, 0.07);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  cursor: pointer;
+  transition: border-color 0.22s ease, background 0.22s ease;
+  text-decoration: none;
+  display: block;
+  -webkit-user-drag: none;
+}
+.article-card:hover {
+  border-color: rgba(184, 240, 210, 0.22);
+  background: rgba(12, 22, 14, 0.72);
+}
+.article-card__thumb {
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  display: block;
+  filter: grayscale(30%) brightness(0.85);
+  pointer-events: none;
+}
+.article-card__body {
+  padding: 9px 11px 11px;
+}
+.article-card__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+.article-card__source {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(184, 240, 210, 0.45);
+}
+.article-card__date {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  color: rgba(232, 232, 226, 0.22);
+}
+.article-card__title {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(232, 232, 226, 0.82);
+  line-height: 1.45;
+  margin-bottom: 6px;
+  letter-spacing: 0.01em;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.article-card__desc {
+  font-family: var(--sans);
+  font-size: 9.5px;
+  font-weight: 300;
+  color: rgba(232, 232, 226, 0.38);
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ─── ESC HINT ───────────────────────────────────────── */
+.esc-hint {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 110;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--fg-dimmer);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.esc-hint.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<!-- ── CORNERS ────────────────────────────────────── -->
+<div class="corner corner-tl">
+  <div class="logo">
+    <span class="logo-ghost" data-text="v4run">v4run</span>
+  </div>
+</div>
+
+<div class="corner corner-tr">
+  <div>Shaping Justice Systems in India.</div>
+  <div style="margin-top:3px; color:rgba(232,232,226,0.45);">♥ Bengaluru</div>
+</div>
+
+<div class="corner corner-bl">
+  <a href="mailto:v@pvt.is" style="color:inherit;text-decoration:none;border-bottom:1px solid rgba(232,232,226,0.15);padding-bottom:1px;">email: v@pvt.is</a>
+</div>
+
+<div class="corner corner-br">
+  <span>©2026 Varun Hemachandran</span>
+</div>
+
+<!-- ── LOGO PHOTO POPUP ────────────────────────── -->
+<svg id="logo-photo-svg" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <!-- base elbow line, dim solid -->
+  <path id="logo-photo-base" fill="none"
+    stroke="rgba(184,240,210,0.18)" stroke-width="1" stroke-linecap="square"/>
+  <!-- travelling light pulse -->
+  <path id="logo-photo-pulse" fill="none"
+    stroke="rgba(184,240,210,0.70)" stroke-width="1.2" stroke-linecap="round"
+    style="filter:drop-shadow(0 0 3px rgba(100,255,160,0.55))"/>
+  <!-- node dot at logo end -->
+  <circle id="logo-photo-node" r="3.5"
+    fill="rgba(184,240,210,0.9)" stroke="rgba(100,255,160,0.4)" stroke-width="4"
+    style="filter:drop-shadow(0 0 5px rgba(100,255,160,0.8))"/>
+</svg>
+<div id="logo-photo-wrap">
+  <div id="logo-photo-box">
+    <img src="images/varun.jpg" alt="Varun">
+  </div>
+</div>
+
+<!-- ── NAV — built dynamically from content/nav.md ── -->
+<nav class="nav" id="nav"></nav>
+
+<!-- ── MODAL ──────────────────────────────────────── -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-scrim" id="modal-scrim"></div>
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-section" id="modal-section">—</span>
+      <div class="modal-x" id="modal-close">×</div>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<div class="sphere-label" id="sphere-label"></div>
+<div class="esc-hint" id="esc-hint">[ ESC to close ]</div>
+<div id="writings-section">
+  <div id="writings-label">My Writings</div>
+  <div id="articles-strip"></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     EDIT YOUR QUOTES HERE — one string per line
+     ════════════════════════════════════════════════════ -->
+<script id="quotes-data" type="application/json">
+[
+  "Justice delayed is justice denied.",
+  "Law is the last resort of the powerless.",
+  "Rights are not given. They are taken.",
+  "The courtroom is where power gets tested.",
+  "Systems change when people refuse to accept them.",
+  "Every case is someone's entire world.",
+  "Due process is not a technicality. It's a promise.",
+  "The arc of the moral universe bends toward justice — if we bend it.",
+  "Reform without accountability is just rebranding.",
+  "Access to justice is a human right, not a privilege."
+]
+</script>
+
+<!-- ════════════════════════════════════════════════════
+     EDIT YOUR ARTICLES HERE
+     Fields: thumb (path), title, source, desc, date, url
+     ════════════════════════════════════════════════════ -->
+<script id="articles-data" type="application/json">
+[
+  {
+    "thumb": "images/thumbs/placeholder.jpg",
+    "title": "Reforming Fast-Track Courts in India",
+    "source": "The Wire",
+    "desc": "An analysis of how fast-track courts have reshaped criminal justice timelines across Indian states.",
+    "date": "May 2026",
+    "url": "#"
+  },
+  {
+    "thumb": "images/thumbs/placeholder.jpg",
+    "title": "When Bail Becomes the Exception",
+    "source": "Article 14",
+    "desc": "Examining the growing trend of pre-trial detention and what it signals about bail jurisprudence.",
+    "date": "Apr 2026",
+    "url": "#"
+  },
+  {
+    "thumb": "images/thumbs/placeholder.jpg",
+    "title": "Legal Aid at Scale",
+    "source": "Frontline",
+    "desc": "Can India build a legal aid system that actually reaches those who need it most?",
+    "date": "Mar 2026",
+    "url": "#"
+  },
+  {
+    "thumb": "images/thumbs/placeholder.jpg",
+    "title": "The Prison Crisis Nobody Talks About",
+    "source": "The Hindu",
+    "desc": "Overcrowding, undertrial detention, and the slow collapse of India's correctional infrastructure.",
+    "date": "Feb 2026",
+    "url": "#"
+  }
+]
+</script>
+
+<!-- ── THREE.JS ────────────────────────────────────── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════
+//  DOT SPHERE BACKGROUND  (from dot-sphere.html)
+// ═══════════════════════════════════════════════════
+(function () {
+  const cv = document.getElementById('bg-canvas');
+  const W = () => window.innerWidth;
+  const H = () => window.innerHeight;
+
+  const renderer = new THREE.WebGLRenderer({
+    canvas: cv,
+    antialias: false,
+    alpha: true,
+    powerPreference: 'high-performance'
+  });
+  renderer.setClearColor(0x000000, 0); // transparent — page bg shows through
+  renderer.setPixelRatio(1);
+  renderer.setSize(W(), H());
+
+  const scene = new THREE.Scene();
+  const cam   = new THREE.PerspectiveCamera(55, W() / H(), 0.1, 100);
+  cam.position.z = 3.0;
+
+  const DEFORM = `
+    vec3 _def(vec3 b, float t) {
+      vec3 n = normalize(b);
+      vec3 d = vec3(
+        sin(n.y*5.1 + n.z*3.7 + t*.31) + sin(n.x*2.9 + n.z*6.3 + t*.19)*.6,
+        sin(n.z*4.7 + n.x*3.1 + t*.23) + sin(n.y*6.1 + n.x*2.7 + t*.17)*.6,
+        sin(n.x*4.3 + n.y*5.7 + t*.27) + sin(n.z*3.3 + n.y*4.1 + t*.21)*.6
+      ) * .28;
+      vec3 tang = d - dot(d, n) * n;
+      return normalize(b + tang * .30) * (1. + dot(d, n) * .08);
+    }
+    float _zone(vec3 bn, vec3 mDir) {
+      return pow(max(0., (dot(bn, mDir) + .10) / 1.10), 2.);
+    }
+  `;
+
+  const N = 5000;
+  const base  = new Float32Array(N * 3);
+  const seed  = new Float32Array(N);
+  const seed2 = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const u = Math.random() * Math.PI * 2;
+    const v = Math.acos(2 * Math.random() - 1);
+    const sv = Math.sin(v);
+    base[i*3]   = sv * Math.cos(u);
+    base[i*3+1] = sv * Math.sin(u);
+    base[i*3+2] = Math.cos(v);
+    seed[i]  = Math.random();
+    seed2[i] = Math.random();
+  }
+
+  const dGeo = new THREE.BufferGeometry();
+  dGeo.setAttribute('position', new THREE.BufferAttribute(base.slice(), 3));
+  dGeo.setAttribute('aBase',    new THREE.BufferAttribute(base,  3));
+  dGeo.setAttribute('aSeed',    new THREE.BufferAttribute(seed,  1));
+  dGeo.setAttribute('aSeed2',   new THREE.BufferAttribute(seed2, 1));
+
+  const uni = {
+    uTime:   { value: 0 },
+    uMouse:  { value: new THREE.Vector3(0, 0, 10) },
+    uActive: { value: 0 },
+    uBang:   { value: 0 },
+    uGlitch: { value: 0 },
+    uModal:  { value: 0 }   // 0 = closed, 1 = open — dots part around modal
+  };
+
+  const dMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.NormalBlending,
+    uniforms: uni,
+    vertexShader: DEFORM + `
+      attribute vec3 aBase; attribute float aSeed, aSeed2;
+      uniform float uTime, uActive, uBang, uGlitch, uModal; uniform vec3 uMouse;
+      varying float vRim, vWhite, vAM, vBang, vSeed;
+      void main() {
+        vec3 p   = _def(aBase, uTime);
+        vec3 bn  = normalize(aBase);
+        vec3 mDir = normalize(uMouse);
+        float cosA = dot(bn, mDir);
+        p += normalize(bn - cosA*mDir + vec3(.0001)) * _zone(bn, mDir) * .75 * uActive;
+        float bDelay = aSeed2 * .40;
+        float bT     = clamp((uBang - bDelay) / max(1. - bDelay, .001), 0., 1.);
+        float bEase  = 1. - pow(1. - bT, 3.);
+        p   *= bEase;
+        vBang = bEase;
+        vec4 clip = projectionMatrix * modelViewMatrix * vec4(p, 1.);
+        vRim = clamp(length(clip.xy / clip.w) * 1.08, 0., 1.);
+        float gDir = aSeed > .66 ? 1. : aSeed > .33 ? 0. : -1.;
+        float scanY = (fract(aSeed * 7.3) - .5) * uGlitch * .10;
+        clip.x += gDir * uGlitch * .12 * clip.w;
+        clip.y += scanY * clip.w;
+        float chaos = step(.75, fract(aSeed * 13.7)) * uGlitch * uGlitch;
+        clip.x += (fract(aSeed2 * 31.1) - .5) * chaos * .30 * clip.w;
+        clip.y += (fract(aSeed2 * 17.3) - .5) * chaos * .20 * clip.w;
+        vWhite = step(.88, aSeed);
+        vAM    = .45 + .55 * (sin(uTime*(.6 + aSeed2*1.2) + aSeed2*6.283) * .5 + .5);
+        vSeed  = aSeed;
+        /* Modal: shoal-of-fish flow around modal zone */
+        vec2 ndc      = clip.xy / clip.w;
+        float nd      = length(ndc);
+        float radius  = 0.52;
+        float prox    = max(0., (radius - nd) / radius); // 1=centre, 0=edge
+        float mp      = prox * uModal;
+        if (nd > 0.001 && mp > 0.001) {
+          vec2 radDir  = ndc / nd;
+          /* Split into two streams by aSeed — half flow CW, half CCW */
+          float side   = aSeed > 0.5 ? 1.0 : -1.0;
+          vec2 tangDir = vec2(-radDir.y, radDir.x) * side;
+          /* Tangential dominant near core, blends outward at edge */
+          float tf = 0.70 + prox * 0.15;
+          float rf = 0.35;
+          vec2 flowDir = normalize(tangDir * tf + radDir * rf);
+          /* Subtle pulse so the shoal breathes organically */
+          float pulse  = 1.0 + 0.10 * sin(uTime * 0.7 + aSeed * 6.2832);
+          clip.xy     += flowDir * mp * 0.82 * pulse * clip.w;
+        }
+        gl_PointSize = 1.0;
+        gl_Position  = clip;
+      }
+    `,
+    fragmentShader: `
+      varying float vRim, vWhite, vAM, vBang, vSeed;
+      uniform float uGlitch;
+      void main() {
+        float a = mix(.45 + vRim*.30, .95, vWhite) * vAM;
+        vec3  c = mix(mix(vec3(0.,.68,.12), vec3(.08,1.,.24), vRim),
+                      vec3(1.,1.,1.), vWhite);
+        c = mix(vec3(1.,1.,1.), c, vBang);
+        a = clamp(mix(1., a, vBang), 0., 1.);
+        vec3 gc = vSeed > .66 ? vec3(1., .0, .02)
+                : vSeed > .33 ? vec3(.0, 1., .18)
+                :               vec3(.0, .15, 1.);
+        c = mix(c, gc, min(1., uGlitch * 1.3));
+        float dropout = step(.85, fract(vSeed * 23.7));
+        a *= 1. - dropout * uGlitch;
+        a = min(1., a * (1. + uGlitch * 1.2));
+        gl_FragColor = vec4(c, a);
+      }
+    `
+  });
+
+  const NODES = 80;
+  const nIdx  = Array.from({ length: NODES }, (_, i) => Math.floor(i * N / NODES));
+  const nv    = nIdx.map(i =>
+    new THREE.Vector3(base[i*3], base[i*3+1], base[i*3+2]).normalize()
+  );
+  const K = 4, edges = [];
+  for (let a = 0; a < NODES; a++) {
+    const ds = [];
+    for (let b = 0; b < NODES; b++) if (b !== a) ds.push({ b, cos: nv[a].dot(nv[b]) });
+    ds.sort((x, y) => y.cos - x.cos);
+    for (let k = 0; k < K; k++) { const b = ds[k].b; if (a < b) edges.push([a, b]); }
+  }
+  const E = edges.length;
+  const lBase  = new Float32Array(E * 6);
+  const lSeedL = new Float32Array(E * 2);
+  for (let e = 0; e < E; e++) {
+    const [a, b] = edges[e], ia = nIdx[a], ib = nIdx[b];
+    lBase[e*6]   = base[ia*3];   lBase[e*6+1] = base[ia*3+1]; lBase[e*6+2] = base[ia*3+2];
+    lBase[e*6+3] = base[ib*3];   lBase[e*6+4] = base[ib*3+1]; lBase[e*6+5] = base[ib*3+2];
+    const s = Math.random();
+    lSeedL[e*2] = lSeedL[e*2+1] = s;
+  }
+  const lGeo = new THREE.BufferGeometry();
+  lGeo.setAttribute('position', new THREE.BufferAttribute(lBase,  3));
+  lGeo.setAttribute('aSeedL',   new THREE.BufferAttribute(lSeedL, 1));
+  const lMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: uni,
+    vertexShader: DEFORM + `
+      attribute float aSeedL;
+      uniform float uTime, uActive, uBang, uModal; uniform vec3 uMouse;
+      varying float vW;
+      void main() {
+        vec3 p   = _def(position, uTime);
+        vec3 bn  = normalize(position);
+        vec3 mDir = normalize(uMouse);
+        float pulse = .55 + .45 * sin(uTime*(.8 + aSeedL*1.4) + aSeedL*6.283);
+        vW = _zone(bn, mDir) * uActive * max(0., pulse) * uBang;
+        vec4 clip    = projectionMatrix * modelViewMatrix * vec4(p, 1.);
+        /* Modal: same shoal flow for constellation lines */
+        vec2 ndc     = clip.xy / clip.w;
+        float nd     = length(ndc);
+        float radius = 0.52;
+        float prox   = max(0., (radius - nd) / radius);
+        float mp     = prox * uModal;
+        if (nd > 0.001 && mp > 0.001) {
+          vec2 radDir  = ndc / nd;
+          float side   = aSeedL > 0.5 ? 1.0 : -1.0;
+          vec2 tangDir = vec2(-radDir.y, radDir.x) * side;
+          float tf     = 0.70 + prox * 0.15;
+          float rf     = 0.35;
+          vec2 flowDir = normalize(tangDir * tf + radDir * rf);
+          float pulse2 = 1.0 + 0.10 * sin(uTime * 0.7 + aSeedL * 6.2832);
+          clip.xy     += flowDir * mp * 0.82 * pulse2 * clip.w;
+        }
+        gl_Position = clip;
+      }
+    `,
+    fragmentShader: `
+      varying float vW;
+      void main() {
+        if (vW < .01) discard;
+        gl_FragColor = vec4(.05, .92, .22, vW * .35);
+      }
+    `
+  });
+
+  const group = new THREE.Group();
+  const pts   = new THREE.Points(dGeo, dMat);
+  pts.frustumCulled = false;
+  const lines = new THREE.LineSegments(lGeo, lMat);
+  lines.frustumCulled = false;
+  group.add(pts);
+  group.add(lines);
+  scene.add(group);
+
+  // Mouse — bound to whole document so it works over UI elements too
+  let rawMx = 0, rawMy = 0, mouseOver = false;
+  const sm = new THREE.Vector3(0, 0, 10);
+  let targetActive = 0, active = 0;
+  const _tmp = new THREE.Vector3();
+  let pxTarget = 0, pyTarget = 0, pxCur = 0, pyCur = 0;
+  let glitchVal = 0, nextIdleGlitch = 3 + Math.random() * 4;
+  let lastMx = 0, lastMy = 0;
+  let modalStrength = 0, modalTarget = 0;
+
+  function projectMouse() {
+    const tHF = Math.tan(55 * Math.PI / 360);
+    const asp = W() / H();
+    const rdx = rawMx * tHF * asp, rdy = rawMy * tHF;
+    const rL  = Math.sqrt(rdx*rdx + rdy*rdy + 1);
+    const rx = rdx/rL, ry = rdy/rL, rz = -1/rL;
+    const oz = 3.0, b = 2*oz*rz, c = oz*oz - 1, disc = b*b - 4*c;
+    let v;
+    if (disc >= 0) {
+      const t = (-b - Math.sqrt(disc)) / 2;
+      v = new THREE.Vector3(rx*t, ry*t, oz + rz*t);
+    } else {
+      const tc = -oz*rz, px = rx*tc, py = ry*tc, pz = oz + rz*tc;
+      const l = Math.sqrt(px*px + py*py + pz*pz);
+      v = new THREE.Vector3(px/l, py/l, pz/l);
+    }
+    v.applyQuaternion(group.quaternion.clone().invert());
+    return v;
+  }
+
+  document.addEventListener('mousemove', e => {
+    rawMx =  (e.clientX / W() - 0.5) * 2;
+    rawMy = -(e.clientY / H() - 0.5) * 2;
+    mouseOver = true; targetActive = 1;
+    pxTarget = rawMx * 0.13;
+    pyTarget = rawMy * 0.13;
+  });
+  document.addEventListener('mouseleave', () => {
+    mouseOver = false; targetActive = 0;
+    pxTarget = 0; pyTarget = 0;
+  });
+  window.addEventListener('resize', () => {
+    renderer.setSize(W(), H());
+    cam.aspect = W() / H();
+    cam.updateProjectionMatrix();
+  });
+
+  const clock = new THREE.Clock();
+  (function frame() {
+    requestAnimationFrame(frame);
+    const t = clock.getElapsedTime();
+    group.rotation.y = t * 0.09;
+    pxCur += (pxTarget - pxCur) * 0.04;
+    pyCur += (pyTarget - pyCur) * 0.04;
+    group.position.set(pxCur, pyCur, 0);
+    active += (targetActive - active) * 0.04;
+    uni.uTime.value   = t;
+    uni.uActive.value = active;
+    uni.uBang.value   = Math.min(1.0, t / 2.2);
+    const spd = Math.hypot(rawMx - lastMx, rawMy - lastMy);
+    lastMx = rawMx; lastMy = rawMy;
+    if (t > nextIdleGlitch) {
+      glitchVal = 1.0;
+      setTimeout(() => { glitchVal = Math.max(glitchVal, 0.9); }, 160);
+      nextIdleGlitch = t + 2 + Math.random() * 3;
+    }
+    glitchVal = Math.max(glitchVal, Math.min(1.0, spd * 12));
+    glitchVal *= 0.88;
+    if (glitchVal < 0.005) glitchVal = 0;
+    uni.uGlitch.value = glitchVal;
+    /* Asymmetric ease: slow open (shoal takes time to part), faster close */
+    const modalRate = modalTarget > modalStrength ? 0.025 : 0.055;
+    modalStrength += (modalTarget - modalStrength) * modalRate;
+    uni.uModal.value = modalStrength;
+    if (mouseOver) sm.lerp(projectMouse(), 0.07);
+    else           sm.lerp(_tmp.set(0, 0, 10), 0.05);
+    uni.uMouse.value.copy(sm);
+    renderer.render(scene, cam);
+  })();
+
+  // ── JS glitch on logo
+  const logoEl   = document.querySelector('.logo-ghost');
+  const origText = 'v4run';
+  const gChars   = '!<>-_\\/[]{};=+*^?#@0123456789ABCDEFGHIJKL';
+
+  function setLogo(text) {
+    logoEl.textContent = text;
+    logoEl.dataset.text = text;
+  }
+
+  function scramble(src) {
+    return src.split('').map(c =>
+      Math.random() < 0.55 ? gChars[Math.floor(Math.random() * gChars.length)] : c
+    ).join('');
+  }
+
+  // Force an immediate vivid RGB burst
+  function rgbBurst() {
+    logoEl.classList.remove('rgb-burst');
+    void logoEl.offsetWidth; // reflow to restart animation
+    logoEl.classList.add('rgb-burst');
+    setTimeout(() => logoEl.classList.remove('rgb-burst'), 300);
+  }
+
+  // Glitch transition: scramble → target text, with RGB burst
+  function glitchTo(fromText, toText, onDone) {
+    setLogo(scramble(fromText));
+    rgbBurst();
+    setTimeout(() => {
+      setLogo(toText);
+      setTimeout(onDone, 45);
+    }, 42);
+  }
+
+  // State machine: cycle randomly among 3 forms
+  const logoForms = [origText, 'varun', 'v4.run'];
+  let currentForm = origText;
+
+  function runGlitch() {
+    // Pick a different form at random
+    const others = logoForms.filter(f => f !== currentForm);
+    const next   = others[Math.floor(Math.random() * others.length)];
+
+    glitchTo(currentForm, next, () => {
+      currentForm = next;
+      const delay = currentForm === origText
+        ? 2500 + Math.random() * 2500   // v4run rests longest
+        : 1600 + Math.random() * 2000;  // alt forms hold briefly then flip
+      setTimeout(runGlitch, delay);
+    });
+  }
+  setTimeout(runGlitch, 1200);
+
+  // ── LOGO PHOTO POPUP ─────────────────────────────────────────────────────
+  (function() {
+    const logoWrap  = document.querySelector('.corner-tl');
+    const photoWrap = document.getElementById('logo-photo-wrap');
+    const photoBox  = document.getElementById('logo-photo-box');
+    const photoBase  = document.getElementById('logo-photo-base');
+    const photoPulse = document.getElementById('logo-photo-pulse');
+    const photoNode  = document.getElementById('logo-photo-node');
+    const BOXW = 88, BOXH = 88;
+    const OFFSET = 18;
+    const MAX_DIST = 240;
+
+    const logoEl2   = document.querySelector('.logo');
+    const MAX_TUG   = 6;   // max px the logo can be pulled
+
+    let logoAnchor = { x: 0, y: 0 };
+    let visible = false;
+    let targetX = 0, targetY = 0;
+    let dispX = 0, dispY = 0;
+    let pulseT = 0;
+    let tugX = 0, tugY = 0;           // current smoothed tug offset
+    let tugTargetX = 0, tugTargetY = 0;
+
+    function getLogoCenter() {
+      const r = logoWrap.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    }
+
+    function buildElbowPath(bx, by) {
+      // Pivoting hinge elbow: bend direction follows cursor position relative to logo
+      const cx   = bx + BOXW / 2;
+      const endY = (by > logoAnchor.y) ? by : by + BOXH;
+      const totalDx = cx - logoAnchor.x;
+      const totalDy = endY - logoAnchor.y;
+
+      // Pivot ratio: how far along the horizontal vs vertical leg the hinge sits.
+      // When cursor is far right → hinge is closer to logo (small t).
+      // When cursor is far below → hinge is farther along (large t).
+      // Use angle of direction vector to blend between two extreme elbow styles:
+      //   t=0.2 → sharp early bend (horizontal leg is short)
+      //   t=0.7 → late bend (horizontal leg is long)
+      const angle  = Math.atan2(Math.abs(totalDy), Math.abs(totalDx)); // 0..PI/2
+      const t      = 0.20 + (angle / (Math.PI / 2)) * 0.50; // 0.20..0.70
+
+      const ex = logoAnchor.x + totalDx * (1 - t); // hinge x
+      const ey = logoAnchor.y + totalDy * t;        // hinge y
+      return {
+        d: `M ${logoAnchor.x} ${logoAnchor.y} L ${ex} ${ey} L ${cx} ${endY}`,
+        seg1: { x: ex - logoAnchor.x, y: ey - logoAnchor.y }
+      };
+    }
+
+    function updateConnector(bx, by) {
+      const { d, seg1 } = buildElbowPath(bx, by);
+      photoBase.setAttribute('d', d);
+      photoPulse.setAttribute('d', d);
+
+      // Place node dot ~15px along the first segment from the logo
+      const seg1len = Math.sqrt(seg1.x * seg1.x + seg1.y * seg1.y) || 1;
+      const DOT_OFFSET = 15;
+      photoNode.setAttribute('cx', logoAnchor.x + (seg1.x / seg1len) * DOT_OFFSET);
+      photoNode.setAttribute('cy', logoAnchor.y + (seg1.y / seg1len) * DOT_OFFSET);
+      photoNode.style.display = 'block';
+
+      // Slow, subtle travelling pulse
+      const pathLen = photoPulse.getTotalLength() || 1;
+      const dashLen = 16;
+      const cycle   = pathLen + dashLen;
+      pulseT       += 0.007;
+      const offset  = pathLen - ((pulseT * cycle) % cycle);
+      photoPulse.style.strokeDasharray  = `${dashLen} ${pathLen + dashLen}`;
+      photoPulse.style.strokeDashoffset = offset;
+    }
+
+    function show() {
+      if (visible) return;
+      visible = true;
+      photoWrap.classList.add('visible');
+    }
+    function hide() {
+      if (!visible) return;
+      visible = false;
+      photoWrap.classList.remove('visible');
+      photoBase.setAttribute('d', '');
+      photoPulse.setAttribute('d', '');
+      photoNode.style.display = 'none';
+    }
+
+    document.addEventListener('mousemove', e => {
+      if (window._modalOpen) { hide(); return; }
+      logoAnchor = getLogoCenter();
+      const dx = e.clientX - logoAnchor.x, dy = e.clientY - logoAnchor.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > MAX_DIST) { hide(); return; }
+      show();
+      const nx = dx / (dist || 1), ny = dy / (dist || 1);
+      targetX = Math.max(4, Math.min(window.innerWidth  - BOXW - 4, e.clientX + nx * OFFSET));
+      targetY = Math.max(4, Math.min(window.innerHeight - BOXH - 4, e.clientY + ny * OFFSET));
+    });
+
+    (function rafLoop() {
+      requestAnimationFrame(rafLoop);
+
+      // Logo tug — runs even when not visible so it can ease back to zero
+      if (visible) {
+        // direction from logo center toward box center
+        const bCx = dispX + BOXW / 2, bCy = dispY + BOXH / 2;
+        const dx = bCx - logoAnchor.x, dy = bCy - logoAnchor.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const pull = Math.min(1, dist / MAX_DIST);   // stronger when farther
+        tugTargetX = (dx / dist) * MAX_TUG * pull;
+        tugTargetY = (dy / dist) * MAX_TUG * pull;
+      } else {
+        tugTargetX = 0;
+        tugTargetY = 0;
+      }
+      tugX += (tugTargetX - tugX) * 0.07;   // slow lerp = elastic weight feel
+      tugY += (tugTargetY - tugY) * 0.07;
+      logoEl2.style.transform = `translate(${tugX.toFixed(2)}px, ${tugY.toFixed(2)}px)`;
+
+      if (!visible) return;
+      dispX += (targetX - dispX) * 0.16;
+      dispY += (targetY - dispY) * 0.16;
+      photoBox.style.left = dispX + 'px';
+      photoBox.style.top  = dispY + 'px';
+      updateConnector(dispX, dispY);
+    })();
+  })();
+
+  // expose for modal dimming (CSS approach)
+  window._setModalOpen = v => {
+    window._modalOpen = v;
+    cv.classList.toggle('dimmed', v);
+    modalTarget = v ? 1.0 : 0.0;
+  };
+})();
+
+// Shared nav config — populated by bootNav() from content/nav.md
+const NAV_HINTS  = {};  // key → sphere hover text
+const NAV_LABELS = {};  // key → display label
+
+// ═══════════════════════════════════════════════════
+//  SPHERE CENTRE LABEL  (hover text over sphere)
+// ═══════════════════════════════════════════════════
+(function () {
+  const lbl = document.getElementById('sphere-label');
+  const GLITCH = '!<>_\\/[]{}|=+*^?#@░▒▓│╡╢╖╣║╗╝╜╛┐└┴┬├─┼╔╩╦╠═╬╧╨╙╘╒╓╫╪┘┌01010110';
+
+  let active = false, rafId = null, timeoutId = null;
+
+  // cancelTypewriter declared early so showLabel can call it
+  let _twTimer = null;
+  function cancelTypewriter() {
+    if (_twTimer) { clearTimeout(_twTimer); _twTimer = null; }
+  }
+
+  function doGlitchBurst(orig) {
+    const dur = 180 + Math.random() * 140;
+    const t0  = performance.now();
+    function tick(now) {
+      if (!active) return;
+      if (now - t0 > dur) {
+        lbl.textContent = orig;
+        // next burst in 0.6–1.8 s
+        timeoutId = setTimeout(() => {
+          if (active) doGlitchBurst(orig);
+        }, 600 + Math.random() * 1200);
+        return;
+      }
+      let out = '';
+      for (let i = 0; i < orig.length; i++) {
+        if (orig[i] === ' ' || orig[i] === "'") { out += orig[i]; continue; }
+        out += Math.random() < 0.55
+          ? GLITCH[Math.floor(Math.random() * GLITCH.length)]
+          : orig[i];
+      }
+      lbl.textContent = out;
+      rafId = requestAnimationFrame(tick);
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  let isNavHover = false;
+
+  function showLabel(key) {
+    const text = NAV_HINTS[key] || key.toUpperCase();
+    isNavHover = true;
+    active = true;
+    cancelTypewriter();
+    lbl.classList.remove('quote-mode');
+    lbl.innerHTML = '';
+    lbl.textContent = text;
+    lbl.dataset.text = text;
+    lbl.classList.add('visible');
+    doGlitchBurst(text);
+  }
+
+  function hideLabel() {
+    isNavHover = false;
+    active = false;
+    clearTimeout(timeoutId);
+    cancelAnimationFrame(rafId);
+    lbl.classList.remove('visible');
+    lbl.innerHTML = '';
+    // Resume quote after brief pause
+    setTimeout(() => { if (!isNavHover) showNextQuote(); }, 500);
+  }
+
+  // Called by bootNav() after nav DOM is built
+  window._wireNavHoverListeners = () => {
+    document.querySelectorAll('.nav-item[data-modal]').forEach(el => {
+      el.addEventListener('mouseenter', () => showLabel(el.dataset.modal));
+      el.addEventListener('mouseleave', hideLabel);
+    });
+  };
+
+  // ── QUOTES ──────────────────────────────────────────────────────────────
+  let quotes = [], lastQuoteIdx = -1;
+
+  function showNextQuote() {
+    if (isNavHover || quotes.length === 0) return;
+    cancelTypewriter();
+
+    let idx;
+    do { idx = Math.floor(Math.random() * quotes.length); }
+    while (idx === lastQuoteIdx && quotes.length > 1);
+    lastQuoteIdx = idx;
+    const text = '“' + quotes[idx] + '”'; // curly quotes
+
+    active = false;
+    clearTimeout(timeoutId);
+    cancelAnimationFrame(rafId);
+    lbl.classList.add('quote-mode', 'visible');
+
+    // Build DOM: text span + cursor span
+    lbl.innerHTML = '';
+    const textSpan = document.createElement('span');
+    const cursor = document.createElement('span');
+    cursor.className = 'tw-cursor';
+    lbl.appendChild(textSpan);
+    lbl.appendChild(cursor);
+
+    // --- TYPE IN ---
+    const HOLD_MS = 5500;
+
+    // Human typing: variable delay per character
+    function humanDelay() {
+      const r = Math.random();
+      if (r < 0.04) return 280 + Math.random() * 300; // long pause (thinking)
+      if (r < 0.12) return 90  + Math.random() * 120;  // brief hesitation
+      if (r < 0.30) return 55  + Math.random() * 55;   // slightly slow
+      return 18 + Math.random() * 30;                   // normal fast burst
+    }
+
+    // Occasionally mistype and correct (only on "real" word chars)
+    function shouldMistype(ch) {
+      return /[a-zA-Z]/.test(ch) && Math.random() < 0.07;
+    }
+    const NEARBY = { a:'sq',s:'adw',d:'sef',f:'dg',g:'fh',h:'gj',j:'hk',k:'jl',l:'k',
+                     e:'wr',r:'et',t:'ry',y:'tu',u:'yi',i:'uo',o:'ip',p:'o',
+                     n:'bm',m:'n',b:'vn',v:'bc',c:'vx',x:'cz',z:'x',
+                     A:'S',S:'AD',D:'SE',E:'WR',R:'ET',T:'RY' };
+
+    let charIdx = 0;
+    let mistypeActive = false, mistypeChar = '';
+
+    function typeChar() {
+      if (isNavHover) { lbl.classList.remove('quote-mode', 'visible'); return; }
+
+      // Resolve a pending mistype: show wrong char briefly, then delete it
+      if (mistypeActive) {
+        mistypeActive = false;
+        // show mistype char
+        textSpan.textContent = text.slice(0, charIdx - 1) + mistypeChar;
+        // brief pause then backspace
+        _twTimer = setTimeout(() => {
+          textSpan.textContent = text.slice(0, charIdx - 1); // backspace
+          _twTimer = setTimeout(typeChar, 40 + Math.random() * 60); // re-type
+        }, 60 + Math.random() * 100);
+        return;
+      }
+
+      if (charIdx <= text.length) {
+        const ch = text[charIdx - 1] || '';
+        textSpan.textContent = text.slice(0, charIdx);
+        charIdx++;
+
+        // Maybe mistype the next character
+        if (charIdx <= text.length) {
+          const nextCh = text[charIdx - 1];
+          if (shouldMistype(nextCh)) {
+            const pool = NEARBY[nextCh] || 'qwerty';
+            mistypeChar = pool[Math.floor(Math.random() * pool.length)];
+            mistypeActive = true;
+          }
+        }
+
+        _twTimer = setTimeout(typeChar, humanDelay());
+      } else {
+        // Fully typed — pause at end before holding
+        _twTimer = setTimeout(() => {
+          _twTimer = setTimeout(deleteChar, HOLD_MS);
+        }, 120 + Math.random() * 180);
+      }
+    }
+
+    // --- DELETE OUT ---
+    let delIdx = text.length;
+    function deleteChar() {
+      if (isNavHover) { lbl.classList.remove('quote-mode', 'visible'); return; }
+      if (delIdx >= 0) {
+        textSpan.textContent = text.slice(0, delIdx);
+        delIdx--;
+        // Deleting is faster but slightly variable, with occasional micro-pause
+        const d = Math.random() < 0.08
+          ? 80 + Math.random() * 80   // brief delete hesitation
+          : 14 + Math.random() * 18;
+        _twTimer = setTimeout(deleteChar, d);
+      } else {
+        cursor.style.display = 'none';
+        lbl.classList.remove('visible');
+        _twTimer = setTimeout(() => {
+          if (!isNavHover) showNextQuote();
+        }, 600);
+      }
+    }
+
+    // Small random pause before starting to type (like a person gathering thoughts)
+    _twTimer = setTimeout(typeChar, 200 + Math.random() * 400);
+  }
+
+  // ── QUOTES — reads from inline <script id="quotes-data"> block ──────────
+  try {
+    quotes = JSON.parse(document.getElementById('quotes-data').textContent);
+    showNextQuote();
+    // After each full cycle (type + hold + delete ≈ CHAR_DELAY*len + HOLD + DEL_DELAY*len + 600)
+    // we just chain from deleteChar → showNextQuote, so no separate interval needed.
+  } catch(e) {}
+
+  // ── ARTICLES — reads from inline <script id="articles-data"> block ───────
+  try {
+    const articles = JSON.parse(document.getElementById('articles-data').textContent);
+    const strip = document.getElementById('articles-strip');
+    const section = document.getElementById('writings-section');
+    const track = document.createElement('div');
+    track.className = 'articles-track';
+
+    function makeCard(a) {
+      const card = document.createElement('a');
+      card.className = 'article-card';
+      card.href = a.url || '#';
+      if (a.url && a.url !== '#') card.target = '_blank';
+      card.innerHTML = `
+        <img class="article-card__thumb" src="${a.thumb}" alt="" onerror="this.style.display='none'">
+        <div class="article-card__body">
+          <div class="article-card__meta">
+            <span class="article-card__source">${a.source}</span>
+            <span class="article-card__date">${a.date}</span>
+          </div>
+          <div class="article-card__title">${a.title}</div>
+          <div class="article-card__desc">${a.desc}</div>
+        </div>`;
+      return card;
+    }
+
+    // Render cards 3× so there's always plenty to fill the screen
+    [...articles, ...articles, ...articles].forEach(a => track.appendChild(makeCard(a)));
+    strip.appendChild(track);
+    section.classList.add('ready');
+
+    // ── DRAG + AUTO-SCROLL CAROUSEL — DOM recycling, no offset jump ──────
+    let carouselOffset = 0;
+    let carouselVel    = 0;
+    const AUTO_SPEED   = 0.4;  // px/frame auto-scroll
+    const CARD_GAP     = 14;   // must match CSS gap
+    let isDragging     = false;
+    let dragStartX     = 0;
+    let dragLastX      = 0;
+    let dragLastT      = 0;
+
+    function carouselTick() {
+      if (!isDragging) {
+        carouselOffset -= AUTO_SPEED + carouselVel;
+        carouselVel   *= 0.94; // decay momentum
+      }
+
+      // Recycle front → back when card scrolls off left
+      const first = track.firstElementChild;
+      if (first) {
+        const cardW = first.offsetWidth + CARD_GAP;
+        if (carouselOffset <= -cardW) {
+          carouselOffset += cardW;   // compensate offset so nothing jumps visually
+          track.appendChild(first);  // move to end
+        }
+      }
+
+      // Recycle back → front when dragging right past origin
+      if (carouselOffset > 0) {
+        const last = track.lastElementChild;
+        if (last) {
+          const cardW = last.offsetWidth + CARD_GAP;
+          carouselOffset -= cardW;
+          track.insertBefore(last, track.firstElementChild);
+        }
+      }
+
+      track.style.transform = `translateX(${carouselOffset.toFixed(2)}px)`;
+      requestAnimationFrame(carouselTick);
+    }
+    carouselTick();
+
+    // Drag handlers
+    strip.addEventListener('pointerdown', e => {
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragLastX  = e.clientX;
+      dragLastT  = performance.now();
+      carouselVel = 0;
+      strip.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+
+    strip.addEventListener('pointermove', e => {
+      if (!isDragging) return;
+      const now = performance.now();
+      const dx  = e.clientX - dragLastX;
+      // instant drag
+      carouselOffset += dx;
+      // track velocity for momentum
+      const dt = now - dragLastT || 1;
+      carouselVel = -dx / dt * 16; // convert to px/frame (≈16ms)
+      dragLastX = e.clientX;
+      dragLastT = now;
+      e.preventDefault();
+    });
+
+    strip.addEventListener('pointerup', e => {
+      isDragging = false;
+      // clamp velocity so it doesn't fling too hard
+      carouselVel = Math.max(-18, Math.min(18, carouselVel));
+    });
+
+    strip.addEventListener('pointercancel', () => { isDragging = false; carouselVel = 0; });
+
+    // Prevent link navigation on drag
+    strip.addEventListener('click', e => {
+      if (Math.abs(e.clientX - dragStartX) > 5) e.preventDefault();
+    });
+
+  } catch(e) {}
+
+  // hide when modal opens
+  window._hideSphereLabel = hideLabel;
+})();
+
+// ═══════════════════════════════════════════════════
+//  MODAL CONTENT
+// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+//  MODAL LOGIC — content fetched from content/*.md
+// ═══════════════════════════════════════════════════
+const overlay  = document.getElementById('modal');
+const scrim    = document.getElementById('modal-scrim');
+const modalSection = document.getElementById('modal-section');
+const modalBody    = document.getElementById('modal-body');
+const closeBtn = document.getElementById('modal-close');
+const escHint  = document.getElementById('esc-hint');
+
+const _mdCache = {}; // key → rendered HTML (cached after first load)
+
+async function openModal(key) {
+  if (window._hideSphereLabel) window._hideSphereLabel();
+
+  // Show section label immediately from nav config
+  modalSection.textContent = (NAV_LABELS[key] || key).toUpperCase();
+  modalBody.innerHTML = '<p style="opacity:0.25;font-size:11px;">Loading…</p>';
+  overlay.classList.add('open');
+  escHint.classList.add('visible');
+  document.querySelectorAll('.nav-item').forEach(el =>
+    el.classList.toggle('active', el.dataset.modal === key)
+  );
+  if (window._setModalOpen) window._setModalOpen(true);
+
+  // Fetch + parse markdown (cached)
+  if (!_mdCache[key]) {
+    try {
+      const res = await fetch(`content/${key}.md`);
+      if (!res.ok) throw new Error(res.status);
+      const md = await res.text();
+      _mdCache[key] = marked.parse(md);
+    } catch(e) {
+      _mdCache[key] = `<p style="opacity:0.4;font-size:11px;">
+        Could not load <code>content/${key}.md</code>.<br>
+        Open via a local server (e.g. <code>npx serve .</code>) rather than file://.
+      </p>`;
+    }
+  }
+
+  modalBody.innerHTML = _mdCache[key];
+  // Stamp data-text on links for CSS glitch hover effect
+  modalBody.querySelectorAll('a').forEach(a => a.dataset.text = a.textContent);
+}
+
+function closeModal() {
+  overlay.classList.remove('open');
+  escHint.classList.remove('visible');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  if (window._setModalOpen) window._setModalOpen(false);
+}
+
+closeBtn.addEventListener('click', closeModal);
+scrim.addEventListener('click', closeModal);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ═══════════════════════════════════════════════════
+//  BOOT — load content/nav.md, build nav, wire all listeners
+// ═══════════════════════════════════════════════════
+(async function bootNav() {
+  const navEl = document.getElementById('nav');
+
+  // Parse nav.md: lines like "key | Label | Hint", skip # comments
+  let navItems = [];
+  try {
+    const res  = await fetch('content/nav.md');
+    if (!res.ok) throw new Error();
+    const text = await res.text();
+    navItems = text.split('\n')
+      .map(l => l.trim())
+      .filter(l => l && !l.startsWith('#'))
+      .map(l => {
+        const [key, label, hint] = l.split('|').map(p => p.trim());
+        return { key, label: label || key, hint: hint || key.toUpperCase() };
+      })
+      .filter(item => item.key);
+  } catch(e) {
+    // Fallback if not on a server
+    navItems = [
+      { key: 'about',   label: 'About',   hint: 'WHO I AM' },
+      { key: 'work',    label: 'Work',    hint: "THINGS I'VE BUILT" },
+      { key: 'writing', label: 'Writing', hint: 'WHAT I THINK' },
+      { key: 'contact', label: 'Contact', hint: 'GET IN TOUCH' },
+    ];
+  }
+
+  // Populate shared hint + label maps
+  navItems.forEach(({ key, label, hint }) => {
+    NAV_HINTS[key]  = hint;
+    NAV_LABELS[key] = label;
+  });
+
+  // Build nav DOM
+  navItems.forEach(({ key, label }) => {
+    const div = document.createElement('div');
+    div.className   = 'nav-item';
+    div.dataset.modal = key;
+    div.innerHTML   = `<span class="nav-link">${label}</span>`;
+    div.addEventListener('click', () => openModal(key));
+    navEl.appendChild(div);
+  });
+
+  // Wire sphere-label hover listeners (defined in sphere IIFE above)
+  if (window._wireNavHoverListeners) window._wireNavHoverListeners();
+
+  // Stamp corner links for glitch hover
+  document.querySelectorAll('.corner a').forEach(a => a.dataset.text = a.textContent);
+})();
+</script>
+</body>
+</html>
