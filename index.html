@@ -64,6 +64,14 @@ body::after {
   letter-spacing: 0.08em;
   line-height: 1.7;
   color: rgba(232, 232, 226, 0.72);
+  opacity: 0;
+  transition: opacity 1.6s ease;
+  pointer-events: none;
+}
+body.ui-ready .corner {
+  opacity: 1;
+  pointer-events: auto;
+  transition-delay: 0s;
 }
 
 .corner-tl { top: 28px; left: 32px; }
@@ -286,6 +294,17 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.6s ease;
+}
+body.ui-ready .nav {
+  opacity: 1;
+  pointer-events: auto;
+  transition-delay: 0.4s;
+}
+body.ui-ready #writings-section.ready {
+  transition-delay: 0.8s;
 }
 
 .nav-item {
@@ -666,6 +685,10 @@ body::after {
   pointer-events: none;
 }
 #writings-section.ready {
+  /* opacity gated on body.ui-ready below */
+  pointer-events: none;
+}
+body.ui-ready #writings-section.ready {
   opacity: 1;
   pointer-events: auto;
 }
@@ -1469,6 +1492,9 @@ body::after {
   })();
 
   // expose for modal dimming (CSS approach)
+  // Fade in all UI after bang animation settles (~2.2s)
+  setTimeout(() => document.body.classList.add('ui-ready'), 2600);
+
   window._setModalOpen = v => {
     window._modalOpen = v;
     cv.classList.toggle('dimmed', v);
