@@ -12,7 +12,7 @@ description: A fascinating re-examination of why the Indus civilisation didn't c
 ---
 
 title: Indic Voice Technologies for an Inclusive Digital India: Toolkit for Developers
-url: ../pdfs/Indic-Voice-Technologies-For-An-Inclusive-Digital-India_Toolkit-for-Developers.pdf
+url: pdfs/Indic-Voice-Technologies-For-An-Inclusive-Digital-India_Toolkit-for-Developers.pdf
 source: Bhashini / GIZ FAIR Forward
 date: 2025-01-01
 tags: voice technology, indic languages, AI, digital inclusion, open source, responsible AI
@@ -22,7 +22,7 @@ description: A practical developer toolkit for building speech AI across Indian 
 ---
 
 title: Responsible AI in Practice: Ensuring Fairness and Trust
-url: ../pdfs/Responsible-AI-in-Practice-Ensuring-Fairness-and-Trust-Google-x-Aapti-Institute_compressed-1.pdf
+url: pdfs/Responsible-AI-in-Practice-Ensuring-Fairness-and-Trust-Google-x-Aapti-Institute_compressed-1.pdf
 source: Aapti Institute
 date: 2025-03-01
 tags: responsible AI, bias, fairness, cybersecurity, digital integrity, AI governance
