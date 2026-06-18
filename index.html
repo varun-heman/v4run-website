@@ -549,8 +549,10 @@ body.ui-ready #writings-section.ready {
   z-index: 1;
   width: min(580px, 88vw);
   max-height: 72vh;
-  background: rgba(10, 10, 10, 0.60);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(7, 7, 7, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   padding: 36px 44px 44px;
   overflow-y: auto;
   clip-path: inset(0 0 100% 0);
@@ -623,6 +625,38 @@ body.ui-ready #writings-section.ready {
   color: rgba(232, 232, 226, 0.62);
   letter-spacing: 0.01em;
   margin-bottom: 14px;
+}
+
+/* Job title lines: <p> containing only a <strong> */
+.modal-body p:has(> strong:only-child) {
+  color: rgba(232, 232, 226, 0.92);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0em;
+  margin-top: 30px;
+  margin-bottom: 3px;
+  line-height: 1.4;
+}
+.modal-body p:first-child:has(> strong:only-child),
+.modal-body p:has(> strong:only-child):first-of-type { margin-top: 0; }
+
+/* Company · Date · Location line (immediately after a title line) */
+.modal-body p:has(> strong:only-child) + p {
+  font-size: 10px;
+  font-family: var(--mono);
+  letter-spacing: 0.1em;
+  color: rgba(100, 255, 160, 0.48);
+  margin-bottom: 8px;
+  margin-top: 0;
+  line-height: 1.5;
+}
+
+/* Description paragraph (2nd after a title line) */
+.modal-body p:has(> strong:only-child) + p + p {
+  font-size: 13px;
+  line-height: 1.8;
+  color: rgba(232, 232, 226, 0.55);
+  margin-bottom: 4px;
 }
 
 /* Non-nav text links — glitch + green glow on hover */
