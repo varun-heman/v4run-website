@@ -2043,7 +2043,7 @@ body.strip-hovered .nav {
   color: rgba(232,232,226,0.75);
 }
 #gallery-album-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  display: grid; grid-template-columns: repeat(5, 1fr);
   gap: 12px;
 }
 .gallery-album-thumb {
@@ -2113,6 +2113,7 @@ body.strip-hovered .nav {
   #gallery-head { padding: 14px 16px; }
   #gallery-recent-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
   #gallery-albums-grid  { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  #gallery-album-grid   { grid-template-columns: repeat(3, 1fr); gap: 6px; }
   #lb-img { max-width: calc(100vw - 60px); max-height: calc(100vh - 140px); }
   #lb-meta { padding: 14px 16px; }
   #lb-prev { left: 2px; } #lb-next { right: 2px; }
@@ -4285,7 +4286,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     });
   }
 
-  function openAlbum(album) {
+  function slugify(s) { return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''); }
+
+  function openAlbum(album, skipHash) {
     albumTitle.textContent = album.title;
     albumGrid.innerHTML = '';
     album.photos.forEach((p, i) => {
@@ -4293,14 +4296,19 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     });
     mainView.style.display = 'none';
     albumView.style.display = 'block';
+    if (!skipHash) history.pushState({ panel: 'pics', album: album.title }, '', '#pics/' + slugify(album.title));
   }
   backBtn.addEventListener('click', () => {
     albumView.style.display = 'none';
     mainView.style.display = 'block';
+    history.pushState({ panel: 'pics' }, '', '#pics');
   });
 
   // ── Open/close overlay ─────────────────────────────
   async function openGallery() {
+    // Always reset to main view
+    mainView.style.display = 'block';
+    albumView.style.display = 'none';
     overlay.classList.add('open');
     window._modalOpen = true;
     document.body.style.overflow = 'hidden';
@@ -4341,9 +4349,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       closeGallery();
   });
 
-  window._openGallery = function(skipHash) {
-    openGallery();
-    if (!skipHash) history.pushState({ panel: 'pics' }, '', '#pics');
+  window._openGallery = async function(skipHash, albumSlug) {
+    await openGallery();
+    if (!skipHash) history.pushState({ panel: 'pics' }, '', albumSlug ? '#pics/' + albumSlug : '#pics');
+    if (albumSlug && galleryData) {
+      const album = galleryData.albums.find(a => slugify(a.title) === albumSlug);
+      if (album) openAlbum(album, true);
+    }
   };
 })();
 
@@ -4806,6 +4818,7 @@ function _openFromHash(hash) {
   if (!key) return;
   if (key === 'writing'  && window._openViewAll)  { window._openViewAll(true);  return; }
   if (key === 'pics'     && window._openGallery)  { window._openGallery(true);  return; }
+  if (key.startsWith('pics/') && window._openGallery) { window._openGallery(true, key.slice(5)); return; }
   if (key === 'reads'    && window._openReads)    { window._openReads(true);    return; }
   if (key === 'projects' && window._openProjects) { window._openProjects(true); return; }
   // Modal keys (about, work, etc.) — openModal is defined in this scope
