@@ -835,14 +835,18 @@ body.ui-ready #writings-section.ready {
   border: 1px solid rgba(184,240,210,0.07);
   text-decoration: none;
   color: inherit;
-  transition: border-color 0.2s, background 0.2s, opacity 0.25s ease, transform 0.25s ease;
+  transition: border-color 0.2s, background 0.2s;
   cursor: pointer;
-  opacity: 0;
-  transform: translateY(8px);
+  clip-path: inset(0 0 100% 0);
 }
 .viewall-card.card-visible {
-  opacity: 1;
-  transform: translateY(0);
+  clip-path: inset(0 0 0% 0);
+  transition: border-color 0.2s, background 0.2s,
+              clip-path 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.viewall-card.card-exit {
+  clip-path: inset(100% 0 0% 0);
+  transition: clip-path 0.22s cubic-bezier(0.4, 0, 1, 1);
 }
 #viewall-grid.filtering {
   pointer-events: none;
@@ -2726,10 +2730,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
           <div class="viewall-card__desc">${a.desc || ''}</div>
         </div>`;
       grid.appendChild(card);
-      // staggered entrance
-      requestAnimationFrame(() => {
-        setTimeout(() => card.classList.add('card-visible'), i * 40);
-      });
+      // staggered scan-in — same wipe as modal open
+      setTimeout(() => card.classList.add('card-visible'), i * 45);
     });
   }
 
@@ -2743,18 +2745,17 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       return true;
     });
 
-    // If grid already has cards, fade them out first then swap
-    if (grid.children.length && grid.querySelector('.card-visible')) {
+    // If grid already has cards, wipe them out then scan new ones in
+    const existing = [...grid.querySelectorAll('.card-visible')];
+    if (existing.length) {
       grid.classList.add('filtering');
-      [...grid.children].forEach(c => {
-        c.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
-        c.style.opacity = '0';
-        c.style.transform = 'translateY(-6px)';
+      existing.forEach((c, i) => {
+        setTimeout(() => c.classList.add('card-exit'), i * 25);
       });
       setTimeout(() => {
         grid.classList.remove('filtering');
         buildCards(filtered);
-      }, 200);
+      }, existing.length * 25 + 240);
     } else {
       buildCards(filtered);
     }
