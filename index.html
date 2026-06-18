@@ -932,6 +932,7 @@ body.ui-ready #writings-section.ready {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   cursor: pointer;
+  overflow: hidden;
   transition: border-color 0.35s cubic-bezier(0.4,0,0.2,1), background 0.35s cubic-bezier(0.4,0,0.2,1), transform 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s cubic-bezier(0.4,0,0.2,1);
   text-decoration: none;
   display: block;
@@ -1018,10 +1019,15 @@ body.ui-ready #writings-section.ready {
   overflow: hidden;
   max-height: 1.6em; /* single line only */
 }
+.article-card__tags {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
 .article-card__tag {
   font-family: var(--mono);
   font-size: 7px;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
   padding: 2px 6px;
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 10px;
@@ -2213,9 +2219,9 @@ const NAV_LABELS = {};  // key → display label
             <span class="article-card__date">${a.date || ''}</span>
             ${a._isNew ? '<span class="article-card__new">NEW</span>' : ''}
           </div>
-          ${(visibleTags || overflowTag) ? `<div class="article-card__tags">${visibleTags}${overflowTag}</div>` : ''}
           <div class="article-card__title">${a.title}</div>
           <div class="article-card__desc">${a.desc || ''}</div>
+          ${(visibleTags || overflowTag) ? `<div class="article-card__tags">${visibleTags}${overflowTag}</div>` : ''}
         </div>`;
       return card;
     }
