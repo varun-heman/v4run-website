@@ -1501,10 +1501,13 @@ body.ui-ready #writings-section.ready {
   window._unfreezeLogo = function() {
     _logoFrozen = false;
     if (_frozenTimer) { clearTimeout(_frozenTimer); _frozenTimer = null; }
-    // Glitch back to current cycling form
+    // Glitch back to current cycling form, then restart the cycle
     const snap = currentForm;
     glitchTo(logoEl.textContent, snap, () => {
-      if (!_logoFrozen) setLogo(snap);
+      if (!_logoFrozen) {
+        setLogo(snap);
+        setTimeout(runGlitch, 1800 + Math.random() * 1500);
+      }
     });
   };
 
