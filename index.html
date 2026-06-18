@@ -1691,11 +1691,23 @@ body.strip-hovered .nav {
   #mobile-logo-panel .mobile-photo {
     width: 120px; height: 120px;
     border: 1px solid rgba(184,240,210,0.35);
-    overflow: hidden;
+    overflow: hidden; position: relative;
     filter: grayscale(1) brightness(0.65) sepia(1) hue-rotate(82deg) saturate(3) contrast(1.1);
     margin-bottom: 20px;
   }
-  #mobile-logo-panel .mobile-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  #mobile-logo-panel .mobile-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+  /* CRT scan lines */
+  #mobile-logo-panel .mobile-photo::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.22) 2px, rgba(0,0,0,0.22) 4px);
+  }
+  /* Rolling scan band */
+  #mobile-logo-panel .mobile-photo::before {
+    content: ''; position: absolute; left: 0; right: 0; height: 36px;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, rgba(100,255,160,0.06) 50%, transparent 100%);
+    animation: box-scan 4s linear infinite;
+  }
   #mobile-logo-panel .mobile-name {
     font-family: var(--mono); font-size: 17px; font-weight: bold;
     color: var(--fg); letter-spacing: 0.06em;
@@ -3094,16 +3106,53 @@ body.strip-hovered .nav {
     const backdrop  = document.getElementById('mobile-logo-backdrop');
     const panel     = document.getElementById('mobile-logo-panel');
     const closeBtn  = document.getElementById('mobile-logo-close');
+    const mobileNameEl = document.getElementById('mobile-logo-name');
     if (!logoWrap || !backdrop || !panel) return;
+
+    const nameForms = ['varun hemachandran', 'v4run hemachandran', 'v4.run hemachandran'];
+    let _nameIdx = 0, _glitchTimer = null;
+
+    function scheduleGlitch() {
+      _glitchTimer = setTimeout(() => {
+        if (!mobileNameEl || !document.body.classList.contains('logo-tapped')) return;
+        // rgb-burst flash
+        mobileNameEl.classList.add('rgb-burst');
+        setTimeout(() => {
+          mobileNameEl.classList.remove('rgb-burst');
+          // cycle to next form
+          _nameIdx = (_nameIdx + 1) % nameForms.length;
+          const txt = nameForms[_nameIdx];
+          mobileNameEl.textContent = txt;
+          mobileNameEl.dataset.text = txt;
+          scheduleGlitch();
+        }, 320);
+      }, 2000 + Math.random() * 1500);
+    }
+
+    function startGlitch() {
+      _nameIdx = 0;
+      if (mobileNameEl) { mobileNameEl.textContent = nameForms[0]; mobileNameEl.dataset.text = nameForms[0]; }
+      scheduleGlitch();
+    }
+    function stopGlitch() {
+      clearTimeout(_glitchTimer); _glitchTimer = null;
+      if (mobileNameEl) {
+        mobileNameEl.classList.remove('rgb-burst');
+        mobileNameEl.textContent = 'varun hemachandran';
+        mobileNameEl.dataset.text = 'varun hemachandran';
+      }
+    }
 
     function openPanel() {
       if (!document.body.classList.contains('ui-ready')) return;
       document.body.classList.add('logo-tapped');
       if (window._freezeLogo) window._freezeLogo('varun hemachandran');
+      startGlitch();
     }
     function closePanel() {
       document.body.classList.remove('logo-tapped');
       if (window._unfreezeLogo) window._unfreezeLogo();
+      stopGlitch();
     }
 
     logoWrap.addEventListener('touchend', e => {
