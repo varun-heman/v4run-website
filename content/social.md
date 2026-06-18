@@ -3,6 +3,6 @@
 # Supported: Instagram, X/Twitter, LinkedIn, GitHub, YouTube, Threads,
 #            Bluesky, Medium, Substack, Facebook, Reddit, TikTok, etc.
 
-https://instagram.com/yourhandle
-https://x.com/yourhandle
-https://linkedin.com/in/yourhandle
+https://instagram.com/v4run.zip
+https://x.com/varunh
+https://linkedin.com/in/varunh
