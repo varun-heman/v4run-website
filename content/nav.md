@@ -6,4 +6,3 @@ about   | About   | WHO I AM
 work    | Work    | THINGS I'VE BUILT
 writing | Writing | WHAT I THINK
 pics    | Pics    | PHOTOGRAPHY
-contact | Contact | GET IN TOUCH
