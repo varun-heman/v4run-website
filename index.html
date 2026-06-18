@@ -1821,6 +1821,7 @@ const NAV_LABELS = {};  // key → display label
         })
         .filter(a => a.title && a.url); // must have at least title + url
     }
+    window._parseArticlesMd = parseArticlesMd; // expose for mobile overlay
 
     let articles = [];
     try {
@@ -2046,10 +2047,21 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     const articlesCloseBtn = document.getElementById('articles-overlay-close');
     let articlesNavBuilt = false;
 
-    // Build the overlay card list from window._articles (set by carousel code)
-    function buildArticlesOverlay() {
+    // Build the overlay card list — fetch articles.md directly
+    async function buildArticlesOverlay() {
       if (articlesScrollEl.children.length > 0) return; // already built
-      const articles = window._articles || [];
+      let articles = window._articles; // use cached if available
+      if (!articles) {
+        try {
+          const res = await fetch('content/articles.md');
+          if (!res.ok) throw new Error();
+          const parse = window._parseArticlesMd || (t => []);
+          articles = parse(await res.text());
+        } catch(e) {
+          try { articles = JSON.parse(document.getElementById('articles-data').textContent); }
+          catch(e2) { articles = []; }
+        }
+      }
       articles.forEach(a => {
         const card = document.createElement('a');
         card.className = 'articles-overlay-card';
@@ -2072,8 +2084,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       });
     }
 
-    function openArticlesOverlay() {
-      buildArticlesOverlay();
+    async function openArticlesOverlay() {
+      await buildArticlesOverlay();
       articlesOverlay.classList.add('open');
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       articlesNavItem.classList.add('active');
