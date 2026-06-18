@@ -1520,7 +1520,8 @@ body.ui-ready #writings-section.ready {
     const OFFSET = 18;
     const MAX_DIST = 240;
 
-    const logoEl2   = document.querySelector('.logo');
+    const logoEl2   = document.querySelector('.logo-ghost'); // track actual text width
+    const logoTugEl = document.querySelector('.logo');       // tug applied to wrapper
     const MAX_TUG   = 6;   // max px the logo can be pulled
 
     let logoAnchor = { x: 0, y: 0 };
@@ -1628,9 +1629,10 @@ body.ui-ready #writings-section.ready {
       }
       tugX += (tugTargetX - tugX) * 0.07;   // slow lerp = elastic weight feel
       tugY += (tugTargetY - tugY) * 0.07;
-      logoEl2.style.transform = `translate(${tugX.toFixed(2)}px, ${tugY.toFixed(2)}px)`;
+      logoTugEl.style.transform = `translate(${tugX.toFixed(2)}px, ${tugY.toFixed(2)}px)`;
 
       if (!visible) return;
+      logoAnchor = getLogoCenter(); // refresh every frame so dot tracks expanding text
       dispX += (targetX - dispX) * 0.16;
       dispY += (targetY - dispY) * 0.16;
       photoBox.style.left = dispX + 'px';
