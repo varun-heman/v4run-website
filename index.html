@@ -924,9 +924,9 @@ body.ui-ready #writings-section.ready {
 .viewall-filter-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
-  padding: 4px 0;
+  padding: 2px 0;
 }
 @media (max-width: 768px) {
   #viewall-head, #viewall-filters { padding-left: 20px; padding-right: 20px; }
@@ -1114,12 +1114,12 @@ body.ui-ready #writings-section.ready {
 }
 #reads-close:hover { color: #e03030; }
 #reads-filters {
-  padding: 16px 40px 14px;
+  padding: 12px 40px 10px;
   border-bottom: 1px solid rgba(255,255,255,0.05);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 7px;
 }
 #reads-list {
   flex: 1;
@@ -3500,9 +3500,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     div.dataset.modal = key;
     div.innerHTML   = `<span class="nav-link">${label}</span>`;
     div.addEventListener('click', () => {
-      if (key === 'pics'    && window._openGallery)   { window._openGallery();   return; }
-      if (key === 'writing' && window._openViewAll)   { window._openViewAll();   return; }
-      if (key === 'reads'   && window._openReads)     { window._openReads();     return; }
+      if (key === 'pics'     && window._openGallery)   { window._openGallery();    return; }
+      if (key === 'writing'  && window._openViewAll)   { window._openViewAll();    return; }
+      if (key === 'reads'    && window._openReads)     { window._openReads();      return; }
+      if (key === 'projects' && window._openProjects)  { window._openProjects();   return; }
       openModal(key);
     });
     window._navItemMap[key] = div;
@@ -4642,9 +4643,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 function _openFromHash(hash) {
   const key = (hash || '').replace('#', '').toLowerCase();
   if (!key) return;
-  if (key === 'writing' && window._openViewAll) { window._openViewAll(true); return; }
-  if (key === 'pics'    && window._openGallery) { window._openGallery(true); return; }
-  if (key === 'reads'   && window._openReads)   { window._openReads(true);   return; }
+  if (key === 'writing'  && window._openViewAll)  { window._openViewAll(true);  return; }
+  if (key === 'pics'     && window._openGallery)  { window._openGallery(true);  return; }
+  if (key === 'reads'    && window._openReads)    { window._openReads(true);    return; }
+  if (key === 'projects' && window._openProjects) { window._openProjects(true); return; }
   // Modal keys (about, work, etc.) — openModal is defined in this scope
   if (typeof openModal === 'function') openModal(key);
 }
