@@ -1459,8 +1459,10 @@ body.ui-ready #writings-section.ready {
   // State machine: cycle randomly among 3 forms
   const logoForms = [origText, 'varun', 'v4.run'];
   let currentForm = origText;
+  let _logoFrozen = false; // hoisted so runGlitch can read it
 
   function runGlitch() {
+    if (_logoFrozen) return; // paused while photo popup is showing
     // Pick a different form at random
     const others = logoForms.filter(f => f !== currentForm);
     const next   = others[Math.floor(Math.random() * others.length)];
@@ -1474,6 +1476,37 @@ body.ui-ready #writings-section.ready {
     });
   }
   setTimeout(runGlitch, 1200);
+
+  // Expose freeze/unfreeze for photo popup
+  let _frozenTimer = null;
+  window._freezeLogo = function(targetText) {
+    _logoFrozen = true;
+    if (_frozenTimer) { clearTimeout(_frozenTimer); _frozenTimer = null; }
+    // Typewriter expand from current text to targetText
+    const from = logoEl.textContent;
+    const to   = targetText;
+    if (from === to) return;
+    // Add characters one by one
+    let i = from.length;
+    function typeNext() {
+      if (!_logoFrozen) return;
+      if (i <= to.length) {
+        setLogo(to.slice(0, i));
+        i++;
+        _frozenTimer = setTimeout(typeNext, i < 7 ? 0 : 38); // fast for shared prefix
+      }
+    }
+    typeNext();
+  };
+  window._unfreezeLogo = function() {
+    _logoFrozen = false;
+    if (_frozenTimer) { clearTimeout(_frozenTimer); _frozenTimer = null; }
+    // Glitch back to current cycling form
+    const snap = currentForm;
+    glitchTo(logoEl.textContent, snap, () => {
+      if (!_logoFrozen) setLogo(snap);
+    });
+  };
 
   // ── LOGO PHOTO POPUP ─────────────────────────────────────────────────────
   (function() {
@@ -1553,6 +1586,7 @@ body.ui-ready #writings-section.ready {
       if (visible) return;
       visible = true;
       photoWrap.classList.add('visible');
+      if (window._freezeLogo) window._freezeLogo('varun hemachandran');
     }
     function hide() {
       if (!visible) return;
@@ -1561,6 +1595,7 @@ body.ui-ready #writings-section.ready {
       photoBase.setAttribute('d', '');
       photoPulse.setAttribute('d', '');
       photoNode.style.display = 'none';
+      if (window._unfreezeLogo) window._unfreezeLogo();
     }
 
     document.addEventListener('mousemove', e => {
