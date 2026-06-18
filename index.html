@@ -1009,6 +1009,25 @@ body.ui-ready #writings-section.ready {
   border: 1px solid rgba(100,255,160,0.5);
   padding: 1px 5px;
   border-radius: 2px;
+  flex-shrink: 0;
+}
+.article-card__tags {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+  overflow: hidden;
+  max-height: 1.6em; /* single line only */
+}
+.article-card__tag {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: rgba(255,255,255,0.28);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .article-card__title {
   font-family: var(--sans);
@@ -2175,6 +2194,8 @@ const NAV_LABELS = {};  // key → display label
       card.className = 'article-card' + (a._isNew ? ' is-new' : '');
       card.href = a.url || '#';
       if (a.url && a.url !== '#') card.target = '_blank';
+      const cardTags = (a.tags || []).slice(0, 2)
+        .map(t => `<span class="article-card__tag">${t}</span>`).join('');
       card.innerHTML = `
         <img class="article-card__thumb" src="${a.thumb || 'images/thumbs/placeholder.jpg'}" alt="" onerror="this.style.opacity='0'">
         <div class="article-card__body">
@@ -2183,6 +2204,7 @@ const NAV_LABELS = {};  // key → display label
             <span class="article-card__date">${a.date || ''}</span>
             ${a._isNew ? '<span class="article-card__new">NEW</span>' : ''}
           </div>
+          ${cardTags ? `<div class="article-card__tags">${cardTags}</div>` : ''}
           <div class="article-card__title">${a.title}</div>
           <div class="article-card__desc">${a.desc || ''}</div>
         </div>`;
