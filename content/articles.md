@@ -3,37 +3,28 @@
 # tags: comma-separated list, e.g.  tags: justice, AI, policy
 
 ---
-title: Essay title one
-source: Publication Name
-date: Jun 2026
-desc: A short description of what this piece is about. Keep it to a sentence or two.
-url: https://example.com/article-one
+title: How AI is Transforming Access to Justice in India
+source: NLSIR Online
+date: 2025-03-23
+desc: How AI is dismantling language, literacy, and systemic barriers to justice in India — from WhatsApp chatbots for farmers to 24/7 legal helplines for truckers and AI-powered grievance redressal. Co-authored with Sachin Malhan and Smita Gupta.
+url: https://forum.nls.ac.in/nlsir-online-blog/how-ai-is-transforming-access-to-justice-in-india/
 thumb: images/thumbs/placeholder.jpg
-tags: justice, AI, courts, policy
+tags: AI, access to justice, legal tech, India, OpenNyAI
 
 ---
-title: Essay title two
-source: Another Publication
-date: Apr 2026
-desc: What this article argues or explores. Readers will see this in the card.
-url: https://example.com/article-two
+title: The AI Age of Justice
+source: Field Notes (Agami)
+date: 2023-06-16
+desc: From ChatGPT's launch to Jugalbandi's WhatsApp demo in front of Satya Nadella — tracing how generative AI landed in the hands of Indian farmers and began reshaping what access to justice could look like.
+url: https://notes.agami.in/p/the-ai-age-of-justice
 thumb: images/thumbs/placeholder.jpg
-tags: courts, policy, reform
+tags: AI, access to justice, legal tech, India, generative AI
 
 ---
-title: Essay title three
-source: Medium
-date: Jan 2026
-desc: A brief summary of the piece and why it matters.
-url: https://example.com/article-three
+title: "Aalap: AI Assistant for Legal & Paralegal Functions in India"
+source: arXiv
+date: 2024-01-30
+desc: A fine-tuned Mistral 7B model for Indian legal tasks that outperforms GPT-3.5-turbo on 31% of test cases and matches it on 34% — built to teach legal reasoning, not just legal recall. Co-authored with Aman Tiwari, Prathamesh Kalamkar, Atreyo Banerjee, Saurabh Karn, and Smita Gupta.
+url: https://arxiv.org/abs/2402.01758
 thumb: images/thumbs/placeholder.jpg
-tags: AI, policy
-
----
-title: Essay title four
-source: The Hindu
-date: Aug 2025
-desc: Older piece from last year — still relevant to the conversation.
-url: https://example.com/article-four
-thumb: images/thumbs/placeholder.jpg
-tags: justice, courts
+tags: AI, legal AI, LLM, India, research, NLP

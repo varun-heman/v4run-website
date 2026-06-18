@@ -628,6 +628,51 @@ body.ui-ready #writings-section.ready {
 .modal-box::-webkit-scrollbar { width: 3px; }
 .modal-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
 
+#modal-pdf-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 28px 28px;
+}
+#modal-pdf-wrap iframe {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 60vh;
+  border: none;
+  background: #111;
+}
+/* PDF expanded modal */
+.modal-overlay.pdf-mode .modal-box {
+  width: min(1100px, 95vw);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+.modal-overlay.pdf-mode .modal-head {
+  flex-shrink: 0;
+}
+#pdf-fullscreen-btn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(232,232,226,0.5);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+#pdf-fullscreen-btn:hover {
+  color: rgba(232,232,226,0.9);
+  border-color: rgba(255,255,255,0.3);
+}
+
 .modal-overlay.open .modal-box {
   clip-path: inset(0 0 0% 0);
   animation: modal-border-flash 0.9s ease-out forwards;
@@ -3949,7 +3994,16 @@ async function openModal(key) {
   modalBody.innerHTML = _mdCache[key];
   modalBody.classList.add('modal-body-loaded');
   // Stamp data-text on links for CSS glitch hover effect
-  modalBody.querySelectorAll('a').forEach(a => a.dataset.text = a.textContent);
+  // Intercept PDF links to open in modal instead of new tab
+  modalBody.querySelectorAll('a').forEach(a => {
+    a.dataset.text = a.textContent;
+    if (a.href && a.href.toLowerCase().endsWith('.pdf')) {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        openPdfInModal(a.href, a.textContent);
+      });
+    }
+  });
 }
 
 function closeModal() {
@@ -3960,6 +4014,54 @@ function closeModal() {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   if (window._setModalOpen) window._setModalOpen(false);
   if (location.hash) history.replaceState(null, '', location.pathname);
+  // Clear any PDF iframe and fullscreen button
+  overlay.classList.remove('pdf-mode');
+  const pdfWrap = document.getElementById('modal-pdf-wrap');
+  if (pdfWrap) pdfWrap.remove();
+  const fsBtn = document.getElementById('pdf-fullscreen-btn');
+  if (fsBtn) fsBtn.style.display = 'none';
+  modalBody.style.display = '';
+}
+
+function openPdfInModal(url, title) {
+  if (window._hideSphereLabel) window._hideSphereLabel();
+  modalSection.textContent = (title || 'PDF').toUpperCase();
+  overlay.classList.add('open', 'pdf-mode');
+  scrim.classList.add('open');
+  if (window.innerWidth > 768) document.body.classList.add('modal-sphere-up');
+  escHint.textContent = window.innerWidth <= 768 ? '[ tap outside to close ]' : '[ ESC to close ]';
+  escHint.classList.add('visible');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  if (window._setModalOpen) window._setModalOpen(true);
+
+  // Hide text body, inject iframe + fullscreen button
+  modalBody.style.display = 'none';
+  let pdfWrap = document.getElementById('modal-pdf-wrap');
+  if (!pdfWrap) {
+    pdfWrap = document.createElement('div');
+    pdfWrap.id = 'modal-pdf-wrap';
+    modalBody.parentNode.insertBefore(pdfWrap, modalBody.nextSibling);
+  }
+  const iframe = document.createElement('iframe');
+  iframe.src = url;
+  iframe.title = title || 'PDF';
+  pdfWrap.innerHTML = '';
+  pdfWrap.appendChild(iframe);
+
+  // Inject fullscreen button into modal head
+  let fsBtn = document.getElementById('pdf-fullscreen-btn');
+  if (!fsBtn) {
+    fsBtn = document.createElement('button');
+    fsBtn.id = 'pdf-fullscreen-btn';
+    const modalHead = overlay.querySelector('.modal-head');
+    if (modalHead) modalHead.appendChild(fsBtn);
+  }
+  fsBtn.textContent = '⛶ Fullscreen';
+  fsBtn.style.display = '';
+  fsBtn.onclick = () => {
+    if (iframe.requestFullscreen) iframe.requestFullscreen();
+    else if (iframe.webkitRequestFullscreen) iframe.webkitRequestFullscreen();
+  };
 }
 
 closeBtn.addEventListener('click', closeModal);
@@ -5164,16 +5266,30 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
           ${r.description ? `<div class="reads-card__desc">${r.description}</div>` : ''}
           <div class="reads-card__footer">
             ${tagHtml ? `<div class="reads-card__tags">${tagHtml}</div>` : '<div></div>'}
-            <a class="site-btn" href="${r.url}" target="_blank" rel="noopener noreferrer">
-              Open Link <i class="fa-solid fa-arrow-up-right-from-square"></i>
-            </a>
+            ${r.url ? (() => {
+              const isPdf = r.url.toLowerCase().endsWith('.pdf');
+              return isPdf
+                ? `<button class="site-btn pdf-modal-btn" data-pdf-url="${r.url}" data-pdf-title="${r.title}">Open PDF <i class="fa-solid fa-file-pdf"></i></button>`
+                : `<a class="site-btn" href="${r.url}" target="_blank" rel="noopener noreferrer">Open Link <i class="fa-solid fa-arrow-up-right-from-square"></i></a>`;
+            })() : ''}
           </div>
         </div>`;
 
       if (r.url) {
-        card.addEventListener('click', e => {
-          if (!e.target.closest('.site-btn')) window.open(r.url, '_blank', 'noopener,noreferrer');
-        });
+        const isPdf = r.url.toLowerCase().endsWith('.pdf');
+        if (isPdf) {
+          card.addEventListener('click', e => {
+            const btn = e.target.closest('.pdf-modal-btn');
+            if (btn || !e.target.closest('.site-btn')) {
+              e.preventDefault();
+              openPdfInModal(r.url, r.title);
+            }
+          });
+        } else {
+          card.addEventListener('click', e => {
+            if (!e.target.closest('.site-btn')) window.open(r.url, '_blank', 'noopener,noreferrer');
+          });
+        }
       }
       list.appendChild(card);
       setTimeout(() => card.classList.add('card-visible'), i * 55);
