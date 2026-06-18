@@ -1951,7 +1951,7 @@ const NAV_LABELS = {};  // key → display label
       card.href = a.url || '#';
       if (a.url && a.url !== '#') card.target = '_blank';
       card.innerHTML = `
-        <img class="article-card__thumb" src="${a.thumb || 'images/thumbs/default-thumb.avif'}" alt="" onerror="this.style.display='none'">
+        <img class="article-card__thumb" src="${a.thumb || 'images/thumbs/placeholder.jpg'}" alt="" onerror="this.style.display='none'">
         <div class="article-card__body">
           <div class="article-card__meta">
             <span class="article-card__source">${a.source || ''}</span>
@@ -2174,7 +2174,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
         card.href = a.url || '#';
         if (a.url && a.url !== '#') card.target = '_blank';
         card.rel = 'noopener noreferrer';
-        const thumbHtml = `<img class="articles-overlay-card__thumb" src="${a.thumb || 'images/thumbs/default-thumb.avif'}" alt="" onerror="this.style.display='none'">`;
+        const thumbHtml = `<img class="articles-overlay-card__thumb" src="${a.thumb || 'images/thumbs/placeholder.jpg'}" alt="" onerror="this.style.display='none'">`;
         card.innerHTML = `${thumbHtml}
           <div class="articles-overlay-card__body">
             <div class="articles-overlay-card__meta">
