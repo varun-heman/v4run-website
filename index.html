@@ -874,11 +874,9 @@ body.ui-ready #writings-section.ready {
   border-color: rgba(184,240,210,0.22);
   background: rgba(12,22,14,0.8);
 }
-.viewall-card.is-new {
-  background: rgba(6,18,10,0.7);
-}
+/* is-new: no special card styling — NEW badge is the only indicator */
 .viewall-card.is-new.card-visible {
-  animation: card-border-flash 1.1s ease-out 0.3s both;
+  animation: none;
 }
 .viewall-card__thumb {
   width: 100%;
@@ -1286,12 +1284,7 @@ body.strip-hovered .nav {
     color: inherit;
   }
   .articles-overlay-card:last-child { border-bottom: none; }
-  .articles-overlay-card.is-new {
-    background: rgba(6, 18, 10, 0.5);
-    border-bottom-color: rgba(100, 255, 160, 0.12);
-    box-shadow: inset 3px 0 0 rgba(100, 255, 160, 0.3);
-    padding-left: 10px;
-  }
+  /* is-new: no special card styling on mobile overlay — NEW badge only */
   .articles-overlay-card__thumb {
     width: 64px;
     height: 64px;
