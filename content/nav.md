@@ -3,6 +3,6 @@
 # Reorder lines to reorder nav. Key must match content/{key}.md
 
 about   | About   | WHO I AM
-work    | Work    | THINGS I'VE BUILT
+work    | Work    | WHAT I'M UP TO
 writing | Writing | WHAT I THINK
 pics    | Pics    | PHOTOGRAPHY
