@@ -85,7 +85,7 @@ body.ui-ready .corner {
   font-family: inherit;
 }
 .corner-tr { top: 28px; right: 32px; text-align: right; line-height: 1.2; }
-.corner-bl { bottom: 28px; left: 32px; }
+.corner-bl { bottom: 28px; left: 32px; z-index: 20; } /* above carousel */
 .corner-br { bottom: 28px; right: 32px; text-align: right; }
 
 /* ─── GLITCH LOGO ────────────────────────────────────── */
@@ -696,7 +696,7 @@ body.ui-ready #writings-section.ready {
 /* ── WRITINGS SECTION ─────────────────────────────────── */
 #writings-section {
   position: fixed;
-  bottom: 58px;
+  bottom: 72px;
   left: 0;
   right: 0;
   z-index: 10;
@@ -1353,35 +1353,63 @@ body.strip-hovered .nav {
 .social-dock {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0;
 }
+/* "Contact Me" label */
+.social-dock__label {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: rgba(184,240,210,0.55);
+  background: none; border: none; cursor: pointer; padding: 0;
+  border-bottom: 1px solid rgba(184,240,210,0.18); padding-bottom: 1px;
+  transition: color 0.2s; flex-shrink: 0;
+}
+.social-dock:hover .social-dock__label,
+.social-dock__label:hover { color: rgba(100,255,160,0.9); }
+
+/* Icons container */
+.social-dock__icons {
+  display: flex; align-items: center; gap: 2px;
+  margin-left: 0;
+  overflow: visible;
+}
+
+/* Individual icon */
 .social-icon {
   position: relative;
-  width: 22px; height: 22px;
+  width: 26px; height: 26px;
   display: flex; align-items: center; justify-content: center;
-  color: rgba(184,240,210,0.45);
-  background: none; border: none; cursor: pointer;
-  font-size: 13px; line-height: 1;
-  text-decoration: none;
-  transition: color 0.15s, opacity 0.2s ease, transform 0.2s cubic-bezier(0.16,1,0.3,1);
+  color: rgba(184,240,210,0.5);
+  background: none; border: none !important; border-bottom: none !important;
+  text-decoration: none !important;
+  cursor: pointer; font-size: 12px; line-height: 1;
+  border-radius: 4px;
+  /* base transition — exit is instant (delay removed by JS on leave) */
+  transition: color 0.15s, opacity 0.22s cubic-bezier(0.16,1,0.3,1),
+              transform 0.22s cubic-bezier(0.16,1,0.3,1),
+              background 0.15s;
   flex-shrink: 0;
-}
-.social-icon:hover { color: rgba(100,255,160,0.9); }
-/* Non-email icons hidden until dock is hovered */
-.social-icon:not(.social-icon--email) {
   opacity: 0;
-  transform: translateX(-6px);
+  transform: translateX(-8px);
   pointer-events: none;
 }
-.social-dock:hover .social-icon:not(.social-icon--email) {
+/* Prevent .corner a glitch styles from leaking in */
+.social-icon::before, .social-icon::after { display: none !important; }
+.social-icon:hover {
+  color: rgba(100,255,160,0.9);
+  background: rgba(100,255,160,0.06);
+}
+
+/* Revealed on dock hover */
+.social-dock:hover .social-icon {
   opacity: 1;
   transform: translateX(0);
   pointer-events: auto;
 }
+
 /* Handle tooltip — styled like article tags */
 .social-handle {
   position: absolute;
-  bottom: calc(100% + 7px);
+  bottom: calc(100% + 6px);
   left: 50%; transform: translateX(-50%);
   font-family: var(--mono); font-size: 7px; letter-spacing: 0.08em;
   color: rgba(232,232,226,0.45);
@@ -1389,7 +1417,7 @@ body.strip-hovered .nav {
   border-radius: 10px;
   padding: 2px 7px;
   white-space: nowrap;
-  background: rgba(8,8,8,0.85);
+  background: rgba(8,8,8,0.9);
   opacity: 0; pointer-events: none;
   transition: opacity 0.15s;
 }
@@ -1738,11 +1766,10 @@ body.strip-hovered .nav {
 
 <div class="corner corner-bl">
   <div class="social-dock" id="social-dock">
-    <button class="social-icon social-icon--email" id="contact-trigger" aria-label="Contact Me">
-      <i class="fa-solid fa-envelope"></i>
-      <span class="social-handle">email</span>
-    </button>
-    <!-- additional social icons injected by JS -->
+    <button class="social-dock__label" id="contact-trigger">Contact Me</button>
+    <div class="social-dock__icons" id="social-icons">
+      <!-- email + social icons injected by JS -->
+    </div>
   </div>
 </div>
 
@@ -3741,28 +3768,28 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
 // ── SOCIAL DOCK ───────────────────────────────────────
 (async function () {
-  const dock = document.getElementById('social-dock');
-  if (!dock) return;
+  const dock      = document.getElementById('social-dock');
+  const iconsWrap = document.getElementById('social-icons');
+  if (!dock || !iconsWrap) return;
 
-  // Platform detection from URL
   const PLATFORMS = [
-    { match: ['instagram.com'],           icon: 'fa-brands fa-instagram',   label: 'Instagram' },
-    { match: ['twitter.com', 'x.com'],    icon: 'fa-brands fa-x-twitter',   label: 'X' },
-    { match: ['linkedin.com'],            icon: 'fa-brands fa-linkedin-in',  label: 'LinkedIn' },
-    { match: ['github.com'],              icon: 'fa-brands fa-github',       label: 'GitHub' },
-    { match: ['youtube.com', 'youtu.be'], icon: 'fa-brands fa-youtube',      label: 'YouTube' },
-    { match: ['threads.net'],             icon: 'fa-brands fa-threads',      label: 'Threads' },
-    { match: ['bsky.app', 'bluesky'],     icon: 'fa-brands fa-bluesky',      label: 'Bluesky' },
-    { match: ['medium.com'],              icon: 'fa-brands fa-medium',       label: 'Medium' },
-    { match: ['substack.com'],            icon: 'fa-solid fa-newspaper',     label: 'Substack' },
-    { match: ['facebook.com', 'fb.com'],  icon: 'fa-brands fa-facebook',     label: 'Facebook' },
-    { match: ['mastodon'],                icon: 'fa-brands fa-mastodon',     label: 'Mastodon' },
-    { match: ['reddit.com'],              icon: 'fa-brands fa-reddit',       label: 'Reddit' },
-    { match: ['tiktok.com'],              icon: 'fa-brands fa-tiktok',       label: 'TikTok' },
-    { match: ['twitch.tv'],               icon: 'fa-brands fa-twitch',       label: 'Twitch' },
-    { match: ['discord.com', 'discord.gg'], icon: 'fa-brands fa-discord',   label: 'Discord' },
-    { match: ['telegram.org', 't.me'],    icon: 'fa-brands fa-telegram',     label: 'Telegram' },
-    { match: ['pinterest.com'],           icon: 'fa-brands fa-pinterest',    label: 'Pinterest' },
+    { match: ['instagram.com'],             icon: 'fa-brands fa-instagram',   label: 'Instagram' },
+    { match: ['twitter.com', 'x.com'],      icon: 'fa-brands fa-x-twitter',   label: 'X' },
+    { match: ['linkedin.com'],              icon: 'fa-brands fa-linkedin-in',  label: 'LinkedIn' },
+    { match: ['github.com'],                icon: 'fa-brands fa-github',       label: 'GitHub' },
+    { match: ['youtube.com', 'youtu.be'],   icon: 'fa-brands fa-youtube',      label: 'YouTube' },
+    { match: ['threads.net'],               icon: 'fa-brands fa-threads',      label: 'Threads' },
+    { match: ['bsky.app', 'bluesky'],       icon: 'fa-brands fa-bluesky',      label: 'Bluesky' },
+    { match: ['medium.com'],                icon: 'fa-brands fa-medium',       label: 'Medium' },
+    { match: ['substack.com'],              icon: 'fa-solid fa-newspaper',     label: 'Substack' },
+    { match: ['facebook.com', 'fb.com'],    icon: 'fa-brands fa-facebook',     label: 'Facebook' },
+    { match: ['mastodon'],                  icon: 'fa-brands fa-mastodon',     label: 'Mastodon' },
+    { match: ['reddit.com'],                icon: 'fa-brands fa-reddit',       label: 'Reddit' },
+    { match: ['tiktok.com'],                icon: 'fa-brands fa-tiktok',       label: 'TikTok' },
+    { match: ['twitch.tv'],                 icon: 'fa-brands fa-twitch',       label: 'Twitch' },
+    { match: ['discord.com', 'discord.gg'], icon: 'fa-brands fa-discord',      label: 'Discord' },
+    { match: ['telegram.org', 't.me'],      icon: 'fa-brands fa-telegram',     label: 'Telegram' },
+    { match: ['pinterest.com'],             icon: 'fa-brands fa-pinterest',    label: 'Pinterest' },
   ];
 
   function detectPlatform(url) {
@@ -3782,32 +3809,48 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     } catch(e) { return fallback; }
   }
 
-  // Fetch and parse social.md
+  function makeIcon(faClass, handle, href) {
+    const el = href ? document.createElement('a') : document.createElement('button');
+    el.className = 'social-icon';
+    if (href) { el.href = href; el.target = '_blank'; el.rel = 'noopener noreferrer'; }
+    el.innerHTML = `<i class="${faClass}"></i><span class="social-handle">${handle}</span>`;
+    return el;
+  }
+
+  // Email icon first — opens contact modal
+  const emailIcon = makeIcon('fa-solid fa-envelope', 'email', null);
+  emailIcon.setAttribute('aria-label', 'Contact Me');
+  emailIcon.addEventListener('click', () => {
+    const overlay = document.getElementById('contact-overlay');
+    if (overlay) overlay.classList.add('open');
+    if (window._modalOpen !== undefined) window._modalOpen = true;
+  });
+  iconsWrap.appendChild(emailIcon);
+
+  // Fetch social.md
   let links = [];
   try {
     const res = await fetch('content/social.md');
     if (res.ok) {
       const text = await res.text();
-      links = text.split('\n')
-        .map(l => l.trim())
+      links = text.split('\n').map(l => l.trim())
         .filter(l => l && !l.startsWith('#') && l.startsWith('http'));
     }
   } catch(e) {}
 
-  // Inject icons (after the email icon)
-  links.forEach((url, i) => {
+  links.forEach(url => {
     const platform = detectPlatform(url);
     const handle   = extractHandle(url, platform.label);
+    iconsWrap.appendChild(makeIcon(platform.icon, handle, url));
+  });
 
-    const a = document.createElement('a');
-    a.className = 'social-icon';
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    a.setAttribute('aria-label', platform.label);
-    a.style.transitionDelay = `${i * 30}ms`;
-    a.innerHTML = `<i class="${platform.icon}"></i><span class="social-handle">${handle}</span>`;
-    dock.appendChild(a);
+  // Stagger on enter, instant collapse on leave
+  const allIcons = () => [...iconsWrap.querySelectorAll('.social-icon')];
+  dock.addEventListener('mouseenter', () => {
+    allIcons().forEach((el, i) => { el.style.transitionDelay = `${i * 35}ms`; });
+  });
+  dock.addEventListener('mouseleave', () => {
+    allIcons().forEach(el => { el.style.transitionDelay = '0ms'; });
   });
 })();
 </script>
