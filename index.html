@@ -1609,13 +1609,13 @@ body.strip-hovered .nav {
 
   /* ── Corners ─────────────────────────────────── */
   .corner { font-size: 9px; }
-  .corner-tl { top: 18px; left: 18px; }
-  .corner-tr { top: 18px; right: 18px; }
+  .corner-tl { top: 18px; left: 18px; line-height: 1; }
+  .corner-tr { top: 18px; right: 18px; line-height: 1; }
   .corner-bl { display: none; }  /* email in contact modal instead */
   .corner-br { display: none; }
 
   /* ── Logo ────────────────────────────────────── */
-  .logo { font-size: 14px; }
+  .logo { font-size: 14px; line-height: 1; vertical-align: top; }
   .corner-bio { display: none; }
 
   /* ── Nav — horizontal strip at bottom ───────── */
@@ -3168,12 +3168,10 @@ body.strip-hovered .nav {
     function openPanel() {
       if (!document.body.classList.contains('ui-ready')) return;
       document.body.classList.add('logo-tapped');
-      if (window._freezeLogo) window._freezeLogo('varun hemachandran');
       startGlitch();
     }
     function closePanel() {
       document.body.classList.remove('logo-tapped');
-      if (window._unfreezeLogo) window._unfreezeLogo();
       stopGlitch();
     }
 
