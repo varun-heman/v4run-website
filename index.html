@@ -787,6 +787,76 @@ body::after {
   pointer-events: none;
 }
 .esc-hint.visible { opacity: 1; }
+
+/* ════════════════════════════════════════════════
+   RESPONSIVE — mobile (≤ 768px)
+   ════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Corners ─────────────────────────────────── */
+  .corner { font-size: 9px; }
+  .corner-tl { top: 18px; left: 18px; }
+  .corner-tr { top: 18px; right: 18px; }
+  .corner-bl { display: none; }  /* email in contact modal instead */
+  .corner-br { display: none; }
+
+  /* ── Logo ────────────────────────────────────── */
+  .logo { font-size: 14px; }
+
+  /* ── Nav — horizontal strip at bottom ───────── */
+  .nav {
+    left: 50%;
+    top: auto;
+    bottom: 24px;
+    transform: translateX(-50%);
+    flex-direction: row;
+    gap: 0;
+  }
+  .nav-item {
+    padding: 10px 14px;
+  }
+  .nav-link {
+    font-size: 12px;
+    letter-spacing: 0.03em;
+  }
+  /* Hide slide-out hint — no room horizontally */
+  .nav-hint { display: none; }
+
+  /* ── Photo popup — no hover on touch ────────── */
+  #logo-photo-wrap,
+  #logo-photo-svg { display: none !important; }
+
+  /* ── Sphere label ────────────────────────────── */
+  .sphere-label {
+    font-size: clamp(14px, 4.5vw, 22px);
+    letter-spacing: 0.18em;
+  }
+  .sphere-label.quote-mode {
+    font-size: 11px;
+    max-width: 80vw;
+  }
+
+  /* ── Modal ───────────────────────────────────── */
+  .modal-box {
+    width: 94vw;
+    max-height: 80vh;
+    padding: 24px 20px 28px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .modal-head { margin-bottom: 20px; padding-bottom: 12px; }
+
+  /* ── ESC hint — becomes tap hint ────────────── */
+  .esc-hint { bottom: 80px; font-size: 8px; }
+
+  /* ── Articles — hide on mobile (nav takes bottom) */
+  #writings-section { display: none; }
+}
+
+/* Very small phones */
+@media (max-width: 380px) {
+  .nav-item { padding: 10px 10px; }
+  .nav-link  { font-size: 11px; }
+}
 </style>
 </head>
 <body>
@@ -849,7 +919,7 @@ body::after {
 </div>
 
 <div class="sphere-label" id="sphere-label"></div>
-<div class="esc-hint" id="esc-hint">[ ESC to close ]</div>
+<div class="esc-hint" id="esc-hint"></div>
 <div id="writings-section">
   <div id="writings-label">My Writings</div>
   <div id="articles-strip"></div>
@@ -955,7 +1025,8 @@ body::after {
     }
   `;
 
-  const N = 5000;
+  const isMobile = window.innerWidth <= 768;
+  const N = isMobile ? 2200 : 5000;
   const base  = new Float32Array(N * 3);
   const seed  = new Float32Array(N);
   const seed2 = new Float32Array(N);
@@ -1602,17 +1673,43 @@ const NAV_LABELS = {};  // key → display label
   // ── QUOTES — reads from inline <script id="quotes-data"> block ──────────
   try {
     quotes = JSON.parse(document.getElementById('quotes-data').textContent);
-    showNextQuote();
-    // After each full cycle (type + hold + delete ≈ CHAR_DELAY*len + HOLD + DEL_DELAY*len + 600)
-    // we just chain from deleteChar → showNextQuote, so no separate interval needed.
+    // Delay first quote until bang animation has settled (bang runs ~2.2s, wait 2s more)
+    setTimeout(() => { if (!isNavHover) showNextQuote(); }, 4200);
   } catch(e) {}
 
-  // ── ARTICLES — reads from inline <script id="articles-data"> block ───────
-  try {
-    const articles = JSON.parse(document.getElementById('articles-data').textContent);
-    const strip = document.getElementById('articles-strip');
+  // ── ARTICLES — fetched from content/articles.md ─────────────────────────
+  (async function initCarousel() {
+    function parseArticlesMd(text) {
+      // Split on --- separators, parse key: value pairs from each block
+      return text.split(/\n---/)
+        .map(block => {
+          const obj = {};
+          block.split('\n').forEach(line => {
+            const m = line.match(/^(\w+)\s*:\s*(.+)/);
+            if (m) obj[m[1].trim()] = m[2].trim();
+          });
+          return obj;
+        })
+        .filter(a => a.title && a.url); // must have at least title + url
+    }
+
+    let articles = [];
+    try {
+      const res = await fetch('content/articles.md');
+      if (!res.ok) throw new Error();
+      articles = parseArticlesMd(await res.text());
+    } catch(e) {
+      // Fallback to embedded JSON if not on a server
+      try {
+        articles = JSON.parse(document.getElementById('articles-data').textContent);
+      } catch(e2) {}
+    }
+
+    if (!articles.length) return;
+
+    const strip   = document.getElementById('articles-strip');
     const section = document.getElementById('writings-section');
-    const track = document.createElement('div');
+    const track   = document.createElement('div');
     track.className = 'articles-track';
 
     function makeCard(a) {
@@ -1621,19 +1718,19 @@ const NAV_LABELS = {};  // key → display label
       card.href = a.url || '#';
       if (a.url && a.url !== '#') card.target = '_blank';
       card.innerHTML = `
-        <img class="article-card__thumb" src="${a.thumb}" alt="" onerror="this.style.display='none'">
+        <img class="article-card__thumb" src="${a.thumb || ''}" alt="" onerror="this.style.display='none'">
         <div class="article-card__body">
           <div class="article-card__meta">
-            <span class="article-card__source">${a.source}</span>
-            <span class="article-card__date">${a.date}</span>
+            <span class="article-card__source">${a.source || ''}</span>
+            <span class="article-card__date">${a.date || ''}</span>
           </div>
           <div class="article-card__title">${a.title}</div>
-          <div class="article-card__desc">${a.desc}</div>
+          <div class="article-card__desc">${a.desc || ''}</div>
         </div>`;
       return card;
     }
 
-    // Render cards 3× so there's always plenty to fill the screen
+    // Render cards 3× so there's always enough to fill the screen
     [...articles, ...articles, ...articles].forEach(a => track.appendChild(makeCard(a)));
     strip.appendChild(track);
     section.classList.add('ready');
@@ -1641,8 +1738,8 @@ const NAV_LABELS = {};  // key → display label
     // ── DRAG + AUTO-SCROLL CAROUSEL — DOM recycling, no offset jump ──────
     let carouselOffset = 0;
     let carouselVel    = 0;
-    const AUTO_SPEED   = 0.4;  // px/frame auto-scroll
-    const CARD_GAP     = 14;   // must match CSS gap
+    const AUTO_SPEED   = 0.4;
+    const CARD_GAP     = 14;
     let isDragging     = false;
     let dragStartX     = 0;
     let dragLastX      = 0;
@@ -1651,20 +1748,13 @@ const NAV_LABELS = {};  // key → display label
     function carouselTick() {
       if (!isDragging) {
         carouselOffset -= AUTO_SPEED + carouselVel;
-        carouselVel   *= 0.94; // decay momentum
+        carouselVel   *= 0.94;
       }
-
-      // Recycle front → back when card scrolls off left
       const first = track.firstElementChild;
       if (first) {
         const cardW = first.offsetWidth + CARD_GAP;
-        if (carouselOffset <= -cardW) {
-          carouselOffset += cardW;   // compensate offset so nothing jumps visually
-          track.appendChild(first);  // move to end
-        }
+        if (carouselOffset <= -cardW) { carouselOffset += cardW; track.appendChild(first); }
       }
-
-      // Recycle back → front when dragging right past origin
       if (carouselOffset > 0) {
         const last = track.lastElementChild;
         if (last) {
@@ -1673,51 +1763,32 @@ const NAV_LABELS = {};  // key → display label
           track.insertBefore(last, track.firstElementChild);
         }
       }
-
       track.style.transform = `translateX(${carouselOffset.toFixed(2)}px)`;
       requestAnimationFrame(carouselTick);
     }
     carouselTick();
 
-    // Drag handlers
     strip.addEventListener('pointerdown', e => {
-      isDragging = true;
-      dragStartX = e.clientX;
-      dragLastX  = e.clientX;
-      dragLastT  = performance.now();
-      carouselVel = 0;
-      strip.setPointerCapture(e.pointerId);
-      e.preventDefault();
+      isDragging = true; dragStartX = e.clientX; dragLastX = e.clientX;
+      dragLastT = performance.now(); carouselVel = 0;
+      strip.setPointerCapture(e.pointerId); e.preventDefault();
     });
-
     strip.addEventListener('pointermove', e => {
       if (!isDragging) return;
-      const now = performance.now();
-      const dx  = e.clientX - dragLastX;
-      // instant drag
+      const dx = e.clientX - dragLastX;
       carouselOffset += dx;
-      // track velocity for momentum
-      const dt = now - dragLastT || 1;
-      carouselVel = -dx / dt * 16; // convert to px/frame (≈16ms)
-      dragLastX = e.clientX;
-      dragLastT = now;
-      e.preventDefault();
+      carouselVel = -dx / (performance.now() - dragLastT || 1) * 16;
+      dragLastX = e.clientX; dragLastT = performance.now(); e.preventDefault();
     });
-
-    strip.addEventListener('pointerup', e => {
+    strip.addEventListener('pointerup', () => {
       isDragging = false;
-      // clamp velocity so it doesn't fling too hard
       carouselVel = Math.max(-18, Math.min(18, carouselVel));
     });
-
     strip.addEventListener('pointercancel', () => { isDragging = false; carouselVel = 0; });
-
-    // Prevent link navigation on drag
     strip.addEventListener('click', e => {
       if (Math.abs(e.clientX - dragStartX) > 5) e.preventDefault();
     });
-
-  } catch(e) {}
+  })();
 
   // hide when modal opens
   window._hideSphereLabel = hideLabel;
@@ -1745,6 +1816,7 @@ async function openModal(key) {
   modalSection.textContent = (NAV_LABELS[key] || key).toUpperCase();
   modalBody.innerHTML = '<p style="opacity:0.25;font-size:11px;">Loading…</p>';
   overlay.classList.add('open');
+  escHint.textContent = window.innerWidth <= 768 ? '[ tap outside to close ]' : '[ ESC to close ]';
   escHint.classList.add('visible');
   document.querySelectorAll('.nav-item').forEach(el =>
     el.classList.toggle('active', el.dataset.modal === key)
