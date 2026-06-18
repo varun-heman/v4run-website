@@ -659,8 +659,8 @@ body.ui-ready #writings-section.ready {
   margin-bottom: 4px;
 }
 
-/* Non-nav text links — glitch + green glow on hover */
-.modal-body a,
+/* Non-nav text links — glitch + green glow on hover (any <a> with no class = plain text link) */
+.modal-body a:not([class]),
 .corner a {
   color: var(--fg);
   text-decoration: none;
@@ -668,7 +668,7 @@ body.ui-ready #writings-section.ready {
   transition: color 0.1s, border-color 0.1s;
   position: relative;
 }
-.modal-body a::before, .modal-body a::after,
+.modal-body a:not([class])::before, .modal-body a:not([class])::after,
 .corner a::before, .corner a::after {
   content: attr(data-text);
   position: absolute;
@@ -678,20 +678,20 @@ body.ui-ready #writings-section.ready {
   font: inherit;
   border-bottom: inherit;
 }
-.modal-body a:hover,
+.modal-body a:not([class]):hover,
 .corner a:hover {
   color: rgba(184, 240, 210, 0.95);
   border-color: rgba(100, 255, 160, 0.5);
   animation: link-glow-pulse 1.4s ease-in-out infinite;
 }
-.modal-body a:hover::before,
+.modal-body a:not([class]):hover::before,
 .corner a:hover::before {
   content: attr(data-text);
   color: rgba(255, 30, 80, 0.7);
   opacity: 1;
   animation: link-glitch-r 0.22s steps(1, end) infinite;
 }
-.modal-body a:hover::after,
+.modal-body a:not([class]):hover::after,
 .corner a:hover::after {
   content: attr(data-text);
   color: rgba(0, 200, 255, 0.7);
