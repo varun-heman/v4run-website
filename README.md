@@ -13,22 +13,43 @@ Key visual details:
 - **Logo glitch** — the `v4run` wordmark cycles between `v4run`, `varun`, and `v4.run` at random intervals with an RGB chromatic aberration burst. Hovering the logo area pauses the cycle and typewriters out the full name `varun hemachandran`, then resumes cycling on mouse-out.
 - **Bio** — a short bio paragraph sits below the logo in the top-left corner (hidden on mobile).
 - **Photo popup** — hovering near the logo reveals a photo box that follows the cursor, connected to the logo by an elbowed SVG line with a travelling light pulse. The image has a matrix-green CRT filter and TV flicker effect. Disabled on mobile and when a modal is open.
-- **Shoal of fish** — when a modal is open, the sphere dots flow tangentially around the modal zone in two counter-rotating streams, like a shoal of fish parting around an obstacle.
-- **Typewriter quotes** — when no nav item is hovered, the sphere centre types out quotes one character at a time (with human-like timing jitter and occasional mistypes), holds, then deletes them. Starts after the bang animation clears.
+- **Shoal of fish** — when a modal is open, the sphere dots flow tangentially around the modal zone in two counter-rotating streams, like a shoal of fish parting around an obstacle. On desktop, the sphere is visible behind the modal (raised above the dark scrim via z-index).
+- **Typewriter quotes** — when no nav item is hovered, the sphere centre types out quotes one character at a time (with human-like timing jitter and occasional mistypes), holds, then deletes them. During the hold, the same letter-scramble and RGB chromatic aberration glitch effects run as on nav hints. Starts after the bang animation clears.
 - **Article carousel** — a bottom strip of writing cards that auto-scrolls left, supports drag with momentum fling, and loops infinitely via DOM recycling (no offset jump). Hidden on mobile.
 - **Static noise overlay** — a very faint, fine-grain film noise canvas overlaid on the full page.
 - **Pulsating heart** — a red ♥ in the corner bio pulses continuously with a heartbeat animation.
 
 ## Nav behaviour
 
-- **Writing** — clicking opens the full "View All" writing overlay (with year/tag filters) rather than the inline modal.
+- **Writing** — clicking opens the full "View All" writing overlay (with year/tag filters).
+- **Reads** — clicking opens the Recommended Reads overlay (vertically scrollable link list with descriptions).
 - **Pics** — opens the photo gallery overlay.
-- **NEW badges** — when any article or photo was published within the last 60 days, a green `NEW` badge appears next to the relevant nav item (Writing or Pics). Individual new items also carry a badge.
-- On **desktop**, Writing and Pics are in the nav bar. On **mobile**, they are appended as extra nav items at the bottom.
+- **NEW badges** — a green dot appears next to a nav item when any of its content was published within the last 60 days (Reads uses a 2-month window). Individual new items also carry a NEW badge.
+- All nav items are **deep-linkable** — `/#about`, `/#work`, `/#writing`, `/#reads`, `/#pics` open their panels directly. Browser back/forward navigation works.
+- On **desktop**, Writing, Reads, and Pics are in the nav bar. On **mobile**, they are appended as extra nav items at the bottom.
+
+## Social dock
+
+The `Contact Me` label in the bottom-left corner reveals social icons on hover. Icons slide out to the right with a staggered spring animation. Platform is auto-detected from the URL in `content/social.md`. The email icon is always visible; all others are pulled from the social links file.
 
 ## Contact
 
-The `Contact Me` button in the bottom-left corner opens a modal with a Netlify form (name, email, message). An opt-in checkbox lets visitors subscribe to email updates from seldoncrisis.blog — confirmation dialog explains the commitment before subscribing.
+Clicking the email icon in the social dock opens a modal with a Netlify form (name, email, message). An opt-in checkbox lets visitors subscribe to email updates.
+
+## Recommended Reads
+
+A curated link-sharing section for content not authored by Varun. Defined in `content/reads.md` using a simple key-value format (one entry per `---` separator):
+
+```
+title: Article title
+url: https://...
+source: Publication name
+date: 2026-05-15
+tags: tag1, tag2
+description: Why this is worth reading, in your own words.
+```
+
+Items published within 2 months show a NEW badge. The overlay is filterable by tag.
 
 ## Photo gallery
 
@@ -40,7 +61,7 @@ The Pics overlay has three views:
 
 Clicking any thumbnail opens an immersive **lightbox** (full-screen, black background, `object-fit: contain`). Caption, date, and location are overlaid at the bottom with a gradient. Arrow keys and click to navigate.
 
-Hovering a thumbnail reveals a slide-up overlay with the caption and metadata chips (not shown in the lightbox, where the meta is always visible).
+Hovering a thumbnail reveals a slide-up overlay with the caption and metadata chips.
 
 ### Gallery metadata
 
@@ -71,15 +92,18 @@ node scripts/gen-gallery.js
 
 **marked.js** — loaded from CDN. Parses modal content from markdown files at runtime.
 
+**Font Awesome 6.6.0 Free** — loaded from jsDelivr CDN. Used for icons (arrows, social platforms, envelope).
+
 **Content files** — everything editable lives in the `content/` directory:
 
 ```
 content/
   nav.md         ← nav order, labels, and sphere hover text
   articles.md    ← article cards (title, source, date, desc, url, thumb)
+  reads.md       ← recommended reads (title, url, source, date, tags, description)
   about.md       ← About modal content
   work.md        ← Work modal content
-  writing.md     ← Writing modal content
+  social.md      ← social links (one URL per line, platform auto-detected)
   gallery.json   ← auto-generated by scripts/gen-gallery.js
 ```
 
@@ -102,10 +126,6 @@ Add these files at the project root:
 | `icon-512.png` | Web app manifest icon | 512×512 PNG |
 
 The canonical URL and share image URL are configured for `https://v4.run/`, hosted on Netlify from the GitHub repo `varun-heman/v4run-website`.
-
-### MD preloading
-
-All nav modal content (about, work, writing) is pre-fetched in the background right after the nav is built, so modals open instantly with a smooth fade-in rather than showing a "Loading…" flash.
 
 ## Running locally
 
@@ -131,7 +151,7 @@ For GitHub Pages, push to `main` and enable Pages from repo Settings → Pages (
 
 On screens ≤ 768px:
 - Nav moves to a horizontal strip at the bottom of the screen
-- **Writings** and **Pics** nav items are appended (desktop carousel and gallery link are hidden on mobile)
+- Writing, Reads, and Pics nav items are appended (desktop carousel and gallery link are hidden on mobile)
 - Bio, photo popup, and article carousel are hidden
 - Modal expands to 94vw
 - Particle count is halved for performance
@@ -142,12 +162,13 @@ On screens ≤ 768px:
 |------|-------|
 | Nav items, order, hover text | `content/nav.md` |
 | Article cards | `content/articles.md` |
+| Recommended reads | `content/reads.md` |
 | Modal content | `content/{key}.md` |
 | Quotes | `index.html` → `<script id="quotes-data">` |
-| Bio text | `index.html` → `.corner-bio` paragraph |
+| Bio text | `content/about.md` |
+| Social links | `content/social.md` |
 | Photo | `images/varun.jpg` |
 | Browser/social title and description | `index.html` → `<head>` metadata |
 | Favicon | `favicon.png` in the project root |
 | Social share banner | `social-banner.png` in the project root |
-| Contact Me button | `index.html` → `.corner-bl` |
 | Photo albums | `images/gallery/<album-name>/` + optional `meta.md` |
