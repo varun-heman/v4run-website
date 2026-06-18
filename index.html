@@ -712,13 +712,9 @@ body.ui-ready #writings-section.ready {
   user-select: none;
 }
 #articles-strip {
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(to right,
-    transparent 0%, rgba(0,0,0,0.6) 5%, black 13%,
-    black 87%, rgba(0,0,0,0.6) 95%, transparent 100%);
-  mask-image: linear-gradient(to right,
-    transparent 0%, rgba(0,0,0,0.6) 5%, black 13%,
-    black 87%, rgba(0,0,0,0.6) 95%, transparent 100%);
+  overflow: visible;
+  padding-top: 16px;
+  margin-top: -16px;
   cursor: grab;
 }
 #articles-strip:active { cursor: grabbing; }
@@ -743,12 +739,15 @@ body.ui-ready #writings-section.ready {
   display: block;
   -webkit-user-drag: none;
   transform-origin: bottom center;
+  z-index: 1;
 }
 .article-card:hover {
   border-color: rgba(184, 240, 210, 0.28);
   background: rgba(12, 22, 14, 0.82);
-  transform: translateY(-6px);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+  transform: scale(1.25) translateY(-6px);
+  box-shadow: 0 20px 48px rgba(0,0,0,0.8);
+  z-index: 10;
+  position: relative;
 }
 .article-card.is-new {
   border-color: rgba(100, 255, 160, 0.22);
