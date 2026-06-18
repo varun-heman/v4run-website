@@ -725,6 +725,7 @@ body.ui-ready #writings-section.ready {
   padding: 4px 0;
   will-change: transform;
   user-select: none;
+  isolation: isolate; /* ensures z-index works between sibling cards */
 }
 .article-card {
   flex-shrink: 0;
@@ -744,9 +745,9 @@ body.ui-ready #writings-section.ready {
 .article-card:hover {
   border-color: rgba(184, 240, 210, 0.28);
   background: rgba(12, 22, 14, 0.82);
-  transform: scale(1.25) translateY(-6px);
-  box-shadow: 0 20px 48px rgba(0,0,0,0.8);
-  z-index: 10;
+  transform: scale(1.12) translateY(-5px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.75);
+  z-index: 20;
   position: relative;
 }
 .article-card.is-new {
@@ -1950,7 +1951,7 @@ const NAV_LABELS = {};  // key → display label
       card.href = a.url || '#';
       if (a.url && a.url !== '#') card.target = '_blank';
       card.innerHTML = `
-        <img class="article-card__thumb" src="${a.thumb || 'images/thumbs/default-thumb.avif'}" alt="">
+        <img class="article-card__thumb" src="${a.thumb || 'images/thumbs/default-thumb.avif'}" alt="" onerror="this.style.display='none'">
         <div class="article-card__body">
           <div class="article-card__meta">
             <span class="article-card__source">${a.source || ''}</span>
@@ -2173,7 +2174,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
         card.href = a.url || '#';
         if (a.url && a.url !== '#') card.target = '_blank';
         card.rel = 'noopener noreferrer';
-        const thumbHtml = `<img class="articles-overlay-card__thumb" src="${a.thumb || 'images/thumbs/default-thumb.avif'}" alt="">`;
+        const thumbHtml = `<img class="articles-overlay-card__thumb" src="${a.thumb || 'images/thumbs/default-thumb.avif'}" alt="" onerror="this.style.display='none'">`;
         card.innerHTML = `${thumbHtml}
           <div class="articles-overlay-card__body">
             <div class="articles-overlay-card__meta">
