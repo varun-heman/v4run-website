@@ -1642,12 +1642,12 @@ body.strip-hovered .nav {
   /* Scroll-hint fade divs — real elements, not pseudo */
   .nav-fade {
     display: block;
-    position: fixed; bottom: 0; width: 56px;
+    position: fixed; bottom: 0; width: 80px;
     pointer-events: none; z-index: 12;
     transition: opacity 0.3s ease;
   }
-  #nav-fade-left  { left: 0;  background: linear-gradient(to right, rgba(8,8,8,0.92), transparent); opacity: 0; }
-  #nav-fade-right { right: 0; background: linear-gradient(to left,  rgba(8,8,8,0.92), transparent); opacity: 1; }
+  #nav-fade-left  { left: 0;  background: linear-gradient(to right, rgba(8,8,8,1) 30%, transparent); opacity: 0; }
+  #nav-fade-right { right: 0; background: linear-gradient(to left,  rgba(8,8,8,1) 30%, transparent); opacity: 1; }
   #nav-fade-left.visible  { opacity: 1; }
   #nav-fade-right.hidden  { opacity: 0; }
   .nav-item {
