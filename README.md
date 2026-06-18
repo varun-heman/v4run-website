@@ -23,9 +23,10 @@ Key visual details:
 
 - **Writing** — clicking opens the full "View All" writing overlay (with year/tag filters).
 - **Reads** — clicking opens the Recommended Reads overlay (vertically scrollable link list with descriptions).
+- **Projects** — clicking opens the Projects overlay, a card-based list of things built.
 - **Pics** — opens the photo gallery overlay.
 - **NEW badges** — a green dot appears next to a nav item when any of its content was published within the last 60 days (Reads uses a 2-month window). Individual new items also carry a NEW badge.
-- All nav items are **deep-linkable** — `/#about`, `/#work`, `/#writing`, `/#reads`, `/#pics` open their panels directly. Browser back/forward navigation works.
+- All nav items are **deep-linkable** — `/#about`, `/#work`, `/#projects`, `/#writing`, `/#reads`, `/#pics` open their panels directly. Browser back/forward navigation works.
 - On **desktop**, Writing, Reads, and Pics are in the nav bar. On **mobile**, they are appended as extra nav items at the bottom.
 
 ## Social dock

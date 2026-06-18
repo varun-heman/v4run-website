@@ -105,9 +105,9 @@ body.ui-ready .corner {
   color: rgba(232,232,226,0.45);
   font-family: inherit;
 }
-.corner-tr { top: 28px; right: 32px; text-align: right; line-height: 1.2; }
+.corner-tr { top: 28px; right: 32px; text-align: right; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.12em; }
 .corner-bl { bottom: 28px; left: 32px; z-index: 20; } /* above carousel */
-.corner-br { bottom: 28px; right: 32px; text-align: right; }
+.corner-br { bottom: 28px; right: 32px; text-align: right; text-transform: uppercase; letter-spacing: 0.12em; }
 
 /* ─── GLITCH LOGO ────────────────────────────────────── */
 .logo {
@@ -924,8 +924,9 @@ body.ui-ready #writings-section.ready {
 .viewall-filter-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
+  padding: 4px 0;
 }
 @media (max-width: 768px) {
   #viewall-head, #viewall-filters { padding-left: 20px; padding-right: 20px; }
@@ -1113,9 +1114,12 @@ body.ui-ready #writings-section.ready {
 }
 #reads-close:hover { color: #e03030; }
 #reads-filters {
-  padding: 12px 40px 10px;
+  padding: 16px 40px 14px;
   border-bottom: 1px solid rgba(255,255,255,0.05);
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 #reads-list {
   flex: 1;
@@ -1143,6 +1147,7 @@ body.ui-ready #writings-section.ready {
   color: inherit;
   position: relative;
   clip-path: inset(0 0 100% 0);
+  cursor: pointer;
 }
 .reads-card.card-visible {
   clip-path: inset(0 0 0% 0);
@@ -1168,7 +1173,7 @@ body.ui-ready #writings-section.ready {
   height: 100%;
   object-fit: cover;
   display: block;
-  filter: grayscale(1) brightness(0.55) sepia(1) hue-rotate(85deg) saturate(6);
+  filter: grayscale(1) brightness(0.65) sepia(1) hue-rotate(90deg) saturate(2.5);
   transition: filter 0.35s ease;
 }
 .reads-card:hover .reads-card__thumb {
@@ -1262,6 +1267,54 @@ body.ui-ready #writings-section.ready {
   padding: 60px 0;
   letter-spacing: 0.1em;
 }
+
+/* ─── PROJECTS OVERLAY — shell mirrors reads ─────────── */
+#projects-overlay {
+  position: fixed; inset: 0; z-index: 95;
+  background: rgba(4,4,4,0.96);
+  backdrop-filter: blur(16px) saturate(110%);
+  -webkit-backdrop-filter: blur(16px) saturate(110%);
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none; transition: opacity 0.28s ease;
+}
+#projects-overlay.open { opacity: 1; pointer-events: auto; }
+#projects-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 28px 40px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
+}
+#projects-title {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.22em;
+  text-transform: uppercase; color: rgba(255,255,255,0.45);
+}
+#projects-close {
+  font-size: 22px; color: rgba(224,48,48,0.6); cursor: pointer;
+  padding: 4px 8px; line-height: 1; transition: color 0.2s;
+}
+#projects-close:hover { color: #e03030; }
+#projects-filters {
+  padding: 12px 40px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.05); flex-shrink: 0;
+}
+#projects-list {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 28px 40px 48px;
+  display: flex; flex-direction: column; gap: 1px;
+  max-width: 780px; width: 100%; margin: 0 auto; box-sizing: border-box;
+}
+@media (max-width: 768px) {
+  #projects-head, #projects-filters { padding-left: 20px; padding-right: 20px; }
+  #projects-list { padding: 16px 20px 40px; }
+}
+/* Status badge */
+.proj-status {
+  font-family: var(--mono); font-size: 7px; letter-spacing: 0.1em;
+  text-transform: uppercase; border-radius: 2px; padding: 1px 6px;
+  border: 1px solid; display: inline-block;
+}
+.proj-status--active  { color: rgba(100,255,160,0.85); border-color: rgba(100,255,160,0.35); }
+.proj-status--wip     { color: rgba(255,200,80,0.85);  border-color: rgba(255,200,80,0.35); }
+.proj-status--archived{ color: rgba(255,255,255,0.28); border-color: rgba(255,255,255,0.12); }
 
 #articles-strip {
   overflow: visible;
@@ -1866,12 +1919,12 @@ body.strip-hovered .nav {
 #gallery-overlay.open { opacity: 1; pointer-events: all; }
 #gallery-head {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 32px; border-bottom: 1px solid rgba(184,240,210,0.08);
+  padding: 28px 40px 16px; border-bottom: 1px solid rgba(255,255,255,0.07);
   flex-shrink: 0;
 }
 #gallery-title {
-  font-family: var(--mono); font-size: 9px; letter-spacing: 0.22em;
-  text-transform: uppercase; color: rgba(184,240,210,0.35);
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.22em;
+  text-transform: uppercase; color: rgba(255,255,255,0.45);
 }
 #gallery-close {
   font-size: 20px; color: rgba(224,48,48,0.6); cursor: pointer;
@@ -2165,6 +2218,18 @@ body.strip-hovered .nav {
     <div id="reads-tag-row" class="viewall-filter-row"></div>
   </div>
   <div id="reads-list"></div>
+</div>
+
+<!-- ── PROJECTS OVERLAY ──────────────────────────────── -->
+<div id="projects-overlay">
+  <div id="projects-head">
+    <span id="projects-title">Projects</span>
+    <span id="projects-close">×</span>
+  </div>
+  <div id="projects-filters">
+    <div id="projects-tag-row" class="viewall-filter-row"></div>
+  </div>
+  <div id="projects-list"></div>
 </div>
 
 <!-- ── CONTACT OVERLAY ───────────────────────────────── -->
@@ -4208,6 +4273,159 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   });
 })();
 
+// ── PROJECTS OVERLAY ──────────────────────────────────
+(function () {
+  const overlay  = document.getElementById('projects-overlay');
+  const closeBtn = document.getElementById('projects-close');
+  const tagRow   = document.getElementById('projects-tag-row');
+  const list     = document.getElementById('projects-list');
+  if (!overlay) return;
+
+  let allProjects = [], activeTag = null, built = false;
+
+  function parseProjectsMd(text) {
+    return text.split(/\n---/)
+      .map(block => {
+        const obj = {};
+        block.split('\n').forEach(line => {
+          const m = line.match(/^(\w+)\s*:\s*(.+)/);
+          if (m) {
+            const k = m[1].trim(), v = m[2].trim();
+            obj[k] = k === 'tags' ? v.split(',').map(t => t.trim()).filter(Boolean) : v;
+          }
+        });
+        if (!obj.tags) obj.tags = [];
+        return obj;
+      })
+      .filter(p => p.title);
+  }
+
+  function buildFilters(projects) {
+    tagRow.innerHTML = '';
+    const tagSet = new Set();
+    projects.forEach(p => (p.tags || []).forEach(t => tagSet.add(t)));
+    if (!tagSet.size) return;
+    const lbl = document.createElement('span');
+    lbl.className = 'filter-label'; lbl.textContent = 'Tag';
+    tagRow.appendChild(lbl);
+    [...tagSet].sort().forEach(t => {
+      const pill = document.createElement('button');
+      pill.className = 'filter-pill'; pill.textContent = t;
+      pill.addEventListener('click', () => {
+        if (activeTag === t) { activeTag = null; pill.classList.remove('active'); }
+        else {
+          activeTag = t;
+          tagRow.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+        }
+        renderList();
+      });
+      tagRow.appendChild(pill);
+    });
+  }
+
+  function buildCards(filtered) {
+    list.innerHTML = '';
+    if (!filtered.length) {
+      const empty = document.createElement('div');
+      empty.className = 'reads-empty';
+      empty.textContent = 'No projects match this filter.';
+      list.appendChild(empty);
+      return;
+    }
+    filtered.forEach((p, i) => {
+      const card = document.createElement('div');
+      card.className = 'reads-card';
+
+      const tagHtml = (p.tags || []).map(t => `<span class="reads-card__tag">${t}</span>`).join('');
+      const statusClass = p.status ? `proj-status proj-status--${p.status}` : '';
+      const statusBadge = p.status ? `<span class="${statusClass}">${p.status}</span>` : '';
+      const dateDisplay = p.date ? (() => {
+        const d = new Date(p.date + 'T00:00:00');
+        return isNaN(d) ? p.date : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+      })() : '';
+      const thumbHtml = `<div class="reads-card__thumb-wrap">
+        ${p.thumb ? `<img class="reads-card__thumb" src="${p.thumb}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">` : ''}
+      </div>`;
+      const btnHtml = p.url ? `<a class="site-btn" href="${p.url}" target="_blank" rel="noopener noreferrer">
+        View Project <i class="fa-solid fa-arrow-up-right-from-square"></i>
+      </a>` : '';
+
+      card.innerHTML = `
+        ${thumbHtml}
+        <div class="reads-card__body">
+          <div class="reads-card__meta">
+            ${dateDisplay ? `<span class="reads-card__date">${dateDisplay}</span>` : ''}
+            ${statusBadge}
+          </div>
+          <div class="reads-card__title">${p.title}</div>
+          ${p.description ? `<div class="reads-card__desc">${p.description}</div>` : ''}
+          <div class="reads-card__footer">
+            ${tagHtml ? `<div class="reads-card__tags">${tagHtml}</div>` : '<div></div>'}
+            ${btnHtml}
+          </div>
+        </div>`;
+
+      if (p.url) {
+        card.addEventListener('click', e => {
+          if (!e.target.closest('.site-btn')) window.open(p.url, '_blank', 'noopener,noreferrer');
+        });
+      }
+      list.appendChild(card);
+      setTimeout(() => card.classList.add('card-visible'), i * 55);
+    });
+  }
+
+  function renderList() {
+    const filtered = allProjects.filter(p =>
+      !activeTag || (p.tags || []).includes(activeTag)
+    );
+    const existing = [...list.querySelectorAll('.card-visible')];
+    if (existing.length) {
+      existing.forEach((c, i) => setTimeout(() => c.classList.add('card-exit'), i * 20));
+      setTimeout(() => buildCards(filtered), existing.length * 20 + 220);
+    } else {
+      buildCards(filtered);
+    }
+  }
+
+  async function openProjects() {
+    if (!built) {
+      try {
+        const res = await fetch('content/projects.md');
+        if (res.ok) {
+          allProjects = parseProjectsMd(await res.text());
+          allProjects.sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
+      } catch(e) {}
+      buildFilters(allProjects);
+      built = true;
+    }
+    renderList();
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    window._modalOpen = true;
+  }
+
+  function closeProjects() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    window._modalOpen = false;
+    if (location.hash) history.replaceState(null, '', location.pathname);
+  }
+
+  closeBtn.addEventListener('click', closeProjects);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeProjects(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) closeProjects();
+  });
+
+  window._openProjects = function(skipHash) {
+    openProjects();
+    if (!skipHash) history.pushState({ panel: 'projects' }, '', '#projects');
+  };
+})();
+
 // ── READS OVERLAY ─────────────────────────────────────
 (function () {
   const overlay  = document.getElementById('reads-overlay');
@@ -4339,6 +4557,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
           </div>
         </div>`;
 
+      if (r.url) {
+        card.addEventListener('click', e => {
+          if (!e.target.closest('.site-btn')) window.open(r.url, '_blank', 'noopener,noreferrer');
+        });
+      }
       list.appendChild(card);
       setTimeout(() => card.classList.add('card-visible'), i * 55);
     });
