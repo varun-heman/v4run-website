@@ -1958,15 +1958,16 @@ const NAV_LABELS = {};  // key → display label
     // ── DRAG + AUTO-SCROLL CAROUSEL — DOM recycling, no offset jump ──────
     let carouselOffset = 0;
     let carouselVel    = 0;
-    const AUTO_SPEED   = 0.4;
+    const AUTO_SPEED   = 0.22;
     const CARD_GAP     = 14;
     let isDragging     = false;
+    let isHovered      = false;
     let dragStartX     = 0;
     let dragLastX      = 0;
     let dragLastT      = 0;
 
     function carouselTick() {
-      if (!isDragging) {
+      if (!isDragging && !isHovered) {
         carouselOffset -= AUTO_SPEED + carouselVel;
         carouselVel   *= 0.94;
       }
@@ -2005,6 +2006,8 @@ const NAV_LABELS = {};  // key → display label
       carouselVel = Math.max(-18, Math.min(18, carouselVel));
     });
     strip.addEventListener('pointercancel', () => { isDragging = false; carouselVel = 0; });
+    strip.addEventListener('mouseenter', () => { isHovered = true; });
+    strip.addEventListener('mouseleave', () => { isHovered = false; });
     strip.addEventListener('click', e => {
       if (Math.abs(e.clientX - dragStartX) > 5) e.preventDefault();
     });
