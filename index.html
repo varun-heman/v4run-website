@@ -1629,9 +1629,37 @@ body.strip-hovered .nav {
     padding: 10px 12px 20px; /* extra bottom for home indicator */
     background: linear-gradient(to top, rgba(8,8,8,0.92) 60%, transparent);
     backdrop-filter: none;
-    justify-content: center;
+    justify-content: flex-start; /* allow scroll; centering handled by JS when not overflowing */
   }
   .nav::-webkit-scrollbar { display: none; }
+
+  /* Scroll-hint fades — pseudo-elements on a wrapper */
+  #nav-scroll-wrap {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    z-index: 11; pointer-events: none;
+  }
+  #nav-scroll-wrap::before,
+  #nav-scroll-wrap::after {
+    content: '';
+    position: absolute; top: 0; bottom: 0; width: 40px;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 12;
+  }
+  #nav-scroll-wrap::before {
+    left: 0;
+    background: linear-gradient(to right, rgba(8,8,8,0.85), transparent);
+    opacity: 0;
+  }
+  #nav-scroll-wrap::after {
+    right: 0;
+    background: linear-gradient(to left, rgba(8,8,8,0.85), transparent);
+    opacity: 1;
+  }
+  #nav-scroll-wrap.scrolled-start::before { opacity: 0; }
+  #nav-scroll-wrap.scrolled-end::after    { opacity: 0; }
+  #nav-scroll-wrap.can-scroll-left::before  { opacity: 1; }
+  #nav-scroll-wrap.can-scroll-right::after  { opacity: 1; }
   .nav-item {
     padding: 6px 11px;
     flex-shrink: 0;
@@ -2301,7 +2329,9 @@ body.strip-hovered .nav {
 </div>
 
 <!-- ── NAV — built dynamically from content/nav.md ── -->
-<nav class="nav" id="nav"></nav>
+<div id="nav-scroll-wrap">
+  <nav class="nav" id="nav"></nav>
+</div>
 
 <!-- ── MODAL ──────────────────────────────────────── -->
 <div class="modal-scrim" id="modal-scrim"></div>
@@ -4038,6 +4068,22 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       if (window._openGallery) window._openGallery();
     });
     navEl.appendChild(picsNavItem);
+  }
+
+  // ── Mobile nav scroll-hint fades ─────────────────────────────────────
+  if (window.innerWidth <= 768) {
+    const wrap = document.getElementById('nav-scroll-wrap');
+    if (wrap && navEl) {
+      function updateFades() {
+        const overflows = navEl.scrollWidth > navEl.clientWidth;
+        wrap.classList.toggle('can-scroll-right', overflows && navEl.scrollLeft < navEl.scrollWidth - navEl.clientWidth - 2);
+        wrap.classList.toggle('can-scroll-left',  navEl.scrollLeft > 2);
+      }
+      navEl.addEventListener('scroll', updateFades, { passive: true });
+      window.addEventListener('resize', updateFades);
+      // Run after paint so scrollWidth is accurate
+      requestAnimationFrame(updateFades);
+    }
   }
 })();
 
