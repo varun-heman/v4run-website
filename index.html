@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css">
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1348,14 +1349,51 @@ body.strip-hovered .nav {
 }
 
 /* ── CONTACT TRIGGER ─────────────────────────────── */
-#contact-trigger {
-  font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em;
-  text-transform: uppercase; color: rgba(184,240,210,0.55);
-  background: none; border: none; cursor: pointer; padding: 0;
-  border-bottom: 1px solid rgba(184,240,210,0.18); padding-bottom: 1px;
-  transition: color 0.2s;
+/* ── SOCIAL DOCK ──────────────────────────────────── */
+.social-dock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
-#contact-trigger:hover { color: rgba(100,255,160,0.9); }
+.social-icon {
+  position: relative;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(184,240,210,0.45);
+  background: none; border: none; cursor: pointer;
+  font-size: 13px; line-height: 1;
+  text-decoration: none;
+  transition: color 0.15s, opacity 0.2s ease, transform 0.2s cubic-bezier(0.16,1,0.3,1);
+  flex-shrink: 0;
+}
+.social-icon:hover { color: rgba(100,255,160,0.9); }
+/* Non-email icons hidden until dock is hovered */
+.social-icon:not(.social-icon--email) {
+  opacity: 0;
+  transform: translateX(-6px);
+  pointer-events: none;
+}
+.social-dock:hover .social-icon:not(.social-icon--email) {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+/* Handle tooltip — styled like article tags */
+.social-handle {
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%; transform: translateX(-50%);
+  font-family: var(--mono); font-size: 7px; letter-spacing: 0.08em;
+  color: rgba(232,232,226,0.45);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 2px 7px;
+  white-space: nowrap;
+  background: rgba(8,8,8,0.85);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.15s;
+}
+.social-icon:hover .social-handle { opacity: 1; }
 
 /* ── CONTACT MODAL ───────────────────────────────── */
 #contact-overlay {
@@ -1699,7 +1737,13 @@ body.strip-hovered .nav {
 </div>
 
 <div class="corner corner-bl">
-  <button id="contact-trigger">Contact Me</button>
+  <div class="social-dock" id="social-dock">
+    <button class="social-icon social-icon--email" id="contact-trigger" aria-label="Contact Me">
+      <i class="fa-solid fa-envelope"></i>
+      <span class="social-handle">email</span>
+    </button>
+    <!-- additional social icons injected by JS -->
+  </div>
 </div>
 
 <div class="corner corner-br">
@@ -3693,6 +3737,78 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   });
 
   window._openGallery = openGallery;
+})();
+
+// ── SOCIAL DOCK ───────────────────────────────────────
+(async function () {
+  const dock = document.getElementById('social-dock');
+  if (!dock) return;
+
+  // Platform detection from URL
+  const PLATFORMS = [
+    { match: ['instagram.com'],           icon: 'fa-brands fa-instagram',   label: 'Instagram' },
+    { match: ['twitter.com', 'x.com'],    icon: 'fa-brands fa-x-twitter',   label: 'X' },
+    { match: ['linkedin.com'],            icon: 'fa-brands fa-linkedin-in',  label: 'LinkedIn' },
+    { match: ['github.com'],              icon: 'fa-brands fa-github',       label: 'GitHub' },
+    { match: ['youtube.com', 'youtu.be'], icon: 'fa-brands fa-youtube',      label: 'YouTube' },
+    { match: ['threads.net'],             icon: 'fa-brands fa-threads',      label: 'Threads' },
+    { match: ['bsky.app', 'bluesky'],     icon: 'fa-brands fa-bluesky',      label: 'Bluesky' },
+    { match: ['medium.com'],              icon: 'fa-brands fa-medium',       label: 'Medium' },
+    { match: ['substack.com'],            icon: 'fa-solid fa-newspaper',     label: 'Substack' },
+    { match: ['facebook.com', 'fb.com'],  icon: 'fa-brands fa-facebook',     label: 'Facebook' },
+    { match: ['mastodon'],                icon: 'fa-brands fa-mastodon',     label: 'Mastodon' },
+    { match: ['reddit.com'],              icon: 'fa-brands fa-reddit',       label: 'Reddit' },
+    { match: ['tiktok.com'],              icon: 'fa-brands fa-tiktok',       label: 'TikTok' },
+    { match: ['twitch.tv'],               icon: 'fa-brands fa-twitch',       label: 'Twitch' },
+    { match: ['discord.com', 'discord.gg'], icon: 'fa-brands fa-discord',   label: 'Discord' },
+    { match: ['telegram.org', 't.me'],    icon: 'fa-brands fa-telegram',     label: 'Telegram' },
+    { match: ['pinterest.com'],           icon: 'fa-brands fa-pinterest',    label: 'Pinterest' },
+  ];
+
+  function detectPlatform(url) {
+    const u = url.toLowerCase();
+    for (const p of PLATFORMS) {
+      if (p.match.some(m => u.includes(m))) return p;
+    }
+    return { icon: 'fa-solid fa-link', label: 'Link' };
+  }
+
+  function extractHandle(url, fallback) {
+    try {
+      const pathname = new URL(url).pathname.replace(/^\/+|\/+$/g, '');
+      const parts = pathname.split('/').filter(Boolean);
+      const last = parts[parts.length - 1];
+      return last ? '@' + last : fallback;
+    } catch(e) { return fallback; }
+  }
+
+  // Fetch and parse social.md
+  let links = [];
+  try {
+    const res = await fetch('content/social.md');
+    if (res.ok) {
+      const text = await res.text();
+      links = text.split('\n')
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith('#') && l.startsWith('http'));
+    }
+  } catch(e) {}
+
+  // Inject icons (after the email icon)
+  links.forEach((url, i) => {
+    const platform = detectPlatform(url);
+    const handle   = extractHandle(url, platform.label);
+
+    const a = document.createElement('a');
+    a.className = 'social-icon';
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.setAttribute('aria-label', platform.label);
+    a.style.transitionDelay = `${i * 30}ms`;
+    a.innerHTML = `<i class="${platform.icon}"></i><span class="social-handle">${handle}</span>`;
+    dock.appendChild(a);
+  });
 })();
 </script>
 </body>
