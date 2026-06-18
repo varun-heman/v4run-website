@@ -2778,7 +2778,14 @@ const NAV_LABELS = {};  // key → display label
       if (_hoveredCard) { _hoveredCard.classList.remove('is-hovered'); _hoveredCard = null; }
       _candidateCard = null;
       track.classList.remove('has-hover');
+      isHovered = false;
+      document.body.classList.remove('strip-hovered');
+      if (window._setQuotesPaused) window._setQuotesPaused(false);
     }
+
+    // Scroll moves the page under a stationary cursor — mouseleave never fires.
+    // Clear everything on any scroll so hover can't get orphaned.
+    window.addEventListener('scroll', clearHover, { passive: true });
 
     strip.addEventListener('pointermove', e => {
       if (isDragging) return;
