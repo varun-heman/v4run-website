@@ -1647,23 +1647,23 @@ body.strip-hovered .nav {
   #nav-scroll-wrap::before,
   #nav-scroll-wrap::after {
     content: '';
-    position: absolute; top: 0; bottom: 0; width: 44px;
+    position: absolute; top: 0; bottom: 0; width: 48px;
     pointer-events: none;
     transition: opacity 0.3s ease;
-    z-index: 1;
+    z-index: 2;
   }
   #nav-scroll-wrap::before {
     left: 0;
-    background: linear-gradient(to right, rgba(8,8,8,0.9), transparent);
-    opacity: 0;
+    background: linear-gradient(to right, rgba(8,8,8,0.92), transparent);
+    opacity: 0; /* appears once user scrolls right */
   }
   #nav-scroll-wrap::after {
     right: 0;
-    background: linear-gradient(to left, rgba(8,8,8,0.9), transparent);
-    opacity: 0;
+    background: linear-gradient(to left, rgba(8,8,8,0.92), transparent);
+    opacity: 1; /* always on — fades out only when fully scrolled to end */
   }
-  #nav-scroll-wrap.can-scroll-left::before  { opacity: 1; }
-  #nav-scroll-wrap.can-scroll-right::after  { opacity: 1; }
+  #nav-scroll-wrap.can-scroll-left::before { opacity: 1; }
+  #nav-scroll-wrap.at-scroll-end::after    { opacity: 0; }
   .nav-item {
     padding: 6px 11px;
     flex-shrink: 0;
@@ -4079,14 +4079,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     const wrap = document.getElementById('nav-scroll-wrap');
     if (wrap && navEl) {
       function updateFades() {
-        const overflows = navEl.scrollWidth > navEl.clientWidth;
-        wrap.classList.toggle('can-scroll-right', overflows && navEl.scrollLeft < navEl.scrollWidth - navEl.clientWidth - 2);
-        wrap.classList.toggle('can-scroll-left',  navEl.scrollLeft > 2);
+        wrap.classList.toggle('can-scroll-left', navEl.scrollLeft > 2);
+        wrap.classList.toggle('at-scroll-end',   navEl.scrollLeft >= navEl.scrollWidth - navEl.clientWidth - 2);
       }
       navEl.addEventListener('scroll', updateFades, { passive: true });
       window.addEventListener('resize', updateFades);
-      // Run after paint so scrollWidth is accurate
-      requestAnimationFrame(updateFades);
+      // Delay to ensure layout is fully calculated after all nav items are appended
+      setTimeout(updateFades, 100);
     }
   }
 })();
