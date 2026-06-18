@@ -29,6 +29,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css">
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -628,24 +629,9 @@ body.ui-ready #writings-section.ready {
 .modal-box::-webkit-scrollbar { width: 3px; }
 .modal-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
 
-#modal-pdf-wrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  padding: 0 28px 28px;
-}
-#modal-pdf-wrap iframe {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  min-height: 60vh;
-  border: none;
-  background: #111;
-}
 /* PDF expanded modal */
 .modal-overlay.pdf-mode .modal-box {
-  width: min(1100px, 95vw);
+  width: min(860px, 95vw);
   max-height: 92vh;
   display: flex;
   flex-direction: column;
@@ -654,6 +640,64 @@ body.ui-ready #writings-section.ready {
 }
 .modal-overlay.pdf-mode .modal-head {
   flex-shrink: 0;
+}
+#modal-pdf-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+#pdf-canvas-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #0e0e0e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
+}
+#pdf-canvas-scroll canvas {
+  max-width: 100%;
+  display: block;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+}
+#pdf-controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 10px 0 14px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+#pdf-controls button {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(232,232,226,0.55);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+#pdf-controls button:hover:not(:disabled) {
+  color: rgba(232,232,226,0.95);
+  border-color: rgba(255,255,255,0.3);
+}
+#pdf-controls button:disabled { opacity: 0.25; cursor: default; }
+#pdf-page-info {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: rgba(232,232,226,0.35);
+  min-width: 80px;
+  text-align: center;
 }
 #pdf-fullscreen-btn {
   background: none;
@@ -2430,6 +2474,7 @@ body.strip-hovered .nav {
   <div class="modal-box">
     <div class="modal-head">
       <span class="modal-section" id="modal-section">—</span>
+      <button id="pdf-fullscreen-btn" style="display:none">⛶ Fullscreen</button>
       <div class="modal-x" id="modal-close">×</div>
     </div>
     <div class="modal-body" id="modal-body"></div>
@@ -4014,14 +4059,18 @@ function closeModal() {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   if (window._setModalOpen) window._setModalOpen(false);
   if (location.hash) history.replaceState(null, '', location.pathname);
-  // Clear any PDF iframe and fullscreen button
+  // Clear PDF viewer
   overlay.classList.remove('pdf-mode');
   const pdfWrap = document.getElementById('modal-pdf-wrap');
   if (pdfWrap) pdfWrap.remove();
   const fsBtn = document.getElementById('pdf-fullscreen-btn');
   if (fsBtn) fsBtn.style.display = 'none';
+  _pdfDoc = null; _pdfPage = 1; _pdfTotal = 0;
   modalBody.style.display = '';
 }
+
+// ── PDF.js viewer ────────────────────────────────────
+let _pdfDoc = null, _pdfPage = 1, _pdfTotal = 0;
 
 function openPdfInModal(url, title) {
   if (window._hideSphereLabel) window._hideSphereLabel();
@@ -4034,34 +4083,84 @@ function openPdfInModal(url, title) {
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   if (window._setModalOpen) window._setModalOpen(true);
 
-  // Hide text body, inject iframe + fullscreen button
   modalBody.style.display = 'none';
+
+  // Build PDF wrap if needed
   let pdfWrap = document.getElementById('modal-pdf-wrap');
   if (!pdfWrap) {
     pdfWrap = document.createElement('div');
     pdfWrap.id = 'modal-pdf-wrap';
+    pdfWrap.innerHTML = `
+      <div id="pdf-canvas-scroll"></div>
+      <div id="pdf-controls">
+        <button id="pdf-prev">← Prev</button>
+        <span id="pdf-page-info">— / —</span>
+        <button id="pdf-next">Next →</button>
+      </div>`;
     modalBody.parentNode.insertBefore(pdfWrap, modalBody.nextSibling);
-  }
-  const iframe = document.createElement('iframe');
-  iframe.src = url;
-  iframe.title = title || 'PDF';
-  pdfWrap.innerHTML = '';
-  pdfWrap.appendChild(iframe);
 
-  // Inject fullscreen button into modal head
-  let fsBtn = document.getElementById('pdf-fullscreen-btn');
-  if (!fsBtn) {
-    fsBtn = document.createElement('button');
-    fsBtn.id = 'pdf-fullscreen-btn';
-    const modalHead = overlay.querySelector('.modal-head');
-    if (modalHead) modalHead.appendChild(fsBtn);
+    document.getElementById('pdf-prev').addEventListener('click', () => _pdfGo(-1));
+    document.getElementById('pdf-next').addEventListener('click', () => _pdfGo(1));
   }
-  fsBtn.textContent = '⛶ Fullscreen';
-  fsBtn.style.display = '';
-  fsBtn.onclick = () => {
-    if (iframe.requestFullscreen) iframe.requestFullscreen();
-    else if (iframe.webkitRequestFullscreen) iframe.webkitRequestFullscreen();
-  };
+
+  const scroll = document.getElementById('pdf-canvas-scroll');
+  scroll.innerHTML = '<p style="font-family:var(--mono);font-size:11px;opacity:0.3;padding:40px;text-align:center;">Loading…</p>';
+  _pdfPage = 1; _pdfDoc = null; _pdfTotal = 0;
+  document.getElementById('pdf-page-info').textContent = '— / —';
+  document.getElementById('pdf-prev').disabled = true;
+  document.getElementById('pdf-next').disabled = true;
+
+  // Show fullscreen button
+  const fsBtn = document.getElementById('pdf-fullscreen-btn');
+  if (fsBtn) {
+    fsBtn.style.display = '';
+    fsBtn.onclick = () => {
+      const el = document.getElementById('modal-pdf-wrap');
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    };
+  }
+
+  // Load with PDF.js
+  if (typeof pdfjsLib === 'undefined') { scroll.innerHTML = '<p style="font-family:var(--mono);font-size:11px;opacity:0.4;padding:40px;text-align:center;">PDF.js not loaded.</p>'; return; }
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  pdfjsLib.getDocument(url).promise.then(doc => {
+    _pdfDoc = doc;
+    _pdfTotal = doc.numPages;
+    _pdfRenderPage(_pdfPage);
+  }).catch(() => {
+    scroll.innerHTML = '<p style="font-family:var(--mono);font-size:11px;opacity:0.4;padding:40px;text-align:center;">Could not load PDF.</p>';
+  });
+}
+
+function _pdfGo(dir) {
+  const next = _pdfPage + dir;
+  if (next < 1 || next > _pdfTotal) return;
+  _pdfPage = next;
+  _pdfRenderPage(_pdfPage);
+}
+
+function _pdfRenderPage(num) {
+  if (!_pdfDoc) return;
+  const scroll = document.getElementById('pdf-canvas-scroll');
+  const info   = document.getElementById('pdf-page-info');
+  const prev   = document.getElementById('pdf-prev');
+  const next   = document.getElementById('pdf-next');
+  info.textContent = `${num} / ${_pdfTotal}`;
+  prev.disabled = num <= 1;
+  next.disabled = num >= _pdfTotal;
+  scroll.innerHTML = '';
+  _pdfDoc.getPage(num).then(page => {
+    const vp = page.getViewport({ scale: 1 });
+    const maxW = (document.getElementById('modal-pdf-wrap').clientWidth || 760) - 32;
+    const scale = Math.min(2, maxW / vp.width);
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width  = viewport.width;
+    canvas.height = viewport.height;
+    scroll.appendChild(canvas);
+    page.render({ canvasContext: canvas.getContext('2d'), viewport });
+  });
 }
 
 closeBtn.addEventListener('click', closeModal);
