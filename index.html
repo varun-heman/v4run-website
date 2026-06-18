@@ -700,16 +700,213 @@ body.ui-ready #writings-section.ready {
   opacity: 1;
   pointer-events: auto;
 }
+#writings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  margin-bottom: 8px;
+}
 #writings-label {
   font-family: var(--mono);
   font-size: 9px;
   letter-spacing: 0.20em;
   text-transform: uppercase;
   color: rgba(184, 240, 210, 0.30);
-  text-align: left;
-  padding-left: 32px;
-  margin-bottom: 8px;
   user-select: none;
+}
+#viewall-btn {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(184, 240, 210, 0.40);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+#viewall-btn:hover { color: rgba(184, 240, 210, 0.85); }
+
+/* ── VIEW ALL OVERLAY ──────────────────────────────── */
+#viewall-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  background: rgba(4,4,4,0.96);
+  backdrop-filter: blur(16px) saturate(110%);
+  -webkit-backdrop-filter: blur(16px) saturate(110%);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+#viewall-overlay.open { opacity: 1; pointer-events: auto; }
+#viewall-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 40px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+#viewall-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+}
+#viewall-close {
+  font-size: 22px;
+  color: rgba(255,255,255,0.3);
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+#viewall-close:hover { color: rgba(255,255,255,0.7); }
+#viewall-filters {
+  padding: 16px 40px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.viewall-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.filter-pill {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  color: rgba(255,255,255,0.35);
+  cursor: pointer;
+  background: none;
+  transition: border-color 0.18s, color 0.18s, background 0.18s;
+  user-select: none;
+}
+.filter-pill:hover {
+  border-color: rgba(184,240,210,0.35);
+  color: rgba(184,240,210,0.7);
+}
+.filter-pill.active {
+  border-color: rgba(100,255,160,0.55);
+  color: rgb(100,255,160);
+  background: rgba(100,255,160,0.08);
+}
+.filter-label {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.2);
+  margin-right: 4px;
+}
+#viewall-grid {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px 40px 40px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  align-content: start;
+}
+.viewall-card {
+  display: flex;
+  flex-direction: column;
+  background: rgba(8,8,8,0.7);
+  border: 1px solid rgba(184,240,210,0.07);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, background 0.2s;
+  cursor: pointer;
+}
+.viewall-card:hover {
+  border-color: rgba(184,240,210,0.22);
+  background: rgba(12,22,14,0.8);
+}
+.viewall-card.is-new {
+  border-color: rgba(100,255,160,0.2);
+  background: rgba(6,18,10,0.7);
+}
+.viewall-card__thumb {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+  background: rgba(20,30,22,0.8);
+  filter: brightness(0.9);
+}
+.viewall-card__body { padding: 14px 16px 16px; }
+.viewall-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.viewall-card__source {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(184,240,210,0.45);
+}
+.viewall-card__date {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: rgba(255,255,255,0.22);
+}
+.viewall-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.viewall-card__tag {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: rgba(255,255,255,0.3);
+}
+.viewall-card__title {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(232,232,226,0.85);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+.viewall-card__desc {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 300;
+  color: rgba(232,232,226,0.38);
+  line-height: 1.6;
+}
+.viewall-empty {
+  grid-column: 1/-1;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: rgba(255,255,255,0.2);
+  padding: 60px 0;
+  letter-spacing: 0.1em;
 }
 #articles-strip {
   overflow: visible;
@@ -762,11 +959,18 @@ body.ui-ready #writings-section.ready {
 .article-card:hover .article-card__title {
   color: rgba(232, 232, 226, 0.97);
 }
+/* Dim all other cards when one is hovered */
+.articles-track:hover .article-card:not(:hover) {
+  opacity: 0.35;
+  filter: grayscale(80%);
+  transition: opacity 0.3s ease, filter 0.3s ease, transform 0.35s cubic-bezier(0.4,0,0.2,1), border-color 0.35s cubic-bezier(0.4,0,0.2,1), background 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s cubic-bezier(0.4,0,0.2,1);
+}
 .article-card__thumb {
   width: 100%;
   height: 0;
   object-fit: cover;
   display: block;
+  background: rgba(20,30,22,0.8);
   filter: grayscale(0%) brightness(0.95);
   pointer-events: none;
   transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1096,8 +1300,24 @@ body.ui-ready #writings-section.ready {
 <div class="sphere-label" id="sphere-label"></div>
 <div class="esc-hint" id="esc-hint"></div>
 <div id="writings-section">
-  <div id="writings-label">Writings</div>
+  <div id="writings-header">
+    <div id="writings-label">Writings</div>
+    <button id="viewall-btn">View All →</button>
+  </div>
   <div id="articles-strip"></div>
+</div>
+
+<!-- ── VIEW ALL OVERLAY ──────────────────────────────────── -->
+<div id="viewall-overlay">
+  <div id="viewall-head">
+    <span id="viewall-title">All Writings</span>
+    <span id="viewall-close">×</span>
+  </div>
+  <div id="viewall-filters">
+    <div id="viewall-year-row" class="viewall-filter-row"></div>
+    <div id="viewall-tag-row" class="viewall-filter-row"></div>
+  </div>
+  <div id="viewall-grid"></div>
 </div>
 
 <!-- ════════════════════════════════════════════════════
@@ -1901,17 +2121,22 @@ const NAV_LABELS = {};  // key → display label
   // ── ARTICLES — fetched from content/articles.md ─────────────────────────
   (async function initCarousel() {
     function parseArticlesMd(text) {
-      // Split on --- separators, parse key: value pairs from each block
       return text.split(/\n---/)
         .map(block => {
           const obj = {};
           block.split('\n').forEach(line => {
             const m = line.match(/^(\w+)\s*:\s*(.+)/);
-            if (m) obj[m[1].trim()] = m[2].trim();
+            if (m) {
+              const key = m[1].trim(), val = m[2].trim();
+              obj[key] = key === 'tags'
+                ? val.split(',').map(t => t.trim()).filter(Boolean)
+                : val;
+            }
           });
+          if (!obj.tags) obj.tags = [];
           return obj;
         })
-        .filter(a => a.title && a.url); // must have at least title + url
+        .filter(a => a.title && a.url);
     }
     window._parseArticlesMd = parseArticlesMd; // expose for mobile overlay
 
@@ -1951,7 +2176,7 @@ const NAV_LABELS = {};  // key → display label
       card.href = a.url || '#';
       if (a.url && a.url !== '#') card.target = '_blank';
       card.innerHTML = `
-        <img class="article-card__thumb" src="${a.thumb || 'images/thumbs/placeholder.jpg'}" alt="" onerror="this.style.display='none'">
+        <img class="article-card__thumb" src="${a.thumb || 'images/thumbs/placeholder.jpg'}" alt="" onerror="this.style.opacity='0'">
         <div class="article-card__body">
           <div class="article-card__meta">
             <span class="article-card__source">${a.source || ''}</span>
@@ -2174,7 +2399,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
         card.href = a.url || '#';
         if (a.url && a.url !== '#') card.target = '_blank';
         card.rel = 'noopener noreferrer';
-        const thumbHtml = `<img class="articles-overlay-card__thumb" src="${a.thumb || 'images/thumbs/placeholder.jpg'}" alt="" onerror="this.style.display='none'">`;
+        const thumbHtml = `<img class="articles-overlay-card__thumb" src="${a.thumb || 'images/thumbs/placeholder.jpg'}" alt="" onerror="this.style.opacity='0'">`;
         card.innerHTML = `${thumbHtml}
           <div class="articles-overlay-card__body">
             <div class="articles-overlay-card__meta">
@@ -2212,6 +2437,193 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     articlesNavItem.addEventListener('click', openArticlesOverlay);
     navEl.appendChild(articlesNavItem);
   }
+})();
+
+// ── VIEW ALL OVERLAY ──────────────────────────────────
+(function () {
+  const overlay   = document.getElementById('viewall-overlay');
+  const closeBtn  = document.getElementById('viewall-close');
+  const openBtn   = document.getElementById('viewall-btn');
+  const yearRow   = document.getElementById('viewall-year-row');
+  const tagRow    = document.getElementById('viewall-tag-row');
+  const grid      = document.getElementById('viewall-grid');
+
+  if (!overlay || !openBtn) return;
+
+  let allArticles = [];
+  let activeYear  = null;
+  let activeMonth = null;
+  let activeTag   = null;
+  let built       = false;
+
+  // ── Build pills from article data ──────────────────
+  function buildFilters(articles) {
+    yearRow.innerHTML = '';
+    tagRow.innerHTML  = '';
+
+    // Year/month pills: collect distinct "MMM YYYY" dates and years
+    const yearSet  = new Set();
+    const monthSet = new Set(); // "Jun 2025" etc
+    articles.forEach(a => {
+      if (!a.date) return;
+      // try to parse "Mon YYYY" format
+      const d = new Date(a.date);
+      if (!isNaN(d)) {
+        const y = d.getFullYear().toString();
+        const m = d.toLocaleString('en', { month: 'short' }) + ' ' + y;
+        yearSet.add(y);
+        monthSet.add(m);
+      }
+    });
+
+    // Year label
+    if (yearSet.size) {
+      const lbl = document.createElement('span');
+      lbl.className = 'filter-label';
+      lbl.textContent = 'Year';
+      yearRow.appendChild(lbl);
+    }
+
+    [...yearSet].sort((a,b) => b - a).forEach(y => {
+      const pill = document.createElement('button');
+      pill.className = 'filter-pill';
+      pill.textContent = y;
+      pill.dataset.year = y;
+      pill.addEventListener('click', () => {
+        if (activeYear === y) {
+          activeYear = null;
+          pill.classList.remove('active');
+        } else {
+          activeYear = y;
+          yearRow.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+        }
+        renderGrid();
+      });
+      yearRow.appendChild(pill);
+    });
+
+    // Tag pills
+    const tagSet = new Set();
+    articles.forEach(a => (a.tags || []).forEach(t => tagSet.add(t)));
+
+    if (tagSet.size) {
+      const lbl = document.createElement('span');
+      lbl.className = 'filter-label';
+      lbl.textContent = 'Tag';
+      tagRow.appendChild(lbl);
+
+      [...tagSet].sort().forEach(t => {
+        const pill = document.createElement('button');
+        pill.className = 'filter-pill';
+        pill.textContent = t;
+        pill.dataset.tag = t;
+        pill.addEventListener('click', () => {
+          if (activeTag === t) {
+            activeTag = null;
+            pill.classList.remove('active');
+          } else {
+            activeTag = t;
+            tagRow.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+          }
+          renderGrid();
+        });
+        tagRow.appendChild(pill);
+      });
+    }
+  }
+
+  // ── Render filtered grid ───────────────────────────
+  function renderGrid() {
+    grid.innerHTML = '';
+    const filtered = allArticles.filter(a => {
+      if (activeYear) {
+        const d = new Date(a.date);
+        if (isNaN(d) || d.getFullYear().toString() !== activeYear) return false;
+      }
+      if (activeTag && !(a.tags || []).includes(activeTag)) return false;
+      return true;
+    });
+
+    if (!filtered.length) {
+      const empty = document.createElement('div');
+      empty.className = 'viewall-empty';
+      empty.textContent = 'No articles match this filter.';
+      grid.appendChild(empty);
+      return;
+    }
+
+    filtered.forEach(a => {
+      const card = document.createElement('a');
+      card.className = 'viewall-card' + (a._isNew ? ' is-new' : '');
+      card.href = a.url || '#';
+      if (a.url && a.url !== '#') card.target = '_blank';
+      card.rel = 'noopener noreferrer';
+
+      const thumbSrc = a.thumb || 'images/thumbs/placeholder.jpg';
+      const tagHtml = (a.tags || []).map(t =>
+        `<span class="viewall-card__tag">${t}</span>`
+      ).join('');
+      const newBadge = a._isNew ? '<span class="article-card__new">NEW</span>' : '';
+
+      card.innerHTML = `
+        <img class="viewall-card__thumb" src="${thumbSrc}" alt="" onerror="this.style.opacity='0'">
+        <div class="viewall-card__body">
+          <div class="viewall-card__meta">
+            <span class="viewall-card__source">${a.source || ''}</span>
+            <span class="viewall-card__date">${a.date || ''}</span>
+            ${newBadge}
+          </div>
+          ${tagHtml ? `<div class="viewall-card__tags">${tagHtml}</div>` : ''}
+          <div class="viewall-card__title">${a.title}</div>
+          <div class="viewall-card__desc">${a.desc || ''}</div>
+        </div>`;
+      grid.appendChild(card);
+    });
+  }
+
+  // ── Open/close ─────────────────────────────────────
+  async function openOverlay() {
+    // Build once
+    if (!built) {
+      allArticles = window._articles || [];
+      if (!allArticles.length) {
+        // Fallback: fetch ourselves
+        try {
+          const res = await fetch('content/articles.md');
+          if (res.ok) {
+            const parse = window._parseArticlesMd || (() => []);
+            allArticles = parse(await res.text());
+            const NOW = Date.now(), SIXTY = 60*24*60*60*1000;
+            allArticles.forEach(a => {
+              a._isNew = (NOW - new Date(a.date).getTime()) < SIXTY;
+            });
+            allArticles.sort((a,b) => new Date(b.date) - new Date(a.date));
+          }
+        } catch(e) {}
+      }
+      buildFilters(allArticles);
+      renderGrid();
+      built = true;
+    }
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeOverlay() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  openBtn.addEventListener('click', openOverlay);
+  closeBtn.addEventListener('click', closeOverlay);
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) closeOverlay();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) closeOverlay();
+  });
 })();
 
 // ── STATIC NOISE OVERLAY ──────────────────────────────
