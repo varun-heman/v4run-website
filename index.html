@@ -1073,7 +1073,7 @@ body.ui-ready #writings-section.ready {
 <!-- ── MOBILE ARTICLES OVERLAY (hidden on desktop) ── -->
 <div id="articles-overlay">
   <div id="articles-overlay-head">
-    <span id="articles-overlay-title">My Writings</span>
+    <span id="articles-overlay-title">Writings</span>
     <span id="articles-overlay-close">×</span>
   </div>
   <div id="articles-overlay-scroll"></div>
@@ -1082,7 +1082,7 @@ body.ui-ready #writings-section.ready {
 <div class="sphere-label" id="sphere-label"></div>
 <div class="esc-hint" id="esc-hint"></div>
 <div id="writings-section">
-  <div id="writings-label">My Writings</div>
+  <div id="writings-label">Writings</div>
   <div id="articles-strip"></div>
 </div>
 
@@ -2196,7 +2196,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     // Articles nav item — appended last, mobile only
     const articlesNavItem = document.createElement('div');
     articlesNavItem.className = 'nav-item';
-    articlesNavItem.innerHTML = `<span class="nav-link">Articles</span>`;
+    articlesNavItem.innerHTML = `<span class="nav-link">Writings</span>`;
     articlesNavItem.addEventListener('click', openArticlesOverlay);
     navEl.appendChild(articlesNavItem);
   }
