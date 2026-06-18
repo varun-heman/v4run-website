@@ -1932,6 +1932,41 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   // Stamp corner links for glitch hover
   document.querySelectorAll('.corner a').forEach(a => a.dataset.text = a.textContent);
 })();
+
+// ── STATIC NOISE OVERLAY ──────────────────────────────
+(function () {
+  const canvas = document.createElement('canvas');
+  const SIZE   = 180; // small canvas, scaled up = coarse film-grain look
+  canvas.width  = SIZE;
+  canvas.height = SIZE;
+  Object.assign(canvas.style, {
+    position:      'fixed',
+    inset:         '0',
+    width:         '100%',
+    height:        '100%',
+    zIndex:        '3',
+    pointerEvents: 'none',
+    opacity:       '0.032',
+  });
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  function drawNoise() {
+    const img  = ctx.createImageData(SIZE, SIZE);
+    const data = img.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const v     = (Math.random() * 255) | 0;
+      data[i]     = v;
+      data[i + 1] = v;
+      data[i + 2] = v;
+      data[i + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  drawNoise();
+  setInterval(drawNoise, 85); // update ~12fps — flickery but not distracting
+})();
 </script>
 </body>
 </html>
