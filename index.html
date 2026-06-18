@@ -511,6 +511,10 @@ body.ui-ready #writings-section.ready {
   0%   { border-color: rgba(100, 255, 160, 0.55); box-shadow: 0 0 24px rgba(100,255,160,0.12), inset 0 0 12px rgba(100,255,160,0.04); }
   100% { border-color: rgba(255, 255, 255, 0.07); box-shadow: none; }
 }
+@keyframes card-border-flash {
+  0%   { border-color: rgba(100, 255, 160, 0.5); box-shadow: 0 0 16px rgba(100,255,160,0.10), inset 0 0 8px rgba(100,255,160,0.03); }
+  100% { border-color: rgba(184, 240, 210, 0.07); box-shadow: none; }
+}
 
 .modal-box {
   position: relative;
@@ -850,6 +854,7 @@ body.ui-ready #writings-section.ready {
   clip-path: inset(0 0 0% 0);
   transition: border-color 0.2s, background 0.2s,
               clip-path 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: card-border-flash 0.85s ease-out 0.3s both;
 }
 .viewall-card.card-exit {
   clip-path: inset(100% 0 0% 0);
@@ -863,8 +868,10 @@ body.ui-ready #writings-section.ready {
   background: rgba(12,22,14,0.8);
 }
 .viewall-card.is-new {
-  border-color: rgba(100,255,160,0.2);
   background: rgba(6,18,10,0.7);
+}
+.viewall-card.is-new.card-visible {
+  animation: card-border-flash 1.1s ease-out 0.3s both;
 }
 .viewall-card__thumb {
   width: 100%;
