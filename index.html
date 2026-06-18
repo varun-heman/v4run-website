@@ -964,8 +964,10 @@ body.ui-ready #writings-section.ready {
   }
 }
 
-/* Mobile articles overlay — hidden on desktop */
-#articles-overlay { display: none; }
+/* Mobile articles overlay — desktop only hides it */
+@media (min-width: 769px) {
+  #articles-overlay { display: none; }
+}
 
 /* Very small phones */
 @media (max-width: 380px) {
