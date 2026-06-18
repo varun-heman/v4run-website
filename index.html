@@ -1614,11 +1614,16 @@ body.strip-hovered .nav {
   .corner-bio { display: none; }
 
   /* ── Nav — horizontal strip at bottom ───────── */
+  /* Wrapper is the fixed element; nav sits inside it */
+  #nav-scroll-wrap {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    z-index: 11;
+    pointer-events: auto;
+    background: linear-gradient(to top, rgba(8,8,8,0.95) 55%, transparent);
+  }
   .nav {
-    left: 0;
-    right: 0;
-    top: auto;
-    bottom: 0;
+    position: relative; /* no longer fixed — wrapper handles positioning */
+    left: auto; right: auto; top: auto; bottom: auto;
     transform: none;
     flex-direction: row;
     gap: 0;
@@ -1626,38 +1631,37 @@ body.strip-hovered .nav {
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    padding: 10px 12px 20px; /* extra bottom for home indicator */
-    background: linear-gradient(to top, rgba(8,8,8,0.92) 60%, transparent);
+    padding: 10px 12px 20px;
+    background: none; /* background now on wrapper */
     backdrop-filter: none;
-    justify-content: flex-start; /* allow scroll; centering handled by JS when not overflowing */
+    justify-content: flex-start;
+    opacity: 1; /* always visible — wrapper inherits ui-ready fade */
+    pointer-events: auto;
   }
   .nav::-webkit-scrollbar { display: none; }
+  body.ui-ready #nav-scroll-wrap { opacity: 1; }
+  #nav-scroll-wrap { opacity: 0; transition: opacity 1.6s ease; }
+  body.ui-ready #nav-scroll-wrap .nav { pointer-events: auto; }
 
-  /* Scroll-hint fades — pseudo-elements on a wrapper */
-  #nav-scroll-wrap {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    z-index: 11; pointer-events: none;
-  }
+  /* Scroll-hint fades on wrapper edges */
   #nav-scroll-wrap::before,
   #nav-scroll-wrap::after {
     content: '';
-    position: absolute; top: 0; bottom: 0; width: 40px;
+    position: absolute; top: 0; bottom: 0; width: 44px;
     pointer-events: none;
     transition: opacity 0.3s ease;
-    z-index: 12;
+    z-index: 1;
   }
   #nav-scroll-wrap::before {
     left: 0;
-    background: linear-gradient(to right, rgba(8,8,8,0.85), transparent);
+    background: linear-gradient(to right, rgba(8,8,8,0.9), transparent);
     opacity: 0;
   }
   #nav-scroll-wrap::after {
     right: 0;
-    background: linear-gradient(to left, rgba(8,8,8,0.85), transparent);
-    opacity: 1;
+    background: linear-gradient(to left, rgba(8,8,8,0.9), transparent);
+    opacity: 0;
   }
-  #nav-scroll-wrap.scrolled-start::before { opacity: 0; }
-  #nav-scroll-wrap.scrolled-end::after    { opacity: 0; }
   #nav-scroll-wrap.can-scroll-left::before  { opacity: 1; }
   #nav-scroll-wrap.can-scroll-right::after  { opacity: 1; }
   .nav-item {
@@ -4496,18 +4500,49 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     if (e.key === 'Escape') closeLightbox();
   });
 
-  // ── Touch swipe in lightbox ───────────────────────────
-  let _swipeX = null;
+  // ── Touch swipe in lightbox — drag follows finger ────
+  let _swipeStartX = null, _swipeDx = 0;
+  const W = () => window.innerWidth;
+
+  function _lbTranslate(dx, animate) {
+    lbImg.style.transition = animate ? 'transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
+    lbImg.style.transform  = dx ? `translateX(${dx}px)` : '';
+  }
+
   lightbox.addEventListener('touchstart', e => {
-    _swipeX = e.touches[0].clientX;
+    if (e.touches.length !== 1) return;
+    _swipeStartX = e.touches[0].clientX;
+    _swipeDx = 0;
+    _lbTranslate(0, false);
   }, { passive: true });
+
+  lightbox.addEventListener('touchmove', e => {
+    if (_swipeStartX === null) return;
+    _swipeDx = e.touches[0].clientX - _swipeStartX;
+    // Resist edges: no prev at index 0, no next at last
+    if (_swipeDx > 0 && lbIndex === 0)                        _swipeDx *= 0.2;
+    if (_swipeDx < 0 && lbIndex === lbPhotos.length - 1)      _swipeDx *= 0.2;
+    _lbTranslate(_swipeDx, false);
+  }, { passive: true });
+
   lightbox.addEventListener('touchend', e => {
-    if (_swipeX === null) return;
-    const dx = e.changedTouches[0].clientX - _swipeX;
-    _swipeX = null;
-    if (Math.abs(dx) < 40) return; // too short — treat as tap
-    if (dx < 0 && lbIndex < lbPhotos.length - 1) { lbIndex++; showLbPhoto(true); }
-    if (dx > 0 && lbIndex > 0)                   { lbIndex--; showLbPhoto(true); }
+    if (_swipeStartX === null) return;
+    const dx = _swipeDx;
+    _swipeStartX = null;
+    const threshold = W() * 0.28; // 28% of screen width to commit
+    if (dx < -threshold && lbIndex < lbPhotos.length - 1) {
+      // fling left → next
+      _lbTranslate(-W(), true);
+      setTimeout(() => { lbIndex++; showLbPhoto(true); _lbTranslate(0, false); }, 280);
+    } else if (dx > threshold && lbIndex > 0) {
+      // fling right → prev
+      _lbTranslate(W(), true);
+      setTimeout(() => { lbIndex--; showLbPhoto(true); _lbTranslate(0, false); }, 280);
+    } else {
+      // snap back
+      _lbTranslate(0, true);
+      setTimeout(() => _lbTranslate(0, false), 320);
+    }
   }, { passive: true });
   // Expose so popstate can close just the lightbox without nuking the gallery
   window._closeLightboxOnly = () => closeLightbox(true);
