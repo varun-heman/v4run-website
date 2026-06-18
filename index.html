@@ -2980,6 +2980,7 @@ const NAV_LABELS = {};  // key → display label
   let isNavHover = false;
 
   function showLabel(key) {
+    if (!document.body.classList.contains('bang-ready')) return;
     const text = NAV_HINTS[key] || key.toUpperCase();
     isNavHover = true;
     active = true;
@@ -3243,13 +3244,13 @@ const NAV_LABELS = {};  // key → display label
   if (hasVisited()) {
     // Return visitor — skip intro, fire bang immediately
     if (window._triggerBigBang) window._triggerBigBang();
-    setTimeout(() => { if (!isNavHover) showNextQuote(); }, 4200);
+    setTimeout(() => { if (!isNavHover) showNextQuote(); }, 6200);
   } else {
     setVisited();
     // First visit — play intro, then bang, then quotes
     runIntro(() => {
       if (window._triggerBigBang) window._triggerBigBang();
-      setTimeout(() => { if (!isNavHover) showNextQuote(); }, 2800);
+      setTimeout(() => { if (!isNavHover) showNextQuote(); }, 4800);
     });
   }
 
