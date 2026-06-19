@@ -2630,23 +2630,7 @@ body.strip-hovered .nav {
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════
-     EDIT YOUR QUOTES HERE — one string per line
-     ════════════════════════════════════════════════════ -->
-<script id="quotes-data" type="application/json">
-[
-  "Justice delayed is justice denied.",
-  "Law is the last resort of the powerless.",
-  "Rights are not given. They are taken.",
-  "The courtroom is where power gets tested.",
-  "Systems change when people refuse to accept them.",
-  "Every case is someone's entire world.",
-  "Due process is not a technicality. It's a promise.",
-  "The arc of the moral universe bends toward justice — if we bend it.",
-  "Reform without accountability is just rebranding.",
-  "Access to justice is a human right, not a privilege."
-]
-</script>
+<!-- quotes now live in content/quotes.md -->
 
 <!-- ════════════════════════════════════════════════════
      EDIT YOUR ARTICLES HERE
@@ -3645,9 +3629,11 @@ const NAV_LABELS = {};  // key → display label
   }
 
   // ── STARTUP ─────────────────────────────────────────────────────────────
-  try {
-    quotes = JSON.parse(document.getElementById('quotes-data').textContent);
-  } catch(e) {}
+  fetch('content/quotes.md')
+    .then(r => r.text())
+    .then(txt => {
+      quotes = txt.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+    }).catch(() => {});
 
   function waitForV(onDone) {
     const prompt = document.getElementById('press-v-prompt');
