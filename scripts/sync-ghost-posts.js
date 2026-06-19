@@ -2,82 +2,74 @@
 /**
  * sync-ghost-posts.js
  *
- * Fetches published posts from seldoncrisis.blog via the Ghost Content API,
- * compares against content/articles.md, and prepends any new entries at the top.
+ * Full reconciliation against the Ghost Content API:
+ *   - New posts are added
+ *   - Deleted / unpublished posts are removed
+ *   - URL or title changes are reflected
+ *
+ * Ghost-sourced entries are identified by `source: Seldon Crisis`.
+ * All other entries in articles.md are treated as manually added and left untouched.
  *
  * Usage:
- *   GHOST_API_KEY=<your_key> node scripts/sync-ghost-posts.js
+ *   GHOST_API_KEY=<key> node scripts/sync-ghost-posts.js
  *
- * The Ghost Content API key lives in:
- *   Ghost Admin → Settings → Integrations → Add custom integration
- * It's a read-only public key — safe to store as a GitHub Actions secret.
+ * Get the key from:
+ *   Ghost Admin → Settings → Integrations → Add custom integration → Content API Key
  */
 
-const fs   = require('fs');
-const path = require('path');
+const fs    = require('fs');
+const path  = require('path');
 const https = require('https');
-
-// ── Config ──────────────────────────────────────────────────────────────────
 
 const GHOST_URL     = 'https://seldoncrisis.blog';
 const GHOST_API_KEY = process.env.GHOST_API_KEY;
 const ARTICLES_MD   = path.join(__dirname, '..', 'content', 'articles.md');
+const GHOST_SOURCE  = 'Seldon Crisis'; // identifies Ghost entries in articles.md
 
 if (!GHOST_API_KEY) {
   console.error('Error: GHOST_API_KEY environment variable is not set.');
   process.exit(1);
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function fetchJson(url) {
   return new Promise((resolve, reject) => {
     https.get(url, res => {
       let body = '';
-      res.on('data', chunk => body += chunk);
+      res.on('data', c => body += c);
       res.on('end', () => {
-        if (res.statusCode !== 200) {
-          reject(new Error(`HTTP ${res.statusCode} for ${url}`));
-        } else {
-          try { resolve(JSON.parse(body)); }
-          catch (e) { reject(new Error(`JSON parse error: ${e.message}`)); }
-        }
+        if (res.statusCode !== 200) return reject(new Error(`HTTP ${res.statusCode}`));
+        try { resolve(JSON.parse(body)); } catch (e) { reject(e); }
       });
     }).on('error', reject);
   });
 }
 
-/**
- * Truncate a string to maxLen chars at a word boundary, add ellipsis if cut.
- */
-function truncate(str, maxLen = 280) {
-  if (!str || str.length <= maxLen) return str || '';
-  const cut = str.slice(0, maxLen).lastIndexOf(' ');
-  return str.slice(0, cut > 0 ? cut : maxLen) + '…';
-}
-
-/**
- * Strip HTML tags from a string.
- */
 function stripHtml(html) {
-  return (html || '').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
+  return (html || '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ').trim();
 }
 
-/**
- * Format a Ghost post object into an articles.md block.
- */
+function truncate(str, max = 280) {
+  if (!str || str.length <= max) return str || '';
+  const cut = str.slice(0, max).lastIndexOf(' ');
+  return str.slice(0, cut > 0 ? cut : max) + '…';
+}
+
+/** Format a Ghost post as an articles.md block. */
 function formatEntry(post) {
   const date  = post.published_at ? post.published_at.slice(0, 10) : '';
   const tags  = (post.tags || []).map(t => t.name).join(', ');
-  const desc  = truncate(stripHtml(post.excerpt || post.custom_excerpt || ''));
+  const desc  = truncate(stripHtml(post.custom_excerpt || post.excerpt || ''));
   const thumb = post.feature_image || 'images/thumbs/placeholder.jpg';
-
   return [
     '---',
     `title: ${post.title}`,
-    `source: Seldon Crisis`,
+    `source: ${GHOST_SOURCE}`,
     date  ? `date: ${date}`   : null,
     desc  ? `desc: ${desc}`   : null,
     `url: ${post.url}`,
@@ -87,71 +79,85 @@ function formatEntry(post) {
 }
 
 /**
- * Parse all URLs already in articles.md so we can skip duplicates.
+ * Parse articles.md into:
+ *   - header: the comment lines before the first ---
+ *   - entries: array of { raw: string, isGhost: boolean }
  */
-function existingUrls(mdContent) {
-  const urls = new Set();
-  for (const line of mdContent.split('\n')) {
-    const m = line.match(/^url:\s*(.+)/);
-    if (m) urls.add(m[1].trim());
+function parseArticlesMd(content) {
+  // Split on block separators — each block starts with ---
+  const parts  = content.split(/\n(?=---)/).map(s => s.trim()).filter(Boolean);
+  let header   = '';
+  const entries = [];
+
+  for (const part of parts) {
+    if (!part.startsWith('---')) {
+      // These are the comment lines at the top
+      header = part;
+      continue;
+    }
+    const sourceMatch = part.match(/^source:\s*(.+)$/m);
+    const isGhost = sourceMatch && sourceMatch[1].trim() === GHOST_SOURCE;
+    entries.push({ raw: part, isGhost: !!isGhost });
   }
-  return urls;
+
+  return { header, entries };
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  // Ghost Content API — fetch all published posts, newest first, with tags
   const apiUrl =
     `${GHOST_URL}/ghost/api/content/posts/` +
     `?key=${GHOST_API_KEY}` +
     `&fields=title,slug,url,excerpt,custom_excerpt,published_at,feature_image` +
     `&include=tags` +
     `&order=published_at%20desc` +
-    `&limit=50`;
+    `&limit=all`;
 
-  console.log('Fetching posts from Ghost…');
+  console.log('Fetching all published posts from Ghost…');
   let data;
   try {
     data = await fetchJson(apiUrl);
   } catch (err) {
-    console.error('Failed to fetch from Ghost API:', err.message);
+    console.error('Ghost API error:', err.message);
     process.exit(1);
   }
 
-  const posts = data.posts || [];
-  console.log(`Fetched ${posts.length} posts from Ghost.`);
+  const ghostPosts = data.posts || [];
+  console.log(`Fetched ${ghostPosts.length} published post(s) from Ghost.`);
 
   const mdContent = fs.readFileSync(ARTICLES_MD, 'utf8');
-  const known     = existingUrls(mdContent);
+  const { header, entries } = parseArticlesMd(mdContent);
 
-  const newPosts = posts.filter(p => p.url && !known.has(p.url));
-  if (!newPosts.length) {
-    console.log('No new posts found. articles.md is up to date.');
+  const manualEntries = entries.filter(e => !e.isGhost);
+  const oldGhostCount = entries.filter(e => e.isGhost).length;
+
+  // Build fresh Ghost blocks (newest first — API already returns them that way)
+  const ghostBlocks = ghostPosts.map(formatEntry);
+
+  // Reconstruct: header → Ghost entries → manual entries
+  const sections = [
+    header,
+    ...ghostBlocks,
+    ...manualEntries.map(e => e.raw),
+  ].filter(Boolean);
+
+  const updated = sections.join('\n\n') + '\n';
+
+  // Check if anything actually changed
+  if (updated.trim() === mdContent.trim()) {
+    console.log('No changes — articles.md is already up to date.');
     return;
   }
 
-  console.log(`Found ${newPosts.length} new post(s):`);
-  newPosts.forEach(p => console.log(`  + ${p.title} (${p.published_at?.slice(0,10)})`));
-
-  // New posts newest-first, then existing content
-  const newBlocks = newPosts.map(formatEntry).join('\n\n');
-
-  // Inject after the header comments, before the first existing entry
-  const headerEnd = mdContent.indexOf('\n---');
-  let updated;
-  if (headerEnd === -1) {
-    // No existing entries yet — just append
-    updated = mdContent.trimEnd() + '\n\n' + newBlocks + '\n';
-  } else {
-    updated =
-      mdContent.slice(0, headerEnd).trimEnd() +
-      '\n\n' + newBlocks +
-      '\n\n' + mdContent.slice(headerEnd + 1).trimStart();
-  }
+  const added   = ghostPosts.length - oldGhostCount;
+  const removed = oldGhostCount - ghostPosts.length;
+  if (added > 0)   console.log(`+${added} new post(s) added.`);
+  if (removed > 0) console.log(`-${removed} post(s) removed or unpublished.`);
+  if (added === 0 && removed === 0) console.log('Post metadata updated (URL, title, or tags changed).');
 
   fs.writeFileSync(ARTICLES_MD, updated, 'utf8');
-  console.log(`articles.md updated with ${newPosts.length} new post(s).`);
+  console.log('articles.md updated.');
 }
 
 main().catch(err => {
