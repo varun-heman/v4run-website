@@ -552,13 +552,77 @@ body.ui-ready #writings-section.ready {
   color: rgba(184,240,210,0.92);
   text-transform: uppercase;
   display: block;
+  position: relative;
   text-shadow: 0 0 30px rgba(100,255,160,0.2);
-  transition: text-shadow 0.2s ease;
 }
-#ag-name.scrambling {
-  text-shadow: 0 0 18px rgba(100,255,160,0.35),
-               2px 0 0 rgba(255,30,80,0.35),
-               -2px 0 0 rgba(0,210,255,0.35);
+/* RGB ghost layers */
+#ag-name::before,
+#ag-name::after {
+  content: attr(data-text);
+  position: absolute; top: 0; left: 0;
+  font-family: inherit; font-size: inherit; font-weight: inherit;
+  letter-spacing: inherit; text-transform: inherit;
+  pointer-events: none; opacity: 0;
+}
+#ag-name::before { color: rgba(255, 30, 80, 1); }
+#ag-name::after  { color: rgba(0, 210, 255, 1); }
+
+/* Scanline sweep on wrap */
+.ag-name-wrap::before {
+  content: '';
+  position: absolute; left: -4px; right: -4px; height: 3px;
+  background: rgba(184,240,210,0.65);
+  top: 0; opacity: 0; pointer-events: none; z-index: 2;
+}
+
+/* Glitch trigger class */
+#ag-name.glitching {
+  animation: ag-body 0.24s steps(1,end) forwards;
+}
+#ag-name.glitching::before {
+  opacity: 1;
+  animation: ag-red 0.24s steps(1,end) forwards;
+}
+#ag-name.glitching::after {
+  opacity: 1;
+  animation: ag-cyan 0.24s steps(1,end) forwards;
+}
+.ag-name-wrap.glitching::before {
+  animation: ag-scan 0.26s cubic-bezier(0.4,0,1,1) forwards;
+}
+
+/* Body jitter — skew + translateX slices */
+@keyframes ag-body {
+  0%   { transform: translateX(5px) skewX(-4deg); filter: brightness(1.5); }
+  16%  { transform: translateX(-8px) skewX(3deg); filter: brightness(0.7); clip-path: inset(25% 0 0 0); }
+  33%  { transform: translateX(4px) skewX(-5deg);  filter: brightness(1.8); clip-path: none; }
+  50%  { transform: translateX(-6px) skewX(2deg);  filter: brightness(0.9); clip-path: inset(0 0 40% 0); }
+  66%  { transform: translateX(3px) skewX(-2deg);  filter: brightness(1.3); clip-path: none; }
+  83%  { transform: translateX(-2px) skewX(1deg);  filter: brightness(1.0); }
+  100% { transform: none; filter: none; clip-path: none; }
+}
+/* Red channel */
+@keyframes ag-red {
+  0%   { transform: translate(-12px, 2px);  clip-path: inset(0 0 55% 0); }
+  20%  { transform: translate(-8px, -2px);  clip-path: inset(48% 0 12% 0); }
+  40%  { transform: translate(-14px, 1px);  clip-path: inset(72% 0 0 0); }
+  60%  { transform: translate(-9px, 0);     clip-path: inset(18% 0 42% 0); }
+  80%  { transform: translate(-5px, -1px);  clip-path: inset(60% 0 8% 0); }
+  100% { transform: translate(0); opacity: 0; clip-path: none; }
+}
+/* Cyan channel */
+@keyframes ag-cyan {
+  0%   { transform: translate(12px, -2px); clip-path: inset(38% 0 28% 0); }
+  20%  { transform: translate(15px, 2px);  clip-path: inset(8% 0 58% 0); }
+  40%  { transform: translate(9px, -1px);  clip-path: inset(62% 0 6% 0); }
+  60%  { transform: translate(13px, 0);    clip-path: inset(0 0 68% 0); }
+  80%  { transform: translate(7px, 1px);   clip-path: inset(44% 0 18% 0); }
+  100% { transform: translate(0); opacity: 0; clip-path: none; }
+}
+/* Scanline sweep */
+@keyframes ag-scan {
+  0%   { top: -2px; opacity: 0.9; }
+  100% { top: calc(100% + 2px); opacity: 0; }
 }
 .ag-question {
   font-family: var(--mono);
@@ -2615,7 +2679,7 @@ body.strip-hovered .nav {
     <div class="ag-header">// clearance required</div>
     <div class="ag-body">
       <p class="ag-line1">You are entering the private space of</p>
-      <div class="ag-name-wrap"><span id="ag-name">VARUN</span></div>
+      <div class="ag-name-wrap"><span id="ag-name" data-text="VARUN">VARUN</span></div>
       <p class="ag-question">Are you sure you want to proceed?</p>
     </div>
     <div class="ag-actions">
@@ -3859,50 +3923,47 @@ const NAV_LABELS = {};  // key → display label
     // Show gate immediately
     requestAnimationFrame(() => gate.classList.add('visible'));
 
-    // ── Name scramble cycle: VARUN → v4run → v4.run → loop ──
-    const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%<>{}[]';
+    // ── Name glitch cycle: VARUN → v4run → v4.run → loop ──
     const NAME_CYCLE = ['VARUN', 'v4run', 'v4.run'];
+    const HOLD_MS    = [2200, 900, 3000]; // hold time per phase before glitching
+    const wrap = nameEl.parentElement;
     let namePhase = 0;
     let nameCycleTimer = null;
-    let nameScrambleTimer = null;
 
-    function scrambleTo(target, duration, onDone) {
-      nameEl.classList.add('scrambling');
-      const steps = Math.max(8, Math.ceil(duration / 35));
-      let step = 0;
-      function tick() {
-        step++;
-        const progress = step / steps;
-        let result = '';
-        for (let i = 0; i < target.length; i++) {
-          result += (progress > (i / target.length + 0.25))
-            ? target[i]
-            : GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
-        }
-        nameEl.textContent = result;
-        if (step < steps) {
-          nameScrambleTimer = setTimeout(tick, 35);
-        } else {
-          nameEl.textContent = target;
-          nameEl.classList.remove('scrambling');
-          if (onDone) onDone();
-        }
-      }
-      tick();
+    // Seed data-text for ::before/::after
+    nameEl.setAttribute('data-text', nameEl.textContent);
+
+    function glitchTo(target, onDone) {
+      // Kick off glitch animations
+      nameEl.classList.add('glitching');
+      wrap && wrap.classList.add('glitching');
+
+      // Snap text + ghost layers to new value halfway through
+      nameCycleTimer = setTimeout(() => {
+        nameEl.textContent = target;
+        nameEl.setAttribute('data-text', target);
+      }, 115);
+
+      // Clean up after animation completes
+      nameCycleTimer = setTimeout(() => {
+        nameEl.classList.remove('glitching');
+        wrap && wrap.classList.remove('glitching');
+        if (onDone) onDone();
+      }, 280);
     }
 
     function cycleNext() {
       namePhase = (namePhase + 1) % NAME_CYCLE.length;
-      scrambleTo(NAME_CYCLE[namePhase], 380, () => {
-        const hold = namePhase === NAME_CYCLE.length - 1 ? 2800 : 700;
-        nameCycleTimer = setTimeout(cycleNext, hold);
+      glitchTo(NAME_CYCLE[namePhase], () => {
+        nameCycleTimer = setTimeout(cycleNext, HOLD_MS[namePhase]);
       });
     }
-    nameCycleTimer = setTimeout(cycleNext, 1600);
+    nameCycleTimer = setTimeout(cycleNext, HOLD_MS[0]);
 
     function stopCycle() {
       clearTimeout(nameCycleTimer);
-      clearTimeout(nameScrambleTimer);
+      nameEl.classList.remove('glitching');
+      wrap && wrap.classList.remove('glitching');
     }
 
     // ── EXIT ──
