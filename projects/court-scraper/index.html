@@ -26,8 +26,9 @@ a{color:inherit;text-decoration:none;}
 .proj-detail__image{flex:0 0 50%;width:50%;height:100vh;position:fixed;left:0;top:0;overflow:hidden;background:#000;}
 .proj-detail__image img{width:100%;height:100%;object-fit:cover;display:block;}
 .proj-detail__content{flex:0 0 50%;width:50%;margin-left:50%;min-height:100vh;overflow-y:auto;padding:56px 64px 96px;}
-.proj-detail__back{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:36px;cursor:pointer;transition:color .2s;}
-.proj-detail__back:hover{color:var(--accent);}
+.proj-detail__back,.proj-detail__back:link,.proj-detail__back:visited{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:36px;cursor:pointer;transition:color .2s;text-decoration:none;}
+.proj-detail__back:hover{color:var(--accent);text-decoration:none;}
+.proj-detail__back i{font-size:10px;}
 .proj-detail__meta{display:flex;align-items:center;gap:10px;margin-bottom:16px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-dim);}
 .proj-detail__status{padding:2px 8px;border:1px solid rgba(100,255,160,.35);border-radius:3px;color:rgba(100,255,160,.85);}
 .proj-detail__status--archived{border-color:rgba(255,255,255,.22);color:rgba(255,255,255,.55);}
@@ -38,14 +39,15 @@ a{color:inherit;text-decoration:none;}
 .proj-detail__body h2{font-size:20px;}
 .proj-detail__body h3{font-size:17px;}
 .proj-detail__body p{margin:0 0 18px;}
-.proj-detail__body a{color:var(--accent);border-bottom:1px solid rgba(184,240,210,.3);}
+.proj-detail__body a,.proj-detail__body a:link,.proj-detail__body a:visited{color:var(--accent);text-decoration:none;background-image:linear-gradient(rgba(184,240,210,.4),rgba(184,240,210,.4));background-repeat:no-repeat;background-position:0 100%;background-size:100% 1px;transition:background-size .2s ease,color .2s ease;}
+.proj-detail__body a:hover{color:#d4ffe6;background-size:100% 2px;}
 .proj-detail__body ul,.proj-detail__body ol{margin:0 0 18px;padding-left:22px;}
 .proj-detail__body li{margin-bottom:6px;}
 .proj-detail__body code{font-family:var(--mono);font-size:13px;background:rgba(255,255,255,.06);padding:2px 5px;border-radius:3px;}
 .proj-detail__tags{display:flex;flex-wrap:wrap;gap:6px;margin:32px 0 0;}
 .proj-detail__tag{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border:1px solid rgba(255,255,255,.18);border-radius:20px;color:rgba(255,255,255,.62);}
-.proj-detail__live{display:inline-flex;align-items:center;gap:8px;margin-top:28px;padding:10px 18px;border:1px solid rgba(100,255,160,.4);border-radius:3px;color:rgb(100,255,160);font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;transition:background .2s;}
-.proj-detail__live:hover{background:rgba(100,255,160,.08);}
+.proj-detail__live,.proj-detail__live:link,.proj-detail__live:visited{display:inline-flex;align-items:center;gap:8px;margin-top:28px;padding:10px 18px;border:1px solid rgba(100,255,160,.4);border-radius:3px;color:rgb(100,255,160);font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;transition:background .2s,border-color .2s;}
+.proj-detail__live:hover{background:rgba(100,255,160,.08);border-color:rgba(100,255,160,.7);text-decoration:none;}
 @media (max-width:768px){
   .proj-detail{display:block;}
   .proj-detail__image{position:static;width:100%;height:auto;max-height:42vh;}
@@ -59,7 +61,7 @@ a{color:inherit;text-decoration:none;}
   <div class="proj-detail">
     <div class="proj-detail__image"><img src="https://picsum.photos/seed/courtscraper/400/300" alt=""></div>
     <div class="proj-detail__content">
-      <a class="proj-detail__back" href="/#projects">&larr; Projects</a>
+      <a class="proj-detail__back" href="/#projects"><i class="fa-solid fa-arrow-left"></i> Projects</a>
       <div class="proj-detail__meta">
         <span>November 15, 2025</span>
         <span class="proj-detail__status proj-detail__status--active">active</span>
