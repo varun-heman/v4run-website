@@ -1492,34 +1492,37 @@ body.ui-ready #writings-section.ready {
   display: flex;
   gap: 24px;
   align-items: flex-start;
-  padding: 24px 0 24px 14px;
-  margin-left: -14px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 22px 20px;
+  margin: 0 -20px;
+  /* invisible box at rest — bottom only shows separator */
+  border: 1px solid transparent;
+  border-bottom-color: rgba(255,255,255,0.06);
   color: inherit;
   position: relative;
   clip-path: inset(0 0 100% 0);
   cursor: pointer;
-  transition: background 0.18s ease, box-shadow 0.18s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .reads-card.card-visible {
   clip-path: inset(0 0 0% 0);
   transition: clip-path 0.42s cubic-bezier(0.16, 1, 0.3, 1),
-              background 0.18s ease, box-shadow 0.18s ease;
-  animation: reads-card-flash 0.9s ease-out 0.3s both;
+              background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  animation: reads-card-flash 0.85s ease-out 0.3s both;
 }
 @keyframes reads-card-flash {
-  0%   { box-shadow: inset 3px 0 0 rgba(100,255,160,0.75); }
-  100% { box-shadow: inset 3px 0 0 rgba(100,255,160,0); }
+  0%   { border-color: rgba(100,255,160,0.55); box-shadow: 0 0 18px rgba(100,255,160,0.08), inset 0 0 10px rgba(100,255,160,0.03); }
+  100% { border-color: transparent; border-bottom-color: rgba(255,255,255,0.06); box-shadow: none; }
 }
 .reads-card.card-exit {
   clip-path: inset(100% 0 0% 0);
   transition: clip-path 0.22s cubic-bezier(0.4, 0, 1, 1);
 }
 .reads-card:hover {
-  background: rgba(10,20,12,0.55);
-  box-shadow: inset 3px 0 0 rgba(100,255,160,0.38);
+  background: rgba(10,20,12,0.65);
+  border-color: rgba(184,240,210,0.20);
+  box-shadow: 0 0 22px rgba(100,255,160,0.05);
 }
-.reads-card:last-child { border-bottom: none; }
+.reads-card:last-child { border-bottom-color: transparent; }
 
 /* Thumbnail — fixed 4:3 ratio, always same size */
 .reads-card__thumb-wrap {
@@ -1551,9 +1554,7 @@ body.ui-ready #writings-section.ready {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s cubic-bezier(0.16,1,0.3,1);
 }
-.reads-card:hover .reads-card__body { transform: translateX(5px); }
 .reads-card__meta {
   display: flex;
   flex-wrap: wrap;
@@ -3955,7 +3956,17 @@ const NAV_LABELS = {};  // key → display label
       return;
     }
 
-    // First visit — show gate
+    // Deeplink first visit — skip gate & intro, mark visited so root visit later is clean
+    if (location.hash) {
+      gate.style.display = 'none';
+      window._isFirstVisit = false;
+      setVisited();
+      if (window._triggerBigBang) window._triggerBigBang();
+      setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9200);
+      return;
+    }
+
+    // First visit on root — show gate
     requestAnimationFrame(() => gate.classList.add('visible'));
 
     // ── Name glitch cycle: VARUN → v4run → v4.run → loop ──
