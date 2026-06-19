@@ -1642,19 +1642,28 @@ body.ui-ready #writings-section.ready {
   transform: scale(1.1) translateY(-6px);
   box-shadow: 0 20px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(100,255,160,0.1);
   z-index: 20;
-  /* expand: no delay */
+  /* expand: no delay; opacity snaps immediately */
   transition: border-color 0.22s ease, background 0.22s ease,
               transform 0.22s cubic-bezier(0.16,1,0.3,1),
-              box-shadow 0.22s ease;
+              box-shadow 0.22s ease,
+              opacity 0.12s ease, filter 0.12s ease;
 }
 /* is-new: no special card styling — the NEW badge is the only indicator */
 .article-card.is-hovered .article-card__title {
   color: rgba(232, 232, 226, 0.97);
 }
-/* Dim all other cards when one is hovered */
+/* Dim all other cards when one is hovered — fast to dim, slow to revert */
+.article-card {
+  /* slow revert when strip is exited */
+  transition: opacity 0.7s ease, filter 0.7s ease,
+              border-color 0.45s ease 0.5s, background 0.45s ease 0.5s,
+              transform 0.5s cubic-bezier(0.25,0,0.35,1) 0.5s,
+              box-shadow 0.45s ease 0.5s;
+}
 .articles-track.has-hover .article-card:not(.is-hovered) {
   opacity: 0.35;
   filter: grayscale(80%);
+  /* fast to dim */
   transition: opacity 0.15s ease, filter 0.15s ease;
 }
 .article-card__thumb {
@@ -3649,6 +3658,25 @@ const NAV_LABELS = {};  // key → display label
     document.cookie = 'v4run_v=1; path=/; SameSite=Lax'; // session cookie — expires on tab close
   }
 
+  // ── TYPEWRITER SOUND — synthesized via Web Audio, no file needed ─────────
+  function playTypeClick() {
+    const ctx = window._audioCtx;
+    if (!ctx) return;
+    try {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = 820 + Math.random() * 520; // 820–1340 Hz, varies per key
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.003);  // snap attack
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.038); // fast decay
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.04);
+    } catch(e) {}
+  }
+
   // Type a plain string into a freshly built span+cursor inside lbl, then call onDone
   function typePhrase(text, holdMs, onDone) {
     cancelTypewriter();
@@ -3675,6 +3703,7 @@ const NAV_LABELS = {};  // key → display label
       }
       if (charIdx <= text.length) {
         textSpan.textContent = text.slice(0, charIdx);
+        playTypeClick();
         charIdx++;
         if (charIdx <= text.length) {
           const nc = text[charIdx - 1];
@@ -3890,6 +3919,11 @@ const NAV_LABELS = {};  // key → display label
       // Start music immediately — button click is a valid user gesture
       const music = document.getElementById('bg-music');
       if (music) { music.volume = 0.35; music.play().catch(() => {}); }
+
+      // Create AudioContext during the gesture so typewriter clicks can play later
+      try {
+        window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch(e) {}
 
       // Dismiss gate with fade
       gate.classList.add('dismissing');
@@ -4147,7 +4181,8 @@ const NAV_LABELS = {};  // key → display label
         if (_hoveredCard) {
           _hoveredCard.classList.remove('is-hovered');
           _hoveredCard = null;
-          track.classList.remove('has-hover');
+          // Keep has-hover on the track — don't flash other cards back while
+          // switching between cards. has-hover is only cleared on strip exit.
         }
         _candidateCard = card;
         if (card) {
