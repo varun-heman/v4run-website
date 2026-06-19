@@ -1,6 +1,6 @@
 # v4run — personal site
 
-Personal site for [v4.run](https://v4.run), built as a single HTML file with no framework, no bundler, no build step (aside from a pre-deploy gallery scan).
+Personal site for [v4.run](https://v4.run), built as a single HTML file with no framework, no bundler — just two small pre-deploy Node scripts (gallery scan + project page generation).
 
 ## What it is
 
@@ -27,6 +27,7 @@ On the very first visit to the root domain, a terminal-style **access gate** is 
 - **Exit** button opens a YouTube link in a new tab and closes the current one.
 - **Proceed** button dismisses the gate. The background music (`audio/bg_score.mp3`) starts immediately at low volume. A blinking green cursor appears for ~2 seconds, then the typewriter intro sequence begins (each keystroke is a synthesized square-wave click via Web Audio API).
 - After the intro finishes, the big bang triggers and the main UI fades in.
+- Pressing **Escape** at any point during the typewriter intro skips straight to the big bang — useful for return visitors who clear their cookie, or anyone who just doesn't want to wait.
 - The gate and intro are skipped for return visitors (cookie `v4run_v=1`). Visitors arriving via a **deep link** (any URL with a hash) also skip the gate and are marked as visited immediately — the linked panel opens directly.
 
 ## Nav behaviour
@@ -46,6 +47,8 @@ The `Contact Me` label in the bottom-left corner reveals social icons on hover. 
 ## Contact
 
 Clicking the email icon in the social dock opens a modal with a Netlify form (name, email, message). An opt-in checkbox lets visitors subscribe to email updates.
+
+After a successful submission, the confirmation message stays in the modal until the visitor closes it themselves (× button, clicking outside, or Escape) — it does not auto-dismiss.
 
 Anti-spam measures:
 - **Honeypot field** — a hidden `bot-field` input that bots auto-fill; Netlify silently drops those submissions server-side, and the client also checks it.
@@ -104,6 +107,22 @@ The gallery JSON is generated pre-deploy by `scripts/gen-gallery.js`. It scans `
 node scripts/gen-gallery.js
 ```
 
+## Project pages
+
+Each entry in `content/projects.md` gets its own real, independent page at `v4.run/projects/<slug>/` — a genuine static HTML file, not a client-side route. This matters for two things a single-page app can't do on its own: search engines can index each project individually, and a project link can be shared/opened directly with a proper page (title, description, OG/Twitter image) already in place.
+
+**Adding a project:**
+
+1. Add an entry to `content/projects.md` (same `key: value` block format as the rest of the content files — see the format comment at the top of the file). `slug` is optional; if you leave it out it's generated automatically from the title (lowercased, spaces → hyphens). Set it explicitly if you ever plan to rename the title later, so the URL doesn't shift under anyone who already has it bookmarked or shared.
+2. Write the long-form write-up as plain markdown in `content/projects/<slug>.md` (headings, paragraphs, bold/italic, links, lists — a small dependency-free converter handles it, not a full markdown spec, so keep formatting simple). This is optional; if the file doesn't exist, the page just falls back to showing the short `description` from `projects.md`.
+3. Run `node scripts/gen-projects.js` (or just deploy — Netlify runs it automatically, see below).
+
+**Layout:** desktop shows a fixed 50:50 split — the project's `thumb` image pinned on the left, the write-up scrolling independently on the right. On mobile (≤768px) it collapses to one column: the image becomes a normal banner that scrolls away, with the write-up flowing underneath.
+
+**How it's generated:** `scripts/gen-projects.js` reads `content/projects.md` + the matching `content/projects/<slug>.md` files and writes a complete, self-contained `projects/<slug>/index.html` per project — no Three.js, no background music, nothing the homepage doesn't need a reading page to carry. It also writes `sitemap.xml` and `robots.txt` at the project root, listing the homepage plus every project page (the only URLs on the site that are real, independently loadable pages — everything else lives behind client-side overlays with no distinct URL).
+
+**Seamless navigation from the homepage:** clicking a project card in the Projects overlay doesn't trigger a real page load. It fetches that project's static page in the background, drops its content into a detail view inside the same overlay (cross-fading via the View Transitions API where the browser supports it), and updates the address bar to the real `/projects/<slug>/` URL using the History API — so the background music and sphere animation never stop. Hovering/touching a card prefetches its page so the swap feels instant. Anyone arriving directly (search result, shared link, JS disabled) just gets the plain static page — same content, no SPA shell required. The external "View Project" button is unrelated to this — it always opens the project's own live URL (the `url` field) in a new tab.
+
 ## How it's built
 
 **One file** — `index.html` contains all HTML, CSS, and JavaScript inline. No npm, no webpack, no React.
@@ -122,13 +141,17 @@ node scripts/gen-gallery.js
 content/
   nav.md         ← nav order, labels, and sphere hover text
   articles.md    ← article cards (title, source, date, desc, url, thumb)
-  projects.md    ← project entries (title, date, status, tags, description, url, thumb)
+  projects.md    ← project entries (title, date, status, tags, description, url, thumb, slug)
+  projects/
+    <slug>.md    ← long-form write-up for that project's own page — see "Project pages"
   reads.md       ← recommended reads (title, url, source, date, tags, description)
   about.md       ← About modal content
   work.md        ← Work modal content
   social.md      ← social links (one URL per line, platform auto-detected)
   gallery.json   ← auto-generated by scripts/gen-gallery.js
 ```
+
+**Auto-generated at the project root** (don't hand-edit; both run as part of the Netlify build): `projects/<slug>/index.html` (one per project, see "Project pages"), `sitemap.xml`, `robots.txt`.
 
 Quotes are embedded in `index.html` in a `<script id="quotes-data" type="application/json">` block.
 
@@ -152,13 +175,16 @@ Add these files at the project root:
 
 The canonical URL and share image URL are configured for `https://v4.run/`, hosted on Netlify from the GitHub repo `varun-heman/v4run-website`.
 
+Every page's `<title>`, `og:title`, and `twitter:title` follow the same `v4run | <Page Title>` format (lowercase `v4run`) — the homepage sets it directly in `index.html`, and `scripts/gen-projects.js` builds it automatically for every project page from that project's title, so it stays consistent without needing to repeat it by hand.
+
 ## Running locally
 
 Because content is fetched at runtime, the site needs to be served over HTTP — opening `index.html` directly via `file://` will not load the markdown files.
 
 ```bash
 cd ~/Documents/Experiments/v4run-website
-node scripts/gen-gallery.js   # regenerate gallery.json after adding photos
+node scripts/gen-gallery.js    # regenerate gallery.json after adding photos
+node scripts/gen-projects.js   # regenerate project pages, sitemap.xml, robots.txt
 npx serve .
 ```
 
@@ -168,9 +194,9 @@ Then open the localhost URL it prints.
 
 Any static host works — Vercel, Netlify, GitHub Pages, Cloudflare Pages.
 
-**Netlify** — `netlify.toml` runs `node scripts/gen-gallery.js` as the build command, then publishes the root directory. No extra config needed. Netlify also handles the contact form honeypot server-side.
+**Netlify** — `netlify.toml` runs `node scripts/gen-gallery.js && node scripts/gen-projects.js` as the build command, then publishes the root directory. No extra config needed. Netlify also handles the contact form honeypot server-side.
 
-For GitHub Pages, push to `main` and enable Pages from repo Settings → Pages (source: root of `main` branch). Enable HTTPS enforcement from the same page once the domain is verified. Note: GitHub Pages has no build step, so run `node scripts/gen-gallery.js` locally and commit `content/gallery.json` before pushing.
+For GitHub Pages, push to `main` and enable Pages from repo Settings → Pages (source: root of `main` branch). Enable HTTPS enforcement from the same page once the domain is verified. Note: GitHub Pages has no build step, so run both `node scripts/gen-gallery.js` and `node scripts/gen-projects.js` locally and commit `content/gallery.json`, `projects/`, `sitemap.xml`, and `robots.txt` before pushing.
 
 ## Mobile
 
@@ -188,7 +214,8 @@ On screens ≤ 768px:
 |------|-------|
 | Nav items, order, hover text | `content/nav.md` |
 | Article cards | `content/articles.md` |
-| Projects | `content/projects.md` |
+| Projects (list entries) | `content/projects.md` |
+| Project write-ups (own page per project) | `content/projects/<slug>.md` — see "Project pages" |
 | Recommended reads | `content/reads.md` |
 | Modal content | `content/{key}.md` |
 | Quotes | `index.html` → `<script id="quotes-data">` |
