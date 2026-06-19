@@ -1508,7 +1508,7 @@ body.ui-ready #writings-section.ready {
 .article-card {
   flex-shrink: 0;
   width: 230px;
-  position: relative; /* required for absolute-positioned thumbnail */
+  position: relative;
   background: rgba(8, 8, 8, 0.82);
   border: 1px solid rgba(184, 240, 210, 0.07);
   cursor: pointer;
@@ -1518,17 +1518,16 @@ body.ui-ready #writings-section.ready {
   -webkit-user-drag: none;
   transform-origin: bottom center;
   z-index: 1;
+  transition: border-color 0.22s ease, background 0.22s ease,
+              transform 0.22s cubic-bezier(0.16,1,0.3,1),
+              box-shadow 0.22s ease;
 }
 .article-card.is-hovered {
   border-color: rgba(184, 240, 210, 0.28);
   background: rgba(12, 22, 14, 0.82);
-  transform: scale(1.12) translateY(-5px);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.75);
+  transform: scale(1.1) translateY(-6px);
+  box-shadow: 0 20px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(100,255,160,0.1);
   z-index: 20;
-  transition: border-color 0.15s cubic-bezier(0.16,1,0.3,1),
-              background 0.15s cubic-bezier(0.16,1,0.3,1),
-              transform 0.18s cubic-bezier(0.16,1,0.3,1),
-              box-shadow 0.15s cubic-bezier(0.16,1,0.3,1);
 }
 /* is-new: no special card styling — the NEW badge is the only indicator */
 .article-card.is-hovered .article-card__title {
@@ -1598,7 +1597,7 @@ body.strip-hovered .nav {
 .article-card__body {
   position: relative;
   z-index: 2; /* above thumbnail (z:0) and gradient overlay (z:1) */
-  padding: 9px 11px 11px;
+  padding: 9px 11px 10px;
 }
 .article-card__meta {
   display: flex;
@@ -1647,7 +1646,7 @@ body.strip-hovered .nav {
   gap: 4px;
   overflow: hidden;
   max-height: 1.6em; /* single line — prevents wrapping */
-  margin-top: 8px;
+  margin-top: 7px;
   margin-bottom: 0;
 }
 .article-card__tag {
@@ -1682,17 +1681,36 @@ body.strip-hovered .nav {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.article-card__desc-wrap {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+  transition: max-height 0.38s cubic-bezier(0.16,1,0.3,1),
+              opacity 0.24s ease 0.06s,
+              margin-top 0.3s ease;
+}
+.article-card.is-hovered .article-card__desc-wrap {
+  max-height: 80px;
+  opacity: 1;
+  margin-top: 6px;
+}
 .article-card__desc {
   font-family: var(--sans);
   font-size: 9.5px;
   font-weight: 300;
-  color: rgba(232, 232, 226, 0.38);
+  color: rgba(232, 232, 226, 0.55);
   line-height: 1.6;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  transform: translateY(6px);
+  transition: transform 0.38s cubic-bezier(0.16,1,0.3,1);
+}
+.article-card.is-hovered .article-card__desc {
+  transform: translateY(0);
 }
 
 /* ─── ESC HINT ───────────────────────────────────────── */
@@ -3824,7 +3842,7 @@ const NAV_LABELS = {};  // key → display label
             ${a._isNew ? '<span class="article-card__new">NEW</span>' : ''}
           </div>
           <div class="article-card__title">${a.title}</div>
-          <div class="article-card__desc">${a.desc || ''}</div>
+          <div class="article-card__desc-wrap"><div class="article-card__desc">${a.desc || ''}</div></div>
           ${(visibleTags || overflowTag) ? `<div class="article-card__tags">${visibleTags}${overflowTag}</div>` : ''}
         </div>`;
       return card;
