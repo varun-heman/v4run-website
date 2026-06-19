@@ -3354,6 +3354,7 @@ body.screen-glitching {
 
   const clock = new THREE.Clock();
   let bangStartT = null; // set by _triggerBigBang(); null = bang hasn't fired yet
+  let bangDuration = 2.2; // seconds; slowed down on first visit only, see _triggerBigBang
 
   (function frame() {
     requestAnimationFrame(frame);
@@ -3365,7 +3366,7 @@ body.screen-glitching {
     active += (targetActive - active) * 0.04;
     uni.uTime.value   = t;
     uni.uActive.value = active;
-    uni.uBang.value   = bangStartT !== null ? Math.min(1.0, (t - bangStartT) / 2.2) : 0;
+    uni.uBang.value   = bangStartT !== null ? Math.min(1.0, (t - bangStartT) / bangDuration) : 0;
     const spd = Math.hypot(rawMx - lastMx, rawMy - lastMy);
     lastMx = rawMx; lastMy = rawMy;
     if (document.body.classList.contains('ui-ready') && t > nextIdleGlitch) {
@@ -3681,6 +3682,10 @@ body.screen-glitching {
   // Called by intro sequence (or immediately for return visitors)
   window._triggerBigBang = function () {
     if (bangStartT !== null) return; // already fired
+    // Slower, more deliberate expansion on first visit only (synced to the
+    // intro music) — return visitors with the cookie already set get the
+    // original, snappier speed.
+    bangDuration = window._isFirstVisit ? 4.2 : 2.2;
     // Fade canvas in first, then fire bang after 1s so the dot is visible before expanding
     document.body.classList.add('bang-ready');
     setTimeout(() => {
@@ -3692,7 +3697,7 @@ body.screen-glitching {
         if (bangSfx) { bangSfx.volume = 0.7; bangSfx.play().catch(() => {}); }
       }
 
-      setTimeout(() => document.body.classList.add('ui-ready'), 2700);
+      setTimeout(() => document.body.classList.add('ui-ready'), window._isFirstVisit ? 4700 : 2700);
     }, 1000);
   };
 
@@ -4191,7 +4196,7 @@ const NAV_LABELS = {};  // key → display label
             lbl.classList.remove('visible');
             runIntro(() => {
               if (window._triggerBigBang) window._triggerBigBang();
-              setTimeout(() => { if (!isNavHover) showNextQuote(); }, 7800);
+              setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9800);
             });
           }, 2000);
         }
