@@ -1631,10 +1631,10 @@ body.ui-ready #writings-section.ready {
   -webkit-user-drag: none;
   transform-origin: bottom center;
   z-index: 1;
-  /* collapse: wait 280ms before shrinking back */
-  transition: border-color 0.25s ease 0.28s, background 0.25s ease 0.28s,
-              transform 0.28s cubic-bezier(0.16,1,0.3,1) 0.28s,
-              box-shadow 0.25s ease 0.28s;
+  /* collapse: wait, then ease back gradually */
+  transition: border-color 0.45s ease 0.5s, background 0.45s ease 0.5s,
+              transform 0.5s cubic-bezier(0.25,0,0.35,1) 0.5s,
+              box-shadow 0.45s ease 0.5s;
 }
 .article-card.is-hovered {
   border-color: rgba(184, 240, 210, 0.28);
@@ -1808,10 +1808,10 @@ body.strip-hovered .nav {
   max-height: 0;
   opacity: 0;
   margin-top: 0;
-  /* collapse: wait before shrinking */
-  transition: max-height 0.3s cubic-bezier(0.4,0,1,1) 0.22s,
-              opacity 0.18s ease 0.1s,
-              margin-top 0.28s ease 0.2s;
+  /* collapse: wait, then ease in gradually */
+  transition: max-height 0.55s cubic-bezier(0.25,0,0.35,1) 0.42s,
+              opacity 0.32s ease 0.38s,
+              margin-top 0.5s ease 0.44s;
 }
 .article-card.is-hovered .article-card__desc-wrap {
   max-height: 80px;
@@ -1834,7 +1834,7 @@ body.strip-hovered .nav {
   overflow: hidden;
   text-overflow: ellipsis;
   transform: translateY(6px);
-  transition: transform 0.3s cubic-bezier(0.4,0,1,1) 0.2s;
+  transition: transform 0.5s cubic-bezier(0.25,0,0.35,1) 0.4s;
 }
 .article-card.is-hovered .article-card__desc {
   transform: translateY(0);
