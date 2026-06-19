@@ -3757,6 +3757,12 @@ const NAV_LABELS = {};  // key → display label
 
     // Sort descending by date ("Jun 2026" etc)
     function parseArticleDate(d) { return d ? new Date(d) : new Date(0); }
+    function fmtArticleDate(d) {
+      if (!d) return '';
+      const parsed = new Date(d + 'T00:00:00');
+      if (isNaN(parsed)) return d;
+      return parsed.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
     articles.sort((a, b) => parseArticleDate(b.date) - parseArticleDate(a.date));
 
     // Mark articles published within 60 days as new
@@ -3799,7 +3805,7 @@ const NAV_LABELS = {};  // key → display label
         <div class="article-card__body">
           <div class="article-card__meta">
             <span class="article-card__source">${a.source || ''}</span>
-            <span class="article-card__date">${a.date || ''}</span>
+            <span class="article-card__date">${fmtArticleDate(a.date)}</span>
             ${a._isNew ? '<span class="article-card__new">NEW</span>' : ''}
           </div>
           <div class="article-card__title">${a.title}</div>
@@ -4287,7 +4293,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
           <div class="articles-overlay-card__body">
             <div class="articles-overlay-card__meta">
               <span>${a.source || ''}</span>
-              <span>${a.date || ''}</span>
+              <span>${fmtArticleDate(a.date)}</span>
               ${a._isNew ? '<span class="article-card__new">NEW</span>' : ''}
             </div>
             <div class="articles-overlay-card__title">${a.title}</div>
@@ -4486,7 +4492,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
         <div class="viewall-card__body">
           <div class="viewall-card__meta">
             <span class="viewall-card__source">${a.source || ''}</span>
-            <span class="viewall-card__date">${a.date || ''}</span>
+            <span class="viewall-card__date">${fmtArticleDate(a.date)}</span>
             ${newBadge}
           </div>
           ${tagHtml ? `<div class="viewall-card__tags">${tagHtml}</div>` : ''}
