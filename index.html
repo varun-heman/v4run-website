@@ -5431,13 +5431,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       if (res.ok || res.status === 200 || res.redirected) {
         form.style.display = 'none';
         success.style.display = 'block';
-        setTimeout(closeContact, 6000);
+        // Stays open until the visitor closes it themselves — × button,
+        // clicking outside, or Escape (all already wired up above).
       }
     } catch(err) {
       // Still show success — Netlify may redirect on success which fetch treats as error
       form.style.display = 'none';
       success.style.display = 'block';
-      setTimeout(closeContact, 6000);
     }
   });
 })();
