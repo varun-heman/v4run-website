@@ -1,6 +1,3 @@
 [build]
   command = "node scripts/gen-gallery.js"
   publish = "."
-
-[build.environment]
-  SECRETS_SCAN_OMIT_KEYS = "GITHUB_REPO"
