@@ -3541,14 +3541,9 @@ body.strip-hovered .nav {
       bangStartT = clock.getElapsedTime();
 
       if (window._isFirstVisit) {
-        // Play big bang sound
+        // Play big bang sound effect
         const bangSfx = document.getElementById('bang-sound');
         if (bangSfx) { bangSfx.volume = 0.7; bangSfx.play().catch(() => {}); }
-        // Start bg music after a short pause so the bang lands first
-        setTimeout(() => {
-          const music = document.getElementById('bg-music');
-          if (music) { music.volume = 0.35; music.play().catch(() => {}); }
-        }, 1200);
       }
 
       setTimeout(() => document.body.classList.add('ui-ready'), 2700);
@@ -3997,6 +3992,12 @@ const NAV_LABELS = {};  // key → display label
 
       // Flag first visit BEFORE setVisited() so the bang can detect it
       window._isFirstVisit = !hasVisited();
+
+      // Start bg music immediately on first visit — button click is a valid gesture
+      if (window._isFirstVisit) {
+        const music = document.getElementById('bg-music');
+        if (music) { music.volume = 0.35; music.play().catch(() => {}); }
+      }
 
       // Dismiss gate with fade
       gate.classList.add('dismissing');
