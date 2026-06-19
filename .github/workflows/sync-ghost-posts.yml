@@ -1,0 +1,39 @@
+name: Sync Ghost Posts
+
+on:
+  schedule:
+    # Runs every day at 07:00 UTC (12:30 IST)
+    - cron: '0 7 * * *'
+  workflow_dispatch: # allow manual trigger from GitHub Actions UI
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit articles.md back
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Ghost sync script
+        env:
+          GHOST_API_KEY: ${{ secrets.GHOST_API_KEY }}
+        run: node scripts/sync-ghost-posts.js
+
+      - name: Commit and push if articles.md changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add content/articles.md
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: sync new posts from seldoncrisis.blog"
+            git push
+          fi
