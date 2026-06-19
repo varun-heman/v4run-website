@@ -3728,7 +3728,7 @@ body.screen-glitching {
     // Slower, more deliberate expansion on first visit only (synced to the
     // intro music) — return visitors with the cookie already set get the
     // original, snappier speed.
-    bangDuration = window._isFirstVisit ? 4.2 : 2.2;
+    bangDuration = window._isFirstVisit ? 5.2 : 2.2;
     // Fade canvas in first, then fire bang after 1s so the dot is visible before expanding
     document.body.classList.add('bang-ready');
     setTimeout(() => {
@@ -3740,7 +3740,7 @@ body.screen-glitching {
         if (bangSfx) { bangSfx.volume = 0.7; bangSfx.play().catch(() => {}); }
       }
 
-      setTimeout(() => document.body.classList.add('ui-ready'), window._isFirstVisit ? 4700 : 2700);
+      setTimeout(() => document.body.classList.add('ui-ready'), window._isFirstVisit ? 5700 : 2700);
     }, 1000);
   };
 
@@ -4239,7 +4239,7 @@ const NAV_LABELS = {};  // key → display label
             lbl.classList.remove('visible');
             runIntro(() => {
               if (window._triggerBigBang) window._triggerBigBang();
-              setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9800);
+              setTimeout(() => { if (!isNavHover) showNextQuote(); }, 10800);
             });
           }, 2000);
         }
