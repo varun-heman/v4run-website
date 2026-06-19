@@ -1794,12 +1794,26 @@ body.ui-ready #writings-section.ready {
 .proj-detail__body h3 { font-size: 16px; }
 .proj-detail__body p { margin: 0 0 18px; }
 .proj-detail__body a, .proj-detail__body a:link, .proj-detail__body a:visited {
-  color: var(--accent); text-decoration: none;
-  background-image: linear-gradient(rgba(184,240,210,0.4), rgba(184,240,210,0.4));
+  position: relative; color: var(--accent); text-decoration: none;
+  background-image: linear-gradient(rgba(100,255,160,0.5), rgba(100,255,160,0.5));
   background-repeat: no-repeat; background-position: 0 100%; background-size: 100% 1px;
-  transition: background-size 0.2s ease, color 0.2s ease;
+  transition: background-size 0.25s cubic-bezier(0.16,1,0.3,1), color 0.2s ease, text-shadow 0.25s ease;
 }
-.proj-detail__body a:hover { color: #d4ffe6; background-size: 100% 2px; }
+.proj-detail__body a:hover {
+  color: #d8ffe9; background-size: 100% 2px;
+  text-shadow: 0 0 10px rgba(100,255,160,0.6);
+  animation: proj-link-jitter 0.22s steps(2, end);
+}
+@keyframes proj-link-jitter {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-1px); }
+  40% { transform: translateX(1px); }
+  60% { transform: translateX(-1px); }
+  80% { transform: translateX(1px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .proj-detail__body a:hover { animation: none; }
+}
 .proj-detail__body ul, .proj-detail__body ol { margin: 0 0 18px; padding-left: 22px; }
 .proj-detail__body li { margin-bottom: 6px; }
 .proj-detail__body code { font-family: var(--mono); font-size: 13px; background: rgba(255,255,255,0.06); padding: 2px 5px; border-radius: 3px; }
