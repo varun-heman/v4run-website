@@ -3769,7 +3769,7 @@ body.screen-glitching {
         if (bangSfx) { bangSfx.volume = 0.7; bangSfx.play().catch(() => {}); }
       }
 
-      setTimeout(() => document.body.classList.add('ui-ready'), window._isFirstVisit ? 5700 : 2700);
+      setTimeout(() => document.body.classList.add('ui-ready'), window._isFirstVisit ? 6700 : 2700);
     }, 1000);
   };
 
@@ -4268,7 +4268,7 @@ const NAV_LABELS = {};  // key → display label
             lbl.classList.remove('visible');
             runIntro(() => {
               if (window._triggerBigBang) window._triggerBigBang();
-              setTimeout(() => { if (!isNavHover) showNextQuote(); }, 10800);
+              setTimeout(() => { if (!isNavHover) showNextQuote(); }, 11800);
             });
           }, 2000);
         }
