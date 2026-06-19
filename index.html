@@ -2333,6 +2333,31 @@ body.strip-hovered #viewall-btn {
   font-size: 0.9em;
 }
 
+/* ── REPLAY INTRO ─────────────────────────────────── */
+.replay-intro {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(184,240,210,0.4);
+  background: rgba(100,255,160,0.02);
+  border: 1px solid rgba(100,255,160,0.12);
+  border-radius: 3px;
+  padding: 4px 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.replay-intro:hover {
+  color: rgba(100,255,160,0.85);
+  border-color: rgba(100,255,160,0.35);
+  background: rgba(100,255,160,0.06);
+}
+.replay-intro__hint {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.03em;
+  text-transform: none;
+  color: rgba(184,240,210,0.45);
+  white-space: nowrap;
+}
+
 /* ── CONTACT TRIGGER ─────────────────────────────── */
 /* ── SOCIAL DOCK ──────────────────────────────────── */
 .social-dock {
@@ -2852,6 +2877,10 @@ body.screen-glitching {
 </div>
 
 <div class="corner corner-bl">
+  <button class="replay-intro" id="replay-intro-btn" aria-label="Replay intro">
+    <span class="replay-intro__label">Replay Intro</span>
+    <span class="replay-intro__hint" id="replay-intro-hint"></span>
+  </button>
   <div class="social-dock" id="social-dock">
     <button class="social-dock__label" id="contact-trigger">Contact Me</button>
     <div class="social-dock__icons" id="social-icons">
@@ -3728,7 +3757,7 @@ body.screen-glitching {
     // Slower, more deliberate expansion on first visit only (synced to the
     // intro music) — return visitors with the cookie already set get the
     // original, snappier speed.
-    bangDuration = window._isFirstVisit ? 5.2 : 2.2;
+    bangDuration = window._isFirstVisit ? 6.2 : 2.2;
     // Fade canvas in first, then fire bang after 1s so the dot is visible before expanding
     document.body.classList.add('bang-ready');
     setTimeout(() => {
@@ -6126,6 +6155,41 @@ window.addEventListener('popstate', () => {
   if (pa) pa.classList.remove('open');
   if (hash) _openFromHash(hash);
 });
+
+// ── REPLAY INTRO ─────────────────────────────────────────────────────────
+(function () {
+  const btn  = document.getElementById('replay-intro-btn');
+  const hint = document.getElementById('replay-intro-hint');
+  if (!btn || !hint) return;
+
+  const HINT_TEXT = 'this will reload the page with the intro';
+  let typeTimer = null;
+
+  function typeHint() {
+    clearTimeout(typeTimer);
+    let i = 0;
+    (function step() {
+      hint.textContent = HINT_TEXT.slice(0, i);
+      i++;
+      if (i <= HINT_TEXT.length) typeTimer = setTimeout(step, 18);
+    })();
+  }
+
+  function clearHint() {
+    clearTimeout(typeTimer);
+    hint.textContent = '';
+  }
+
+  btn.addEventListener('mouseenter', typeHint);
+  btn.addEventListener('mouseleave', clearHint);
+  btn.addEventListener('focus', typeHint);
+  btn.addEventListener('blur', clearHint);
+
+  btn.addEventListener('click', () => {
+    document.cookie = 'v4run_v=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    location.reload();
+  });
+})();
 
 // ── RANDOM SCREEN GLITCH ──────────────────────────────────────────────────
 // Fires a brief (~360ms) full-viewport glitch at random, infrequent intervals:
