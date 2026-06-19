@@ -4023,11 +4023,20 @@ const NAV_LABELS = {};  // key → display label
           setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9200);
         } else {
           setVisited();
-          // First visit — run intro then bang (bang handler starts music)
-          runIntro(() => {
-            if (window._triggerBigBang) window._triggerBigBang();
-            setTimeout(() => { if (!isNavHover) showNextQuote(); }, 7800);
-          });
+          // Flash a lone cursor for ~2s (music is already playing), then type
+          lbl.innerHTML = '';
+          lbl.classList.add('quote-mode', 'intro-mode', 'visible');
+          const preCursor = document.createElement('span');
+          preCursor.className = 'tw-cursor';
+          lbl.appendChild(preCursor);
+          setTimeout(() => {
+            lbl.innerHTML = '';
+            lbl.classList.remove('visible');
+            runIntro(() => {
+              if (window._triggerBigBang) window._triggerBigBang();
+              setTimeout(() => { if (!isNavHover) showNextQuote(); }, 7800);
+            });
+          }, 2000);
         }
       }, 520);
     });
