@@ -4107,6 +4107,12 @@ const NAV_LABELS = {};  // key → display label
 
   let _introActive = false;
   let _introResume = null; // callback to fire when tab regains focus
+  let _introSkip   = null; // set by runIntro(); call it to jump straight to the big bang
+
+  // Escape during the intro — skip the typing entirely and go straight to the bang.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && _introActive && _introSkip) _introSkip();
+  });
 
   // Drop-in replacement for _twTimer = setTimeout inside intro functions.
   // If the tab is already hidden, saves fn and waits; otherwise behaves like setTimeout.
@@ -4208,6 +4214,22 @@ const NAV_LABELS = {};  // key → display label
 
   function runIntro(onAllDone) {
     _introActive = true;
+
+    let _done = false;
+    function finish() {
+      if (_done) return; // guard against the natural end and Escape both firing
+      _done = true;
+      _introActive = false;
+      _introSkip = null;
+      onAllDone();
+    }
+    _introSkip = function () {
+      cancelTypewriter();
+      lbl.innerHTML = '';
+      lbl.classList.remove('visible', 'intro-mode', 'quote-mode');
+      finish();
+    };
+
     // Step 1 — “Hi!”
     typePhrase('Hi!', 1200, (span, cur) => {
       deleteSpan(span, cur, () => {
@@ -4224,10 +4246,7 @@ const NAV_LABELS = {};  // key → display label
 
                     // Step 3 — “Welcome to my universe.”
                     typePhrase('Welcome to my universe.', 1800, (span3, cur3) => {
-                      deleteSpan(span3, cur3, () => {
-                        _introActive = false;
-                        onAllDone();
-                      });
+                      deleteSpan(span3, cur3, finish);
                     });
 
                   });
