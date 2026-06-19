@@ -243,3 +243,52 @@ projects.forEach(p => {
 });
 
 console.log(`✓ gen-projects: ${written} project page(s) written to /projects/<slug>/`);
+
+// ── sitemap.xml ────────────────────────────────────────────────────────────
+// Only includes URLs that are real, independently loadable pages: the
+// homepage and each project's canonical address. The rest of the site
+// (writing, reads, pics, about, etc.) lives behind client-side overlays on
+// the homepage with no distinct crawlable URL of their own, so they don't
+// belong here — listing them would just point crawlers at duplicate/empty
+// content.
+const SITE = 'https://v4.run';
+
+function urlEntry(loc, { lastmod, changefreq, priority } = {}) {
+  return [
+    '  <url>',
+    `    <loc>${loc}</loc>`,
+    lastmod    ? `    <lastmod>${lastmod}</lastmod>` : '',
+    changefreq ? `    <changefreq>${changefreq}</changefreq>` : '',
+    priority   ? `    <priority>${priority}</priority>` : '',
+    '  </url>',
+  ].filter(Boolean).join('\n');
+}
+
+const urls = [
+  urlEntry(`${SITE}/`, { changefreq: 'weekly', priority: '1.0' }),
+  ...projects
+    .filter(p => p.slug)
+    .map(p => urlEntry(`${SITE}/projects/${p.slug}/`, {
+      lastmod: p.date || undefined,
+      changefreq: 'monthly',
+      priority: '0.8',
+    })),
+];
+
+const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.join('\n')}
+</urlset>
+`;
+
+fs.writeFileSync(path.join(root, 'sitemap.xml'), sitemap);
+console.log(`✓ gen-projects: sitemap.xml written with ${urls.length} URL(s)`);
+
+// ── robots.txt ───────────────────────────────────────────────────────────
+// Created only if one doesn't already exist, so it never clobbers hand
+// edits — it just points crawlers at the sitemap above.
+const robotsFile = path.join(root, 'robots.txt');
+if (!fs.existsSync(robotsFile)) {
+  fs.writeFileSync(robotsFile, `User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`);
+  console.log('✓ gen-projects: robots.txt created');
+}
