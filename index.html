@@ -1803,6 +1803,10 @@ body.ui-ready #writings-section.ready {
 /* is-new: no special card styling — the NEW badge is the only indicator */
 .article-card.is-hovered .article-card__title {
   color: rgba(232, 232, 226, 0.97);
+  /* drop the 2-line reservation on expand so the description sits right
+     under the title instead of leaving a gap for short titles */
+  min-height: 0;
+  transition: color 0.3s ease, min-height 0.22s ease;
 }
 /* Dim all other cards when one is hovered — fast to dim, slow to revert */
 .article-card {
@@ -2341,7 +2345,7 @@ body.strip-hovered #viewall-btn {
   background: rgba(100,255,160,0.02);
   border: 1px solid rgba(100,255,160,0.12);
   border-radius: 3px;
-  padding: 4px 8px;
+  padding: 2px 6px;
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s, background 0.2s;
 }
