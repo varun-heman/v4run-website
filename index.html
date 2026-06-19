@@ -2832,8 +2832,10 @@ body.strip-hovered .nav {
       <span id="contact-close">×</span>
     </div>
     <div id="contact-body">
-      <form name="contact" method="POST" data-netlify="true" id="contact-form">
+      <form name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="contact-form">
         <input type="hidden" name="form-name" value="contact">
+        <!-- honeypot: hidden from humans, bots fill it and get silently rejected -->
+        <p style="display:none"><input name="bot-field"></p>
         <div class="cf-field">
           <label for="cf-name">Name</label>
           <input type="text" id="cf-name" name="name" autocomplete="name" required>
@@ -2841,6 +2843,7 @@ body.strip-hovered .nav {
         <div class="cf-field">
           <label for="cf-email">Email</label>
           <input type="email" id="cf-email" name="email" autocomplete="email" required>
+          <span id="cf-email-err" style="display:none;font-size:10px;color:rgba(220,60,60,0.85);letter-spacing:0.08em;margin-top:4px;font-family:var(--mono)">invalid email address</span>
         </div>
         <div class="cf-field">
           <label for="cf-message">Message</label>
@@ -5029,10 +5032,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
   if (!overlay || !trigger) return;
 
+  let _formOpenedAt = 0;
   function openContact() {
     overlay.classList.add('open');
     window._modalOpen = true;
     document.body.style.overflow = 'hidden';
+    _formOpenedAt = Date.now();
   }
   function closeContact() {
     overlay.classList.remove('open');
@@ -5062,9 +5067,51 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     subConf.classList.remove('open');
   });
 
+  // Strict email validation: local@domain.tld, real TLD, no consecutive dots
+  function isValidEmail(v) {
+    if (!v || v.length > 254) return false;
+    const re = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
+    if (!re.test(v)) return false;
+    if (/\.{2,}/.test(v)) return false; // no consecutive dots
+    const [local, domain] = v.split('@');
+    if (local.length > 64 || !domain.includes('.')) return false;
+    return true;
+  }
+
+  const emailInput = document.getElementById('cf-email');
+  const emailErr   = document.getElementById('cf-email-err');
+  emailInput.addEventListener('blur', () => {
+    const ok = isValidEmail(emailInput.value.trim());
+    emailErr.style.display = emailInput.value && !ok ? 'block' : 'none';
+    emailInput.style.borderColor = emailInput.value && !ok ? 'rgba(220,60,60,0.5)' : '';
+  });
+  emailInput.addEventListener('input', () => {
+    if (emailErr.style.display === 'block') {
+      emailErr.style.display = 'none';
+      emailInput.style.borderColor = '';
+    }
+  });
+
   // Form submit → Netlify fetch
   form.addEventListener('submit', async e => {
     e.preventDefault();
+
+    // Honeypot check (client-side backup — Netlify also checks server-side)
+    const botField = form.querySelector('[name="bot-field"]');
+    if (botField && botField.value) return;
+
+    // Timing check — reject if submitted in under 3s (likely a bot)
+    if (Date.now() - _formOpenedAt < 3000) return;
+
+    // Email validation
+    const emailVal = emailInput.value.trim();
+    if (!isValidEmail(emailVal)) {
+      emailErr.style.display = 'block';
+      emailInput.style.borderColor = 'rgba(220,60,60,0.5)';
+      emailInput.focus();
+      return;
+    }
+
     const data = new FormData(form);
     try {
       const res = await fetch('/', { method: 'POST', body: data });
