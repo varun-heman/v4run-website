@@ -1518,9 +1518,10 @@ body.ui-ready #writings-section.ready {
   -webkit-user-drag: none;
   transform-origin: bottom center;
   z-index: 1;
-  transition: border-color 0.22s ease, background 0.22s ease,
-              transform 0.22s cubic-bezier(0.16,1,0.3,1),
-              box-shadow 0.22s ease;
+  /* collapse: wait 280ms before shrinking back */
+  transition: border-color 0.25s ease 0.28s, background 0.25s ease 0.28s,
+              transform 0.28s cubic-bezier(0.16,1,0.3,1) 0.28s,
+              box-shadow 0.25s ease 0.28s;
 }
 .article-card.is-hovered {
   border-color: rgba(184, 240, 210, 0.28);
@@ -1528,6 +1529,10 @@ body.ui-ready #writings-section.ready {
   transform: scale(1.1) translateY(-6px);
   box-shadow: 0 20px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(100,255,160,0.1);
   z-index: 20;
+  /* expand: no delay */
+  transition: border-color 0.22s ease, background 0.22s ease,
+              transform 0.22s cubic-bezier(0.16,1,0.3,1),
+              box-shadow 0.22s ease;
 }
 /* is-new: no special card styling — the NEW badge is the only indicator */
 .article-card.is-hovered .article-card__title {
@@ -1598,6 +1603,8 @@ body.strip-hovered .nav {
   position: relative;
   z-index: 2; /* above thumbnail (z:0) and gradient overlay (z:1) */
   padding: 9px 11px 10px;
+  display: flex;
+  flex-direction: column;
 }
 .article-card__meta {
   display: flex;
@@ -1646,7 +1653,8 @@ body.strip-hovered .nav {
   gap: 4px;
   overflow: hidden;
   max-height: 1.6em; /* single line — prevents wrapping */
-  margin-top: 7px;
+  margin-top: auto;
+  padding-top: 7px;
   margin-bottom: 0;
 }
 .article-card__tag {
@@ -1672,7 +1680,8 @@ body.strip-hovered .nav {
   font-weight: 500;
   color: rgba(232, 232, 226, 0.82);
   line-height: 1.45;
-  margin-bottom: 6px;
+  min-height: calc(1.45em * 2); /* always reserve 2 lines so tags align across cards */
+  margin-bottom: 0;
   letter-spacing: 0.01em;
   transition: color 0.3s ease;
   display: -webkit-box;
@@ -1686,14 +1695,19 @@ body.strip-hovered .nav {
   max-height: 0;
   opacity: 0;
   margin-top: 0;
-  transition: max-height 0.38s cubic-bezier(0.16,1,0.3,1),
-              opacity 0.24s ease 0.06s,
-              margin-top 0.3s ease;
+  /* collapse: wait before shrinking */
+  transition: max-height 0.3s cubic-bezier(0.4,0,1,1) 0.22s,
+              opacity 0.18s ease 0.1s,
+              margin-top 0.28s ease 0.2s;
 }
 .article-card.is-hovered .article-card__desc-wrap {
   max-height: 80px;
   opacity: 1;
   margin-top: 6px;
+  /* expand: immediate, no delay */
+  transition: max-height 0.38s cubic-bezier(0.16,1,0.3,1),
+              opacity 0.24s ease 0.06s,
+              margin-top 0.3s ease;
 }
 .article-card__desc {
   font-family: var(--sans);
@@ -1707,10 +1721,11 @@ body.strip-hovered .nav {
   overflow: hidden;
   text-overflow: ellipsis;
   transform: translateY(6px);
-  transition: transform 0.38s cubic-bezier(0.16,1,0.3,1);
+  transition: transform 0.3s cubic-bezier(0.4,0,1,1) 0.2s;
 }
 .article-card.is-hovered .article-card__desc {
   transform: translateY(0);
+  transition: transform 0.38s cubic-bezier(0.16,1,0.3,1);
 }
 
 /* ─── ESC HINT ───────────────────────────────────────── */
