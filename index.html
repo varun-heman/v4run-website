@@ -2667,8 +2667,9 @@ body.strip-hovered #viewall-btn {
 
 /* ── SCREEN GLITCH (random, whole-viewport) ──────────────────────────────
    Compositor-only properties (transform / opacity / clip-path) — no filter,
-   no blur, no layout/paint of real content. Cost is negligible even while
-   the WebGL dot-sphere is animating underneath. */
+   no blur, no layout/paint of real content. Bands/blocks are plain DOM
+   children generated + removed by JS per-trigger, so cost stays negligible
+   even while the WebGL dot-sphere is animating underneath. */
 #screen-glitch-overlay {
   position: fixed;
   inset: 0;
@@ -2677,78 +2678,81 @@ body.strip-hovered #viewall-btn {
   opacity: 0;
   mix-blend-mode: screen;
   background: repeating-linear-gradient(0deg,
-    rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1px,
+    rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px,
     transparent 1px, transparent 3px);
-}
-#screen-glitch-overlay::before,
-#screen-glitch-overlay::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  mix-blend-mode: screen;
-  opacity: 0;
-}
-#screen-glitch-overlay::before { background: rgba(255, 30, 80, 0.35); }
-#screen-glitch-overlay::after  { background: rgba(0, 210, 255, 0.30); }
-
-body.screen-glitching {
-  animation: sg-body-jitter 0.24s steps(1, end);
 }
 body.screen-glitching #screen-glitch-overlay {
   opacity: 1;
-  animation: sg-overlay-flicker 0.24s steps(1, end);
+  animation: sg-overlay-flicker 0.36s steps(1, end);
 }
-body.screen-glitching #screen-glitch-overlay::before {
-  animation: sg-slice-r 0.24s steps(1, end);
+.sg-band, .sg-block {
+  position: absolute;
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
 }
-body.screen-glitching #screen-glitch-overlay::after {
-  animation: sg-slice-c 0.24s steps(1, end);
+body.screen-glitching .sg-band {
+  animation: sg-band-flicker 0.36s steps(1, end);
+}
+body.screen-glitching .sg-block {
+  animation: sg-block-flicker 0.32s steps(1, end);
+}
+
+body.screen-glitching {
+  animation: sg-body-jitter 0.36s steps(1, end);
 }
 
 @keyframes sg-body-jitter {
   0%   { transform: translate(0, 0); }
-  8%   { transform: translate(-6px, 1px); }
-  16%  { transform: translate(5px, -2px); }
-  24%  { transform: translate(-3px, 2px); }
-  32%  { transform: translate(0, 0); }
-  40%  { transform: translate(4px, -1px); }
-  48%  { transform: translate(-5px, 0); }
-  60%  { transform: translate(0, 0); }
-  68%  { transform: translate(3px, 1px); }
-  80%  { transform: translate(-2px, -1px); }
+  6%   { transform: translate(-14px, 3px); }
+  12%  { transform: translate(11px, -5px); }
+  18%  { transform: translate(-8px, 6px); }
+  24%  { transform: translate(0, 0); }
+  30%  { transform: translate(9px, -3px); }
+  36%  { transform: translate(-12px, 2px); }
+  44%  { transform: translate(0, 0); }
+  52%  { transform: translate(7px, 4px); }
+  58%  { transform: translate(-5px, -2px); }
+  64%  { transform: translate(0, 0); }
+  74%  { transform: translate(10px, -4px); }
+  82%  { transform: translate(-6px, 1px); }
   100% { transform: translate(0, 0); }
 }
 @keyframes sg-overlay-flicker {
-  0%   { opacity: 0.35; clip-path: inset(12% 0 70% 0); }
-  8%   { opacity: 0;    clip-path: inset(40% 0 20% 0); }
-  16%  { opacity: 0.4;  clip-path: inset(0 0 88% 0); }
-  24%  { opacity: 0;    clip-path: inset(60% 0 5% 0); }
-  32%  { opacity: 0.3;  clip-path: inset(25% 0 50% 0); }
-  40%  { opacity: 0;    clip-path: inset(80% 0 2% 0); }
-  56%  { opacity: 0.25; clip-path: inset(5% 0 75% 0); }
-  68%  { opacity: 0;    clip-path: inset(45% 0 30% 0); }
+  0%   { opacity: 0.55; clip-path: inset(12% 0 70% 0); }
+  6%   { opacity: 0;    clip-path: inset(40% 0 20% 0); }
+  12%  { opacity: 0.6;  clip-path: inset(0 0 88% 0); }
+  18%  { opacity: 0;    clip-path: inset(60% 0 5% 0); }
+  26%  { opacity: 0.5;  clip-path: inset(25% 0 50% 0); }
+  34%  { opacity: 0;    clip-path: inset(80% 0 2% 0); }
+  44%  { opacity: 0.45; clip-path: inset(5% 0 75% 0); }
+  54%  { opacity: 0;    clip-path: inset(45% 0 30% 0); }
+  64%  { opacity: 0.35; clip-path: inset(65% 0 8% 0); }
+  74%  { opacity: 0; }
   100% { opacity: 0;    clip-path: inset(0 0 100% 0); }
 }
-@keyframes sg-slice-r {
-  0%   { opacity: 0.5; transform: translateX(-8px); clip-path: inset(15% 0 60% 0); }
-  20%  { opacity: 0;   transform: translateX(0); }
-  44%  { opacity: 0.45; transform: translateX(6px); clip-path: inset(50% 0 10% 0); }
-  64%  { opacity: 0;   transform: translateX(0); }
-  100% { opacity: 0; }
+@keyframes sg-band-flicker {
+  0%   { opacity: var(--sg-op, 0.6); transform: translateX(var(--sg-dx, 14px)); }
+  10%  { opacity: 0; transform: translateX(0); }
+  24%  { opacity: var(--sg-op, 0.55); transform: translateX(calc(var(--sg-dx, 14px) * -1)); }
+  38%  { opacity: 0; transform: translateX(0); }
+  52%  { opacity: var(--sg-op, 0.5); transform: translateX(var(--sg-dx, 14px)); }
+  66%  { opacity: 0; transform: translateX(0); }
+  80%  { opacity: var(--sg-op, 0.35); transform: translateX(calc(var(--sg-dx, 14px) * -0.6)); }
+  100% { opacity: 0; transform: translateX(0); }
 }
-@keyframes sg-slice-c {
-  0%   { opacity: 0; }
-  12%  { opacity: 0.4; transform: translateX(7px); clip-path: inset(30% 0 45% 0); }
-  32%  { opacity: 0;   transform: translateX(0); }
-  56%  { opacity: 0.4; transform: translateX(-6px); clip-path: inset(70% 0 5% 0); }
-  76%  { opacity: 0;   transform: translateX(0); }
+@keyframes sg-block-flicker {
+  0%   { opacity: 0.85; }
+  16%  { opacity: 0; }
+  34%  { opacity: 0.7; }
+  48%  { opacity: 0; }
+  66%  { opacity: 0.5; }
   100% { opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   body.screen-glitching { animation: none !important; }
   body.screen-glitching #screen-glitch-overlay,
-  body.screen-glitching #screen-glitch-overlay::before,
-  body.screen-glitching #screen-glitch-overlay::after {
+  .sg-band, .sg-block {
     animation: none !important;
     opacity: 0 !important;
   }
@@ -6055,16 +6059,69 @@ window.addEventListener('popstate', () => {
 });
 
 // ── RANDOM SCREEN GLITCH ──────────────────────────────────────────────────
-// Fires a brief (~240ms) full-viewport glitch at random, infrequent intervals.
-// Uses only transform/opacity/clip-path (compositor-only) so it's effectively
-// free performance-wise, even with the WebGL dot-sphere running underneath.
+// Fires a brief (~360ms) full-viewport glitch at random, infrequent intervals:
+// body jitter + colored RGB-split scan bands + a few "corrupted block" artefacts.
+// Bands/blocks are generated fresh each trigger then removed — only ever a
+// handful of compositor-only (transform/opacity) elements exist at once, so
+// the steady-state cost is zero and the burst cost is negligible.
 (function () {
   const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (prefersReduced) return;
 
-  const MIN_GAP_MS = 9000;   // shortest wait between glitches
-  const MAX_GAP_MS = 26000;  // longest wait between glitches
+  const overlay = document.getElementById('screen-glitch-overlay');
+  if (!overlay) return;
+
+  const MIN_GAP_MS = 7000;   // shortest wait between glitches
+  const MAX_GAP_MS = 19000;  // longest wait between glitches
+  const GLITCH_MS  = 360;
+  const TINTS = [
+    'rgba(255, 30, 80, 0.55)',   // red
+    'rgba(0, 210, 255, 0.5)',    // cyan
+    'rgba(100, 255, 160, 0.5)',  // theme green
+    'rgba(255, 255, 255, 0.45)', // white static
+    'rgba(255, 210, 0, 0.4)',    // amber
+  ];
   let pending = false;
+
+  function rand(min, max) { return min + Math.random() * (max - min); }
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function spawnBands(n) {
+    const els = [];
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement('div');
+      el.className = 'sg-band';
+      const h = rand(2, 7);
+      el.style.left = '0';
+      el.style.right = '0';
+      el.style.top = rand(0, 96) + '%';
+      el.style.height = h + '%';
+      el.style.background = pick(TINTS);
+      el.style.setProperty('--sg-dx', rand(8, 26) + 'px');
+      el.style.setProperty('--sg-op', rand(0.4, 0.7));
+      overlay.appendChild(el);
+      els.push(el);
+    }
+    return els;
+  }
+
+  function spawnBlocks(n) {
+    const els = [];
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement('div');
+      el.className = 'sg-block';
+      const w = rand(6, 22);
+      const h = rand(1.5, 8);
+      el.style.left = rand(0, 100 - w) + '%';
+      el.style.top = rand(0, 100 - h) + '%';
+      el.style.width = w + '%';
+      el.style.height = h + '%';
+      el.style.background = pick(TINTS);
+      overlay.appendChild(el);
+      els.push(el);
+    }
+    return els;
+  }
 
   function fireGlitch() {
     if (pending) return;
@@ -6076,11 +6133,16 @@ window.addEventListener('popstate', () => {
       return;
     }
     pending = true;
+
+    const bands  = spawnBands(Math.round(rand(3, 6)));
+    const blocks = spawnBlocks(Math.round(rand(2, 5)));
+
     document.body.classList.add('screen-glitching');
     setTimeout(() => {
       document.body.classList.remove('screen-glitching');
+      bands.concat(blocks).forEach(el => el.remove());
       pending = false;
-    }, 260);
+    }, GLITCH_MS);
   }
 
   function scheduleNext(forceDelay) {
