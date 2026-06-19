@@ -3229,6 +3229,20 @@ body.crt-off .crt-off-line {
 <!-- ── THREE.JS ────────────────────────────────────── -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
+// ── BFCACHE RESTORE FIX ──────────────────────────────────────────────────
+// When you navigate away (e.g. to YouTube) and hit Back, Chrome/Safari often
+// restore this page from the back-forward cache instead of re-running our
+// scripts. The WebGL context behind the dot-sphere background is frequently
+// dropped while the tab was hidden/cached (especially after a GPU-heavy page
+// like YouTube), and Three.js has no way to rebuild those GPU resources from
+// a frozen script — so the canvas (and everything relying on its rAF loop)
+// just stays blank. `pageshow` with `persisted: true` tells us we came back
+// from that cache; forcing a real reload re-runs everything from scratch,
+// which is exactly what manually refreshing already fixes — just automatic.
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) location.reload();
+});
+
 // ═══════════════════════════════════════════════════
 //  DOT SPHERE BACKGROUND — built by Varun
 // ═══════════════════════════════════════════════════
@@ -4933,90 +4947,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   // Stamp corner links for glitch hover
   document.querySelectorAll('.corner a').forEach(a => a.dataset.text = a.textContent);
 
-  // ── Mobile-only: Articles nav item + overlay ──────────────────────────
-  if (window.innerWidth <= 768) {
-    const articlesOverlay = document.getElementById('articles-overlay');
-    const articlesScrollEl = document.getElementById('articles-overlay-scroll');
-    const articlesCloseBtn = document.getElementById('articles-overlay-close');
-    let articlesNavBuilt = false;
-
-    // Build the overlay card list — fetch articles.md directly
-    async function buildArticlesOverlay() {
-      if (articlesScrollEl.children.length > 0) return; // already built
-      let articles = window._articles; // use cached if available
-      if (!articles) {
-        try {
-          const res = await fetch('content/articles.md');
-          if (!res.ok) throw new Error();
-          const parse = window._parseArticlesMd || (t => []);
-          articles = parse(await res.text());
-        } catch(e) {
-          try { articles = JSON.parse(document.getElementById('articles-data').textContent); }
-          catch(e2) { articles = []; }
-        }
-      }
-      articles.forEach(a => {
-        const card = document.createElement('a');
-        card.className = 'articles-overlay-card' + (a._isNew ? ' is-new' : '');
-        card.href = a.url || '#';
-        if (a.url && a.url !== '#') card.target = '_blank';
-        card.rel = 'noopener noreferrer';
-        const thumbHtml = `<img class="articles-overlay-card__thumb" src="${a.thumb || 'images/thumbs/placeholder.svg'}" alt="" onerror="this.src=window._thumbFb">`;
-        card.innerHTML = `${thumbHtml}
-          <div class="articles-overlay-card__body">
-            <div class="articles-overlay-card__meta">
-              <span>${a.source || ''}</span>
-              <span>${fmtArticleDate(a.date)}</span>
-              ${a._isNew ? '<span class="article-card__new">NEW</span>' : ''}
-            </div>
-            <div class="articles-overlay-card__title">${a.title}</div>
-            <div class="articles-overlay-card__desc">${a.desc || ''}</div>
-          </div>`;
-        articlesScrollEl.appendChild(card);
-      });
-    }
-
-    async function openArticlesOverlay() {
-      await buildArticlesOverlay();
-      articlesOverlay.classList.add('open');
-      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      articlesNavItem.classList.add('active');
-    }
-    function closeArticlesOverlay() {
-      articlesOverlay.classList.remove('open');
-      articlesNavItem.classList.remove('active');
-    }
-
-    articlesCloseBtn.addEventListener('click', closeArticlesOverlay);
-    articlesOverlay.addEventListener('click', e => {
-      if (e.target === articlesOverlay) closeArticlesOverlay();
-    });
-
-    // Articles nav item — appended last, mobile only
-    const articlesNavItem = document.createElement('div');
-    articlesNavItem.className = 'nav-item';
-    articlesNavItem.dataset.navKey = 'writing';
-    articlesNavItem.innerHTML = `<span class="nav-link">Writings</span>`;
-    articlesNavItem.addEventListener('click', () => {
-      // Use the full View All overlay if available, else fall back to simple list
-      if (window._openViewAll) {
-        window._openViewAll();
-      } else {
-        openArticlesOverlay();
-      }
-    });
-    navEl.appendChild(articlesNavItem);
-
-    // Pics nav item — mobile only
-    const picsNavItem = document.createElement('div');
-    picsNavItem.className = 'nav-item';
-    picsNavItem.dataset.navKey = 'pics';
-    picsNavItem.innerHTML = `<span class="nav-link">Pics</span>`;
-    picsNavItem.addEventListener('click', () => {
-      if (window._openGallery) window._openGallery();
-    });
-    navEl.appendChild(picsNavItem);
-  }
+  // NOTE: mobile used to get extra hand-rolled "Writings"/"Pics" nav items
+  // appended here, duplicating the real nav.md-driven "Writing"/"Pics" items
+  // built above (which already work at every width and call the same
+  // _openViewAll()/_openGallery() handlers). Removed — that's what was
+  // causing Pics (and Writing) to show up twice in the mobile nav.
 
   // ── Mobile nav scroll-hint fades ─────────────────────────────────────
   if (window.innerWidth <= 768) {
