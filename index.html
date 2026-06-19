@@ -2350,6 +2350,13 @@ body.strip-hovered #viewall-btn {
   border-color: rgba(100,255,160,0.35);
   background: rgba(100,255,160,0.06);
 }
+/* Hidden while the Contact Me dock is expanded, so the icon row has room
+   and the two controls don't visually compete */
+.corner-bl.dock-hovering .replay-intro {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
 .replay-intro__hint {
   font-family: var(--mono); font-size: 8px; letter-spacing: 0.03em;
   text-transform: none;
@@ -2375,11 +2382,19 @@ body.strip-hovered #viewall-btn {
 .social-dock:hover .social-dock__label,
 .social-dock__label:hover { color: rgba(100,255,160,0.9); }
 
-/* Icons container */
+/* Icons container — collapsed to zero width until the dock is hovered, so
+   it doesn't reserve invisible layout space that pushes neighboring elements
+   (like Replay Intro) away. */
 .social-dock__icons {
   display: flex; align-items: center; gap: 2px;
+  margin-left: 0;
+  max-width: 0;
+  overflow: hidden;
+  transition: max-width 0.24s cubic-bezier(0.16,1,0.3,1), margin-left 0.24s cubic-bezier(0.16,1,0.3,1);
+}
+.social-dock:hover .social-dock__icons {
   margin-left: 10px;
-  overflow: visible;
+  max-width: 320px;
 }
 
 /* Individual icon */
@@ -5691,6 +5706,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 })();
 
 // ── SOCIAL DOCK ───────────────────────────────────────
+(function () {
+  const dock     = document.getElementById('social-dock');
+  const cornerBl = document.querySelector('.corner-bl');
+  if (!dock || !cornerBl) return;
+  dock.addEventListener('mouseenter', () => cornerBl.classList.add('dock-hovering'));
+  dock.addEventListener('mouseleave', () => cornerBl.classList.remove('dock-hovering'));
+})();
+
 (async function () {
   const dock      = document.getElementById('social-dock');
   const iconsWrap = document.getElementById('social-icons');
