@@ -498,10 +498,14 @@ body.ui-ready #writings-section.ready {
   box-shadow: 0 0 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(100,255,160,0.06),
               inset 0 0 40px rgba(0,0,0,0.5);
   overflow: hidden;
-  clip-path: inset(50% 0 50% 0);
+  opacity: 0;
 }
 #access-gate.visible #access-dialog {
-  animation: gate-frame-expand 0.5s cubic-bezier(0.16,1,0.3,1) forwards;
+  animation: gate-panel-in 0.4s ease-out forwards;
+}
+@keyframes gate-panel-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 #access-dialog::before {
   content: '';
@@ -523,18 +527,57 @@ body.ui-ready #writings-section.ready {
   position: absolute; width: 12px; height: 12px;
   border-color: rgba(100,255,160,0.55); border-style: solid;
   pointer-events: none; z-index: 2;
+  opacity: 0;
 }
-.ag-corner--tl { top: 0; left: 0;  border-width: 1px 0 0 1px; }
-.ag-corner--tr { top: 0; right: 0; border-width: 1px 1px 0 0; }
-.ag-corner--bl { bottom: 0; left: 0;  border-width: 0 0 1px 1px; }
-.ag-corner--br { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
-@keyframes gate-frame-expand {
-  0%   { clip-path: inset(50% 0 50% 0); }
-  100% { clip-path: inset(0% 0 0% 0); }
+.ag-corner--tl { top: 50%; left: 50%;  border-width: 1px 0 0 1px; }
+.ag-corner--tr { top: 50%; right: 50%; border-width: 1px 1px 0 0; }
+.ag-corner--bl { bottom: 50%; left: 50%;  border-width: 0 0 1px 1px; }
+.ag-corner--br { bottom: 50%; right: 50%; border-width: 0 1px 1px 0; }
+
+/* Corners start collapsed at the dialog's center point and snap outward
+   to their resting corners — a HUD reticle "establishing the frame" beat. */
+#access-gate.visible .ag-corner--tl {
+  animation: ag-corner-tl 0.46s cubic-bezier(0.16,1,0.3,1) 0.08s forwards;
 }
-@keyframes gate-content-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+#access-gate.visible .ag-corner--tr {
+  animation: ag-corner-tr 0.46s cubic-bezier(0.16,1,0.3,1) 0.08s forwards;
+}
+#access-gate.visible .ag-corner--bl {
+  animation: ag-corner-bl 0.46s cubic-bezier(0.16,1,0.3,1) 0.08s forwards;
+}
+#access-gate.visible .ag-corner--br {
+  animation: ag-corner-br 0.46s cubic-bezier(0.16,1,0.3,1) 0.08s forwards;
+}
+@keyframes ag-corner-tl {
+  0%   { top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; }
+  35%  { opacity: 1; }
+  100% { top: 0; left: 0; transform: translate(0, 0); opacity: 1; }
+}
+@keyframes ag-corner-tr {
+  0%   { top: 50%; right: 50%; transform: translate(50%, -50%); opacity: 0; }
+  35%  { opacity: 1; }
+  100% { top: 0; right: 0; transform: translate(0, 0); opacity: 1; }
+}
+@keyframes ag-corner-bl {
+  0%   { bottom: 50%; left: 50%; transform: translate(-50%, 50%); opacity: 0; }
+  35%  { opacity: 1; }
+  100% { bottom: 0; left: 0; transform: translate(0, 0); opacity: 1; }
+}
+@keyframes ag-corner-br {
+  0%   { bottom: 50%; right: 50%; transform: translate(50%, 50%); opacity: 0; }
+  35%  { opacity: 1; }
+  100% { bottom: 0; right: 0; transform: translate(0, 0); opacity: 1; }
+}
+
+/* Content glitches in once the corner frame has finished snapping out */
+@keyframes gate-content-glitch {
+  0%   { opacity: 0; clip-path: inset(0 0 100% 0); transform: translateX(0); }
+  10%  { opacity: 1; clip-path: inset(0 55% 0 0);  transform: translateX(-7px); }
+  20%  { opacity: 0; clip-path: inset(0 0 35% 60%); transform: translateX(5px); }
+  30%  { opacity: 1; clip-path: inset(38% 0 0 0);  transform: translateX(-4px); }
+  42%  { opacity: 0.15; transform: translateX(3px); }
+  58%  { opacity: 1; clip-path: inset(0 0 0 0); transform: translateX(0); }
+  100% { opacity: 1; clip-path: inset(0 0 0 0); transform: translateX(0); }
 }
 .ag-header {
   font-family: var(--mono);
@@ -547,7 +590,7 @@ body.ui-ready #writings-section.ready {
   opacity: 0;
 }
 #access-gate.visible .ag-header {
-  animation: gate-content-in 0.4s ease-out 0.5s forwards;
+  animation: gate-content-glitch 0.4s steps(1, end) 0.54s forwards;
 }
 .ag-body {
   position: relative; z-index: 1;
@@ -555,7 +598,7 @@ body.ui-ready #writings-section.ready {
   opacity: 0;
 }
 #access-gate.visible .ag-body {
-  animation: gate-content-in 0.4s ease-out 0.58s forwards;
+  animation: gate-content-glitch 0.4s steps(1, end) 0.62s forwards;
 }
 .ag-line1 {
   font-family: var(--mono);
@@ -663,7 +706,7 @@ body.ui-ready #writings-section.ready {
   opacity: 0;
 }
 #access-gate.visible .ag-actions {
-  animation: gate-content-in 0.4s ease-out 0.66s forwards;
+  animation: gate-content-glitch 0.4s steps(1, end) 0.7s forwards;
 }
 .ag-btn {
   font-family: var(--mono);
