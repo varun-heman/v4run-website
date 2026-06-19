@@ -468,25 +468,140 @@ body.ui-ready #writings-section.ready {
   font-weight: 400;
   text-shadow: 0 0 20px rgba(100, 255, 160, 0.18);
 }
-/* Press any key prompt */
-#press-v-prompt {
-  position: fixed; inset: 0; z-index: 12;
+/* ─── ACCESS GATE ────────────────────────────────────── */
+#access-gate {
+  position: fixed; inset: 0; z-index: 200;
   display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.92);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+#access-gate.visible { opacity: 1; pointer-events: auto; }
+#access-gate.dismissing { opacity: 0; pointer-events: none; }
+#access-dialog {
+  position: relative;
+  width: min(520px, 88vw);
+  padding: 36px 40px 32px;
+  background: rgba(4,8,5,0.97);
+  border: 1px solid rgba(100,255,160,0.22);
+  box-shadow: 0 0 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(100,255,160,0.06),
+              inset 0 0 40px rgba(0,0,0,0.5);
+  animation: gate-in 0.55s cubic-bezier(0.16,1,0.3,1) both;
+  overflow: hidden;
+}
+#access-dialog::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg,
+    transparent, transparent 3px,
+    rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px);
+  pointer-events: none; z-index: 0;
+}
+/* corner brackets */
+#access-dialog::after {
+  content: '';
+  position: absolute;
+  top: 8px; left: 8px; right: 8px; bottom: 8px;
+  border: 1px solid rgba(100,255,160,0.06);
   pointer-events: none;
-  opacity: 0; transition: opacity 1s ease;
 }
-#press-v-prompt.visible { opacity: 1; }
-#press-v-prompt span {
+.ag-corner {
+  position: absolute; width: 12px; height: 12px;
+  border-color: rgba(100,255,160,0.55); border-style: solid;
+  pointer-events: none; z-index: 2;
+}
+.ag-corner--tl { top: 0; left: 0;  border-width: 1px 0 0 1px; }
+.ag-corner--tr { top: 0; right: 0; border-width: 1px 1px 0 0; }
+.ag-corner--bl { bottom: 0; left: 0;  border-width: 0 0 1px 1px; }
+.ag-corner--br { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+@keyframes gate-in {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.ag-header {
   font-family: var(--mono);
-  font-size: clamp(13px, 1.4vw, 17px);
-  letter-spacing: 0.25em;
-  color: rgba(232,232,226,0.6);
+  font-size: 9px;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  animation: press-v-pulse 2.2s ease-in-out infinite;
+  color: rgba(100,255,160,0.5);
+  margin-bottom: 28px;
+  position: relative; z-index: 1;
 }
-@keyframes press-v-pulse {
-  0%, 100% { opacity: 0.45; }
-  50%       { opacity: 1; }
+.ag-body {
+  position: relative; z-index: 1;
+  margin-bottom: 32px;
+}
+.ag-line1 {
+  font-family: var(--mono);
+  font-size: clamp(10px, 1.1vw, 12px);
+  letter-spacing: 0.1em;
+  color: rgba(232,232,226,0.42);
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+.ag-name-wrap {
+  margin: 0 0 14px;
+  position: relative;
+  display: inline-block;
+}
+#ag-name {
+  font-family: var(--mono);
+  font-size: clamp(26px, 3.8vw, 42px);
+  letter-spacing: 0.12em;
+  color: rgba(184,240,210,0.92);
+  text-transform: uppercase;
+  display: block;
+  text-shadow: 0 0 30px rgba(100,255,160,0.2);
+  transition: text-shadow 0.2s ease;
+}
+#ag-name.scrambling {
+  text-shadow: 0 0 18px rgba(100,255,160,0.35),
+               2px 0 0 rgba(255,30,80,0.35),
+               -2px 0 0 rgba(0,210,255,0.35);
+}
+.ag-question {
+  font-family: var(--mono);
+  font-size: clamp(10px, 1.15vw, 13px);
+  letter-spacing: 0.12em;
+  color: rgba(232,232,226,0.55);
+  text-transform: uppercase;
+  margin: 0;
+}
+.ag-actions {
+  position: relative; z-index: 1;
+  display: flex; gap: 12px; justify-content: flex-end;
+}
+.ag-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 9px 22px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid;
+}
+.ag-btn--exit {
+  color: rgba(232,232,226,0.3);
+  border-color: rgba(255,255,255,0.1);
+  background: transparent;
+}
+.ag-btn--exit:hover {
+  color: rgba(232,232,226,0.6);
+  border-color: rgba(255,255,255,0.25);
+}
+.ag-btn--proceed {
+  color: rgba(100,255,160,0.9);
+  border-color: rgba(100,255,160,0.35);
+  background: rgba(100,255,160,0.06);
+}
+.ag-btn--proceed:hover {
+  background: rgba(100,255,160,0.13);
+  border-color: rgba(100,255,160,0.6);
+  box-shadow: 0 0 16px rgba(100,255,160,0.12);
+  color: rgb(100,255,160);
 }
 
 /* Intro mode — larger than quotes */
@@ -2482,7 +2597,24 @@ body.strip-hovered .nav {
   </div>
 </div>
 
-<div id="press-v-prompt"><span id="press-v-text">press any key to continue</span></div>
+<div id="access-gate">
+  <div id="access-dialog">
+    <div class="ag-corner ag-corner--tl"></div>
+    <div class="ag-corner ag-corner--tr"></div>
+    <div class="ag-corner ag-corner--bl"></div>
+    <div class="ag-corner ag-corner--br"></div>
+    <div class="ag-header">// clearance required</div>
+    <div class="ag-body">
+      <p class="ag-line1">You are entering the private space of</p>
+      <div class="ag-name-wrap"><span id="ag-name">VARUN</span></div>
+      <p class="ag-question">Are you sure you want to proceed?</p>
+    </div>
+    <div class="ag-actions">
+      <button class="ag-btn ag-btn--exit" id="ag-exit">Exit</button>
+      <button class="ag-btn ag-btn--proceed" id="ag-proceed">Proceed →</button>
+    </div>
+  </div>
+</div>
 <audio id="bg-music" src="audio/bg_score.mp3" loop preload="auto"></audio>
 
 <div class="corner corner-br">
@@ -3687,48 +3819,100 @@ const NAV_LABELS = {};  // key → display label
       quotes = txt.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
     }).catch(() => {});
 
-  function waitForV(onDone) {
-    const prompt = document.getElementById('press-v-prompt');
-    const promptText = document.getElementById('press-v-text');
-    // Show touch-friendly label on mobile
-    if (promptText && 'ontouchstart' in window) promptText.textContent = 'tap anywhere to continue';
-    if (prompt) prompt.classList.add('visible');
-    function onKey(e) {
-      if (e.key === 'Tab' || e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') return;
-      document.removeEventListener('keydown', onKey);
-      document.removeEventListener('touchstart', onTouch);
-      if (prompt) { prompt.classList.remove('visible'); }
-      // Start music immediately — keydown is a valid user gesture
-      const music = document.getElementById('bg-music');
-      if (music) { music.volume = 0.35; music.play().catch(() => {}); }
-      onDone();
-    }
-    function onTouch() {
-      document.removeEventListener('keydown', onKey);
-      document.removeEventListener('touchstart', onTouch);
-      if (prompt) { prompt.classList.remove('visible'); }
-      const music = document.getElementById('bg-music');
-      if (music) { music.volume = 0.35; music.play().catch(() => {}); }
-      onDone();
-    }
-    document.addEventListener('keydown', onKey);
-    document.addEventListener('touchstart', onTouch, { once: true });
-  }
+  // ── ACCESS GATE ─────────────────────────────────────────────────────────
+  (function() {
+    const gate    = document.getElementById('access-gate');
+    const nameEl  = document.getElementById('ag-name');
+    const btnExit    = document.getElementById('ag-exit');
+    const btnProceed = document.getElementById('ag-proceed');
+    if (!gate) return;
 
-  if (hasVisited()) {
-    // Return visitor — skip intro and V prompt, fire bang immediately
-    if (window._triggerBigBang) window._triggerBigBang();
-    setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9200);
-  } else {
-    setVisited();
-    // First visit — play intro, then wait for V, then bang
-    runIntro(() => {
-      waitForV(() => {
-        if (window._triggerBigBang) window._triggerBigBang();
-        setTimeout(() => { if (!isNavHover) showNextQuote(); }, 7800);
+    // Show gate immediately
+    requestAnimationFrame(() => gate.classList.add('visible'));
+
+    // ── Name scramble cycle: VARUN → v4run → v4.run → loop ──
+    const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%<>{}[]';
+    const NAME_CYCLE = ['VARUN', 'v4run', 'v4.run'];
+    let namePhase = 0;
+    let nameCycleTimer = null;
+    let nameScrambleTimer = null;
+
+    function scrambleTo(target, duration, onDone) {
+      nameEl.classList.add('scrambling');
+      const steps = Math.max(8, Math.ceil(duration / 35));
+      let step = 0;
+      function tick() {
+        step++;
+        const progress = step / steps;
+        let result = '';
+        for (let i = 0; i < target.length; i++) {
+          result += (progress > (i / target.length + 0.25))
+            ? target[i]
+            : GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+        }
+        nameEl.textContent = result;
+        if (step < steps) {
+          nameScrambleTimer = setTimeout(tick, 35);
+        } else {
+          nameEl.textContent = target;
+          nameEl.classList.remove('scrambling');
+          if (onDone) onDone();
+        }
+      }
+      tick();
+    }
+
+    function cycleNext() {
+      namePhase = (namePhase + 1) % NAME_CYCLE.length;
+      scrambleTo(NAME_CYCLE[namePhase], 380, () => {
+        const hold = namePhase === NAME_CYCLE.length - 1 ? 2800 : 700;
+        nameCycleTimer = setTimeout(cycleNext, hold);
       });
+    }
+    nameCycleTimer = setTimeout(cycleNext, 1600);
+
+    function stopCycle() {
+      clearTimeout(nameCycleTimer);
+      clearTimeout(nameScrambleTimer);
+    }
+
+    // ── EXIT ──
+    btnExit && btnExit.addEventListener('click', () => {
+      stopCycle();
+      window.open('https://www.youtube.com/watch?v=8ldnoodqvgE', '_blank');
+      window.close();
     });
-  }
+
+    // ── PROCEED ──
+    btnProceed && btnProceed.addEventListener('click', () => {
+      stopCycle();
+
+      // Start music immediately — button click is a valid user gesture
+      const music = document.getElementById('bg-music');
+      if (music) { music.volume = 0.35; music.play().catch(() => {}); }
+
+      // Dismiss gate with fade
+      gate.classList.add('dismissing');
+      gate.classList.remove('visible');
+
+      setTimeout(() => {
+        gate.style.display = 'none';
+
+        if (hasVisited()) {
+          // Return visitor — skip intro, fire bang immediately
+          if (window._triggerBigBang) window._triggerBigBang();
+          setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9200);
+        } else {
+          setVisited();
+          // First visit — run intro then bang
+          runIntro(() => {
+            if (window._triggerBigBang) window._triggerBigBang();
+            setTimeout(() => { if (!isNavHover) showNextQuote(); }, 7800);
+          });
+        }
+      }, 520);
+    });
+  })();
 
   // ── MUSIC TOGGLE ────────────────────────────────────────────────────────
   (function() {
@@ -3758,17 +3942,7 @@ const NAV_LABELS = {};  // key → display label
     music.addEventListener('play',  () => setPlaying(true));
     music.addEventListener('pause', () => setPlaying(false));
 
-    // For return visitors (no V prompt), start music on first interaction
-    function tryStartMusic() {
-      if (!muted && music.paused) {
-        music.play().then(() => {
-          ['click','keydown','touchstart'].forEach(e => document.removeEventListener(e, tryStartMusic));
-        }).catch(() => {});
-      }
-    }
-    if (hasVisited()) {
-      ['click','keydown','touchstart'].forEach(e => document.addEventListener(e, tryStartMusic));
-    }
+    // Music is now started by the access gate PROCEED button for all visitors
   })();
 
   // ── ARTICLES — fetched from content/articles.md ─────────────────────────
