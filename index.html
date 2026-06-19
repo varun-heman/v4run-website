@@ -1494,9 +1494,7 @@ body.ui-ready #writings-section.ready {
   align-items: flex-start;
   padding: 22px 20px;
   margin: 0 -20px;
-  /* invisible box at rest — bottom only shows separator */
   border: 1px solid transparent;
-  border-bottom-color: rgba(255,255,255,0.06);
   color: inherit;
   position: relative;
   clip-path: inset(0 0 100% 0);
@@ -1511,7 +1509,7 @@ body.ui-ready #writings-section.ready {
 }
 @keyframes reads-card-flash {
   0%   { border-color: rgba(100,255,160,0.55); box-shadow: 0 0 18px rgba(100,255,160,0.08), inset 0 0 10px rgba(100,255,160,0.03); }
-  100% { border-color: transparent; border-bottom-color: rgba(255,255,255,0.06); box-shadow: none; }
+  100% { border-color: transparent; box-shadow: none; }
 }
 .reads-card.card-exit {
   clip-path: inset(100% 0 0% 0);
@@ -1522,7 +1520,6 @@ body.ui-ready #writings-section.ready {
   border-color: rgba(184,240,210,0.20);
   box-shadow: 0 0 22px rgba(100,255,160,0.05);
 }
-.reads-card:last-child { border-bottom-color: transparent; }
 
 /* Thumbnail — fixed 4:3 ratio, always same size */
 .reads-card__thumb-wrap {
@@ -1670,7 +1667,7 @@ body.ui-ready #writings-section.ready {
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,0.08) transparent;
   padding: 28px 40px 48px;
-  display: flex; flex-direction: column; gap: 1px;
+  display: flex; flex-direction: column; gap: 12px;
   max-width: 780px; width: 100%; margin: 0 auto; box-sizing: border-box;
 }
 #projects-list::-webkit-scrollbar { width: 3px; }
