@@ -1114,12 +1114,17 @@ body.ui-ready #writings-section.ready {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
   padding: 24px 40px 40px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
   align-content: start;
 }
+#viewall-grid::-webkit-scrollbar { width: 3px; }
+#viewall-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+#viewall-grid::-webkit-scrollbar-track { background: transparent; }
 .viewall-card {
   display: flex;
   flex-direction: column;
@@ -1281,6 +1286,8 @@ body.ui-ready #writings-section.ready {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
   padding: 28px 40px 48px;
   display: flex;
   flex-direction: column;
@@ -1290,6 +1297,9 @@ body.ui-ready #writings-section.ready {
   margin: 0 auto;
   box-sizing: border-box;
 }
+#reads-list::-webkit-scrollbar { width: 3px; }
+#reads-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+#reads-list::-webkit-scrollbar-track { background: transparent; }
 @media (max-width: 768px) {
   #reads-head, #reads-filters { padding-left: 20px; padding-right: 20px; }
   #reads-list { padding: 16px 20px 40px; }
@@ -1932,6 +1942,8 @@ body.strip-hovered .nav {
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
     padding: 16px 16px 100px; /* bottom pad for nav bar */
   }
   .articles-overlay-card {
