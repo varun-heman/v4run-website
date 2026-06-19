@@ -148,7 +148,7 @@ body.ui-ready .corner {
   100% { height: 10px; opacity: 1;   }
 }
 #music-control.muted { color: rgba(232,232,226,0.25); }
-#music-control.muted #music-viz span { animation-play-state: paused; height: 2px; }
+#music-control.muted #music-viz { display: none; }
 
 /* Mobile-only elements — hidden everywhere by default */
 #mobile-logo-backdrop,
@@ -3930,7 +3930,16 @@ const NAV_LABELS = {};  // key → display label
     const btnProceed = document.getElementById('ag-proceed');
     if (!gate) return;
 
-    // Show gate immediately
+    // Return visitors skip the gate entirely
+    if (hasVisited()) {
+      gate.style.display = 'none';
+      window._isFirstVisit = false;
+      if (window._triggerBigBang) window._triggerBigBang();
+      setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9200);
+      return;
+    }
+
+    // First visit — show gate
     requestAnimationFrame(() => gate.classList.add('visible'));
 
     // ── Name glitch cycle: VARUN → v4run → v4.run → loop ──
