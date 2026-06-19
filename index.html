@@ -627,7 +627,8 @@ body.ui-ready #writings-section.ready {
 }
 
 .modal-box::-webkit-scrollbar { width: 3px; }
-.modal-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
+.modal-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+.modal-box::-webkit-scrollbar-track { background: transparent; }
 
 /* PDF expanded modal */
 .modal-overlay.pdf-mode .modal-box {
@@ -661,6 +662,9 @@ body.ui-ready #writings-section.ready {
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,0.08) transparent;
 }
+#pdf-canvas-scroll::-webkit-scrollbar { width: 3px; }
+#pdf-canvas-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+#pdf-canvas-scroll::-webkit-scrollbar-track { background: transparent; }
 #pdf-canvas-scroll canvas {
   max-width: 100%;
   display: block;
@@ -675,22 +679,8 @@ body.ui-ready #writings-section.ready {
   padding: 10px 0 14px;
   border-top: 1px solid rgba(255,255,255,0.06);
 }
-#pdf-controls button {
-  background: none;
-  border: 1px solid rgba(255,255,255,0.12);
-  color: rgba(232,232,226,0.55);
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  padding: 4px 12px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-}
-#pdf-controls button:hover:not(:disabled) {
-  color: rgba(232,232,226,0.95);
-  border-color: rgba(255,255,255,0.3);
-}
-#pdf-controls button:disabled { opacity: 0.25; cursor: default; }
+#pdf-controls button { cursor: pointer; }
+#pdf-controls button:disabled { opacity: 0.25; cursor: default; pointer-events: none; }
 #pdf-page-info {
   font-family: var(--mono);
   font-size: 10px;
@@ -2231,8 +2221,11 @@ body.strip-hovered .nav {
 #gallery-close:hover { color: #e03030; }
 #gallery-body {
   flex: 1; overflow-y: auto; padding: 28px 32px 40px;
-  scrollbar-width: thin; scrollbar-color: rgba(100,255,160,0.15) transparent;
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.08) transparent;
 }
+#gallery-body::-webkit-scrollbar { width: 3px; }
+#gallery-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+#gallery-body::-webkit-scrollbar-track { background: transparent; }
 .gallery-section-label {
   font-family: var(--mono); font-size: 8px; letter-spacing: 0.2em;
   text-transform: uppercase; color: rgba(184,240,210,0.3);
@@ -4104,9 +4097,9 @@ function openPdfInModal(url, title) {
     pdfWrap.innerHTML = `
       <div id="pdf-canvas-scroll"></div>
       <div id="pdf-controls">
-        <button id="pdf-prev">← Prev</button>
+        <button id="pdf-prev" class="site-btn">← Prev</button>
         <span id="pdf-page-info">— / —</span>
-        <button id="pdf-next">Next →</button>
+        <button id="pdf-next" class="site-btn">Next →</button>
       </div>`;
     modalBody.parentNode.insertBefore(pdfWrap, modalBody.nextSibling);
 
