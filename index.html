@@ -584,18 +584,18 @@ body.ui-ready #writings-section.ready {
 
 /* Glitch trigger class */
 #ag-name.glitching {
-  animation: ag-body 0.24s steps(1,end) forwards;
+  animation: ag-body 0.12s steps(1,end) forwards;
 }
 #ag-name.glitching::before {
   opacity: 1;
-  animation: ag-red 0.24s steps(1,end) forwards;
+  animation: ag-red 0.12s steps(1,end) forwards;
 }
 #ag-name.glitching::after {
   opacity: 1;
-  animation: ag-cyan 0.24s steps(1,end) forwards;
+  animation: ag-cyan 0.12s steps(1,end) forwards;
 }
 .ag-name-wrap.glitching::before {
-  animation: ag-scan 0.26s cubic-bezier(0.4,0,1,1) forwards;
+  animation: ag-scan 0.14s cubic-bezier(0.4,0,1,1) forwards;
 }
 
 /* Body jitter — skew + translateX slices */
@@ -3961,14 +3961,14 @@ const NAV_LABELS = {};  // key → display label
       nameCycleTimer = setTimeout(() => {
         nameEl.textContent = target;
         nameEl.setAttribute('data-text', target);
-      }, 115);
+      }, 55);
 
       // Clean up after animation completes
       nameCycleTimer = setTimeout(() => {
         nameEl.classList.remove('glitching');
         wrap && wrap.classList.remove('glitching');
         if (onDone) onDone();
-      }, 280);
+      }, 140);
     }
 
     function cycleNext() {
