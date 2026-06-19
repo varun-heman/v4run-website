@@ -125,6 +125,11 @@ body.ui-ready .corner {
   font-family: var(--mono); font-size: 10px;
   letter-spacing: 0.18em; text-transform: uppercase;
 }
+#music-icon {
+  font-size: 9px;
+  opacity: 0.7;
+  line-height: 1;
+}
 #music-viz {
   display: flex; align-items: flex-end; gap: 2px; height: 10px;
 }
@@ -2689,10 +2694,12 @@ body.strip-hovered .nav {
   </div>
 </div>
 <audio id="bg-music" src="audio/bg_score.mp3" loop preload="auto"></audio>
+<audio id="bang-sound" src="audio/big_bang.mp3" preload="auto"></audio>
 
 <div class="corner corner-br">
   <button id="music-control" class="muted" aria-label="Toggle music">
     <div id="music-viz"><span></span><span></span><span></span><span></span></div>
+    <span id="music-icon">▶</span>
     <span id="music-label">Music Off</span>
   </button>
   <span>©2026 Varun Hemachandran</span>
@@ -3532,12 +3539,18 @@ body.strip-hovered .nav {
     document.body.classList.add('bang-ready');
     setTimeout(() => {
       bangStartT = clock.getElapsedTime();
-      // Start bg music
-      const music = document.getElementById('bg-music');
-      if (music) {
-        music.volume = 0.35;
-        music.play().catch(() => {}); // autoplay blocked — toggle handles it
+
+      if (window._isFirstVisit) {
+        // Play big bang sound
+        const bangSfx = document.getElementById('bang-sound');
+        if (bangSfx) { bangSfx.volume = 0.7; bangSfx.play().catch(() => {}); }
+        // Start bg music after a short pause so the bang lands first
+        setTimeout(() => {
+          const music = document.getElementById('bg-music');
+          if (music) { music.volume = 0.35; music.play().catch(() => {}); }
+        }, 1200);
       }
+
       setTimeout(() => document.body.classList.add('ui-ready'), 2700);
     }, 1000);
   };
@@ -3977,14 +3990,13 @@ const NAV_LABELS = {};  // key → display label
     btnProceed && btnProceed.addEventListener('click', () => {
       stopCycle();
 
-      // Start music immediately — button click is a valid user gesture
-      const music = document.getElementById('bg-music');
-      if (music) { music.volume = 0.35; music.play().catch(() => {}); }
-
       // Create AudioContext during the gesture so typewriter clicks can play later
       try {
         window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       } catch(e) {}
+
+      // Flag first visit BEFORE setVisited() so the bang can detect it
+      window._isFirstVisit = !hasVisited();
 
       // Dismiss gate with fade
       gate.classList.add('dismissing');
@@ -3993,13 +4005,13 @@ const NAV_LABELS = {};  // key → display label
       setTimeout(() => {
         gate.style.display = 'none';
 
-        if (hasVisited()) {
-          // Return visitor — skip intro, fire bang immediately
+        if (!window._isFirstVisit) {
+          // Return visitor — skip intro, fire bang; no music auto-start
           if (window._triggerBigBang) window._triggerBigBang();
           setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9200);
         } else {
           setVisited();
-          // First visit — run intro then bang
+          // First visit — run intro then bang (bang handler starts music)
           runIntro(() => {
             if (window._triggerBigBang) window._triggerBigBang();
             setTimeout(() => { if (!isNavHover) showNextQuote(); }, 7800);
@@ -4013,6 +4025,7 @@ const NAV_LABELS = {};  // key → display label
   (function() {
     const ctrl  = document.getElementById('music-control');
     const label = document.getElementById('music-label');
+    const icon  = document.getElementById('music-icon');
     const music = document.getElementById('bg-music');
     if (!ctrl || !music) return;
     let muted = false;
@@ -4021,6 +4034,7 @@ const NAV_LABELS = {};  // key → display label
       muted = !playing;
       ctrl.classList.toggle('muted', muted);
       if (label) label.textContent = muted ? 'Music Off' : 'Music On';
+      if (icon)  icon.textContent  = muted ? '▶' : '■';
     }
 
     ctrl.addEventListener('click', () => {
