@@ -126,9 +126,11 @@ body.ui-ready .corner {
   letter-spacing: 0.18em; text-transform: uppercase;
 }
 #music-icon {
-  font-size: 9px;
+  font-size: 8px;
   opacity: 0.7;
-  line-height: 1;
+  width: 8px;
+  text-align: center;
+  flex-shrink: 0;
 }
 #music-viz {
   display: flex; align-items: flex-end; gap: 2px; height: 10px;
@@ -2699,7 +2701,7 @@ body.strip-hovered .nav {
 <div class="corner corner-br">
   <button id="music-control" class="muted" aria-label="Toggle music">
     <div id="music-viz"><span></span><span></span><span></span><span></span></div>
-    <span id="music-icon">▶</span>
+    <i id="music-icon" class="fa-solid fa-play"></i>
     <span id="music-label">Music Off</span>
   </button>
   <span>©2026 Varun Hemachandran</span>
@@ -4035,7 +4037,10 @@ const NAV_LABELS = {};  // key → display label
       muted = !playing;
       ctrl.classList.toggle('muted', muted);
       if (label) label.textContent = muted ? 'Music Off' : 'Music On';
-      if (icon)  icon.textContent  = muted ? '▶' : '■';
+      if (icon) {
+        icon.classList.toggle('fa-play',  muted);
+        icon.classList.toggle('fa-stop', !muted);
+      }
     }
 
     ctrl.addEventListener('click', () => {
