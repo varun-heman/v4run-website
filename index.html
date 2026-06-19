@@ -2846,6 +2846,58 @@ body.screen-glitching {
     opacity: 0 !important;
   }
 }
+
+/* ── CRT OFF (Replay Intro click) ─────────────────────────────────────────
+   Pure overlay illusion — covers the viewport rather than transforming real
+   content, so it can't disturb fixed-position containing blocks anywhere
+   else on the page. A bright line flashes, collapses to a horizontal bar,
+   then to a dot, while the backdrop goes black; reload fires once it ends. */
+#crt-off-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+}
+body.crt-off #crt-off-overlay {
+  animation: crt-bg-in 0.62s steps(1, end) forwards;
+}
+.crt-off-line {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 100%; height: 100%;
+  transform: translate(-50%, -50%);
+  background: #eafff0;
+  opacity: 0;
+  box-shadow: 0 0 60px 14px rgba(234,255,240,0.85);
+}
+body.crt-off .crt-off-line {
+  animation: crt-line-collapse 0.62s cubic-bezier(0.5,0,0.85,0.65) forwards;
+}
+@keyframes crt-bg-in {
+  0%   { opacity: 0; }
+  8%   { opacity: 0.1; }
+  32%  { opacity: 0.65; }
+  58%  { opacity: 0.92; }
+  100% { opacity: 1; }
+}
+@keyframes crt-line-collapse {
+  0%   { opacity: 0;    width: 100%; height: 100%; }
+  6%   { opacity: 0.95; width: 100%; height: 100%; }
+  28%  { opacity: 0.9;  width: 100%; height: 3px; }
+  52%  { opacity: 0.9;  width: 10px; height: 3px; }
+  74%  { opacity: 0.8;  width: 3px;  height: 3px; }
+  100% { opacity: 0;    width: 1px;  height: 1px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.crt-off #crt-off-overlay,
+  body.crt-off .crt-off-line {
+    animation: none !important;
+  }
+  body.crt-off #crt-off-overlay { opacity: 1 !important; }
+  body.crt-off .crt-off-line { opacity: 0 !important; }
+}
 </style>
 </head>
 <body>
@@ -2908,6 +2960,7 @@ body.screen-glitching {
   </div>
 </div>
 <div id="screen-glitch-overlay"></div>
+<div id="crt-off-overlay"><div class="crt-off-line"></div></div>
 <audio id="bg-music" src="audio/bg_score.mp3" loop preload="auto"></audio>
 <audio id="bang-sound" src="audio/big_bang.mp3" preload="auto"></audio>
 
@@ -6185,9 +6238,17 @@ window.addEventListener('popstate', () => {
   btn.addEventListener('focus', typeHint);
   btn.addEventListener('blur', clearHint);
 
-  btn.addEventListener('click', () => {
+  function resetAndReload() {
     document.cookie = 'v4run_v=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
     location.reload();
+  }
+
+  btn.addEventListener('click', () => {
+    clearHint();
+    const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) { resetAndReload(); return; }
+    document.body.classList.add('crt-off');
+    setTimeout(resetAndReload, 640);
   });
 })();
 
