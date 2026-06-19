@@ -139,18 +139,28 @@ function renderPage(p, bodyHtml) {
   const desc = escapeAttr((p.description || '').slice(0, 200));
   const title = escapeAttr(p.title);
 
+  // Same "v4run | <Page Title>" format the homepage uses — keeps every
+  // generated page's <title>/og:title/twitter:title consistent automatically,
+  // without needing to remember to match it by hand each time.
+  const pageTitle = `v4run | ${title}`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${title} — Varun Hemachandran</title>
+<title>${pageTitle}</title>
 <meta name="description" content="${desc}">
 <meta name="view-transition" content="same-origin">
 <meta property="og:type" content="article">
-<meta property="og:title" content="${title}">
+<meta property="og:site_name" content="v4run">
+<meta property="og:title" content="${pageTitle}">
 <meta property="og:description" content="${desc}">
 ${p.thumb ? `<meta property="og:image" content="${escapeAttr(p.thumb)}">` : ''}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${pageTitle}">
+<meta name="twitter:description" content="${desc}">
+${p.thumb ? `<meta name="twitter:image" content="${escapeAttr(p.thumb)}">` : ''}
 <link rel="canonical" href="https://v4.run/projects/${p.slug}/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

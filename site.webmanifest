@@ -1,7 +1,7 @@
 {
-  "name": "V4run",
-  "short_name": "V4run",
-  "description": "The personal site of Varun Hemachandran: work, writing, photography, and experiments around courts, AI, and civic technology.",
+  "name": "v4run",
+  "short_name": "v4run",
+  "description": "Varun Hemachandran is a systems thinker and civic technologist working at the intersection of courts, AI, and access to justice in India — currently Senior Curator at PUCAR (Agami).",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
