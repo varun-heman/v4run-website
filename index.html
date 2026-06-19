@@ -127,11 +127,14 @@ body.ui-ready .corner {
 }
 #music-icon {
   font-size: 8px;
-  opacity: 0.7;
   width: 8px;
   text-align: center;
   flex-shrink: 0;
+  transition: color 0.2s ease;
 }
+/* green when playing, red when muted */
+#music-control:not(.muted) #music-icon { color: rgba(100,255,160,0.85); }
+#music-control.muted #music-icon       { color: rgba(220,60,60,0.75); }
 #music-viz {
   display: flex; align-items: flex-end; gap: 2px; height: 10px;
 }
