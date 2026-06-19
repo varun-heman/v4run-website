@@ -530,28 +530,26 @@ body.ui-ready #writings-section.ready {
   opacity: 0;
 }
 .sphere-label::before {
-  color: rgba(255, 30, 80, 0.9);
-  animation: rgb-r 3.2s infinite;
+  color: rgba(255, 30, 80, 0.35);
+  animation: rgb-r 5s infinite;
 }
 .sphere-label::after {
-  color: rgba(0, 210, 255, 0.9);
-  animation: rgb-b 3.2s infinite;
+  color: rgba(0, 210, 255, 0.35);
+  animation: rgb-b 5s infinite;
 }
 @keyframes rgb-r {
-  0%,  78% { opacity: 0; transform: translate(0); }
-  79%       { opacity: 1; transform: translate(-7px, 0);  clip-path: inset(0 0 55% 0); }
-  80%       { transform: translate(-4px, 1px); clip-path: inset(45% 0 15% 0); }
-  81%       { transform: translate(-8px, -1px); clip-path: inset(75% 0 0 0); }
-  82%       { transform: translate(-3px, 0); clip-path: inset(15% 0 60% 0); }
-  83%       { opacity: 0; }
+  0%,  84% { opacity: 0; transform: translate(0); }
+  85%       { opacity: 1; transform: translate(-3px, 0);  clip-path: inset(0 0 55% 0); }
+  86%       { transform: translate(-2px, 1px); clip-path: inset(45% 0 15% 0); }
+  87%       { transform: translate(-3px, -1px); clip-path: inset(75% 0 0 0); }
+  88%       { opacity: 0; }
   100%      { opacity: 0; }
 }
 @keyframes rgb-b {
-  0%,  80% { opacity: 0; transform: translate(0); }
-  81%       { opacity: 1; transform: translate(7px, -1px); clip-path: inset(35% 0 35% 0); }
-  82%       { transform: translate(5px, 0); clip-path: inset(68% 0 5% 0); }
-  83%       { transform: translate(9px, 1px); clip-path: inset(0 0 72% 0); }
-  84%       { opacity: 0; }
+  0%,  86% { opacity: 0; transform: translate(0); }
+  87%       { opacity: 1; transform: translate(3px, -1px); clip-path: inset(35% 0 35% 0); }
+  88%       { transform: translate(2px, 0); clip-path: inset(68% 0 5% 0); }
+  89%       { opacity: 0; }
   100%      { opacity: 0; }
 }
 
