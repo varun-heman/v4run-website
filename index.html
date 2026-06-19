@@ -4465,14 +4465,20 @@ function openPdfInModal(url, title) {
   document.getElementById('pdf-prev').disabled = true;
   document.getElementById('pdf-next').disabled = true;
 
-  // Show fullscreen button
+  // Show fullscreen button — desktop uses Fullscreen API, mobile opens in new tab
   const fsBtn = document.getElementById('pdf-fullscreen-btn');
   if (fsBtn) {
+    const canFullscreen = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
     fsBtn.style.display = '';
+    fsBtn.textContent = canFullscreen ? '⛶ Fullscreen' : '↗ Open PDF';
     fsBtn.onclick = () => {
-      const el = document.getElementById('modal-pdf-wrap');
-      if (el.requestFullscreen) el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      if (canFullscreen) {
+        const el = document.getElementById('modal-pdf-wrap');
+        if (el.requestFullscreen) el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      } else {
+        window.open(url, '_blank');
+      }
     };
   }
 
