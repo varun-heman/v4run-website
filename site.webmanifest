@@ -1,7 +1,7 @@
 {
   "name": "v4run",
   "short_name": "v4run",
-  "description": "Varun Hemachandran is a systems thinker and civic technologist working at the intersection of courts, AI, and access to justice in India — currently Senior Curator at PUCAR (Agami).",
+  "description": "Varun Hemachandran is a systems thinker and civic technologist working at the intersection of courts, AI, and access to justice in India.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
