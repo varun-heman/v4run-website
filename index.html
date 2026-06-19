@@ -109,7 +109,7 @@ body.ui-ready .corner {
   font-family: inherit;
 }
 .corner-tr { top: 28px; right: 32px; text-align: right; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.12em; }
-.corner-bl { bottom: 28px; left: 32px; z-index: 20; } /* above carousel */
+.corner-bl { bottom: 28px; left: 32px; z-index: 20; display: flex; align-items: center; gap: 14px; } /* above carousel */
 .corner-br { bottom: 28px; right: 32px; text-align: right; text-transform: uppercase; letter-spacing: 0.12em; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 
 /* ─── AUDIO VISUALISER / CONTROL ────────────────────── */
@@ -2342,7 +2342,6 @@ body.strip-hovered #viewall-btn {
   border: 1px solid rgba(100,255,160,0.12);
   border-radius: 3px;
   padding: 4px 8px;
-  margin-bottom: 5px;
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s, background 0.2s;
 }
@@ -2929,16 +2928,16 @@ body.crt-off .crt-off-line {
 </div>
 
 <div class="corner corner-bl">
-  <button class="replay-intro" id="replay-intro-btn" aria-label="Replay intro">
-    <span class="replay-intro__label">Replay Intro</span>
-    <span class="replay-intro__hint" id="replay-intro-hint"></span>
-  </button>
   <div class="social-dock" id="social-dock">
     <button class="social-dock__label" id="contact-trigger">Contact Me</button>
     <div class="social-dock__icons" id="social-icons">
       <!-- email + social icons injected by JS -->
     </div>
   </div>
+  <button class="replay-intro" id="replay-intro-btn" aria-label="Replay intro">
+    <span class="replay-intro__label">Replay Intro</span>
+    <span class="replay-intro__hint" id="replay-intro-hint"></span>
+  </button>
 </div>
 
 <div id="access-gate">
