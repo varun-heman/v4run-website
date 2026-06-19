@@ -3757,12 +3757,6 @@ const NAV_LABELS = {};  // key → display label
 
     // Sort descending by date ("Jun 2026" etc)
     function parseArticleDate(d) { return d ? new Date(d) : new Date(0); }
-    function fmtArticleDate(d) {
-      if (!d) return '';
-      const parsed = new Date(d + 'T00:00:00');
-      if (isNaN(parsed)) return d;
-      return parsed.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    }
     articles.sort((a, b) => parseArticleDate(b.date) - parseArticleDate(a.date));
 
     // Mark articles published within 60 days as new
@@ -3990,6 +3984,14 @@ const closeBtn = document.getElementById('modal-close');
 const escHint  = document.getElementById('esc-hint');
 
 const _mdCache = {}; // key → rendered HTML (cached after first load)
+
+// Format article dates as "Month DD, YYYY"
+function fmtArticleDate(d) {
+  if (!d) return '';
+  const parsed = new Date(d + 'T00:00:00');
+  if (isNaN(parsed)) return d;
+  return parsed.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
 
 async function openModal(key) {
   if (window._hideSphereLabel) window._hideSphereLabel();
