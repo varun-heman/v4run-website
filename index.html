@@ -1752,7 +1752,7 @@ body.ui-ready #writings-section.ready {
 }
 .proj-status--active  { color: rgba(100,255,160,0.85); border-color: rgba(100,255,160,0.35); }
 .proj-status--wip     { color: rgba(255,200,80,0.85);  border-color: rgba(255,200,80,0.35); }
-.proj-status--archived{ color: rgba(255,255,255,0.28); border-color: rgba(255,255,255,0.12); }
+.proj-status--archived{ color: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.22); }
 
 #articles-strip {
   overflow: visible;
@@ -6344,13 +6344,12 @@ window.addEventListener('popstate', () => {
   }
 
   function fireGlitch() {
-    if (pending) return;
+    if (pending) return false;
     // Skip while a modal/overlay or the access gate is open — avoid visual clash
     const gate = document.getElementById('access-gate');
     const gateOpen = gate && gate.classList.contains('visible');
     if (window._modalOpen || gateOpen || document.visibilityState !== 'visible') {
-      scheduleNext(2000); // try again soon rather than losing the cadence
-      return;
+      return false; // caller decides how soon to retry
     }
     pending = true;
 
@@ -6363,11 +6362,15 @@ window.addEventListener('popstate', () => {
       bands.concat(blocks).forEach(el => el.remove());
       pending = false;
     }, GLITCH_MS);
+    return true;
   }
 
   function scheduleNext(forceDelay) {
     const delay = forceDelay || (MIN_GAP_MS + Math.random() * (MAX_GAP_MS - MIN_GAP_MS));
-    setTimeout(() => { fireGlitch(); scheduleNext(); }, delay);
+    setTimeout(() => {
+      const fired = fireGlitch();
+      scheduleNext(fired ? undefined : 2000); // exactly one timer ever pending
+    }, delay);
   }
 
   scheduleNext();
