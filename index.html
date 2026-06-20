@@ -481,18 +481,17 @@ body.ui-ready #writings-section.ready {
 }
 
 /* ── MEMORY FOG — EXPERIMENTAL ───────────────────────────────────────────
-   Quotes only show in the sphere centre while the mouse is near it (see
-   the centerPaused logic + the standalone IIFE further down). Away from
-   centre, random gallery photos drift in and out instead — feathered to a
-   soft oval via mask-image, blurred in from "fog", coming briefly into
-   focus, then receding away into the distance under real 3D perspective
-   (translateZ + rotateX, not a flat scale) while blurring/fading back out.
-   The caption overlays the bottom third of the photo (inside the same
-   animated wrapper, .memory-card), so it appears immediately with the
-   image — no separate delay — and rides the exact same transform,
-   tracking the photo's movement rigidly since it's the same transformed
-   element. Self-contained: this block + the matching JS IIFE + the
-   #memory-fog div (search "MEMORY FOG") can be deleted to fully undo. */
+   Quotes only show in the sphere centre once the mouse has been idle 60s+
+   or has left the page entirely (see the centerPaused logic + the
+   standalone IIFE further down) — any other time, random gallery photos
+   drift in and out instead, feathered to a soft oval via mask-image,
+   blurred in from "fog", coming briefly into focus, then receding away
+   into the distance under real 3D perspective while blurring/fading back
+   out. The tilt itself lives on a separate, always-running inner wrapper
+   (.memory-tilt) so it can be paused independently of the fade/recede —
+   see the "hover to pause" behaviour below. Self-contained: this block +
+   the matching JS IIFE + the #memory-fog div and SVG mask defs (search
+   "MEMORY FOG") can be deleted to fully undo. */
 #memory-fog {
   position: fixed; top: 50%; left: 50%;
   width: min(64vw, 640px);
@@ -505,9 +504,25 @@ body.ui-ready #writings-section.ready {
   display: flex; flex-direction: column; align-items: center;
   opacity: 0;
   will-change: opacity, transform;
+  /* Opacity + depth/scale/drift only — no tilt here, see .memory-tilt.
+     Hovering the image pauses *this* animation (animation-play-state),
+     which freezes the fade and recede in place without touching the
+     independent tilt animation on the child below. */
   animation: memory-drift 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
+  pointer-events: auto; /* only exists in the DOM while a photo is showing */
+}
+.memory-card.paused { animation-play-state: paused; }
+.memory-tilt {
+  position: relative;
+  width: 100%;
+  /* Continuous, independent tilt — never paused by hover, so the photo
+     keeps "breathing" in 3D even while frozen in place. Never reaches
+     flat/0deg, same reasoning as the old combined animation. */
+  animation: memory-tilt-drift 9s ease-in-out infinite;
 }
 .memory-photo {
+  position: relative;
+  z-index: 2;
   width: 100%; height: min(64vw, 640px);
   object-fit: cover; display: block;
   -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 46%, transparent 86%);
@@ -518,6 +533,52 @@ body.ui-ready #writings-section.ready {
      image and made it unreadable. */
   animation: memory-photo-blur 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
 }
+/* Swiss-cheese dissolve while paused — the photo's smooth oval mask
+   switches to the SVG mask (holes already mid-drift, see the cheese-hole
+   keyframes below), letting the smoke layer and hover text show through
+   the gaps. Browsers don't tween between two different mask-image values,
+   so this is an instant swap, not a gradual reveal — the holes' own
+   continuous drift is what reads as "slowly dissolving". */
+.memory-card.paused .memory-photo {
+  -webkit-mask-image: url(#memory-cheese-mask);
+          mask-image: url(#memory-cheese-mask);
+}
+/* Soft glowing haze behind the photo, only visible through the cheese
+   holes (or around the edges) once paused. */
+.memory-smoke {
+  position: absolute;
+  inset: -12%;
+  z-index: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(184,240,210,0.4), rgba(184,240,210,0.14) 50%, transparent 75%);
+  filter: blur(26px);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  animation: memory-smoke-drift 10s ease-in-out infinite;
+}
+.memory-card.paused .memory-smoke { opacity: 1; }
+/* The fixed line of text revealed behind the photo while paused — sits
+   behind the photo (z-index) and the smoke (z-index), shown through the
+   cheese holes. */
+.memory-hover-text {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16%;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  line-height: 1.7;
+  color: rgba(184, 240, 210, 0.75);
+  text-shadow: 0 0 16px rgba(184,240,210,0.5), 0 1px 6px rgba(0,0,0,0.9);
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.memory-card.paused .memory-hover-text { opacity: 1; }
 /* Sits over the lower third of the photo (not below it — it was getting
    lost down there in the gap), pulled up from the very bottom edge so it
    clears the carousel strip rather than landing right behind it. No
@@ -527,6 +588,7 @@ body.ui-ready #writings-section.ready {
 .memory-caption {
   position: absolute;
   left: 10%; right: 10%; bottom: 24%;
+  z-index: 3;
   max-width: none;
   font-family: var(--mono);
   font-size: 11px;
@@ -539,24 +601,35 @@ body.ui-ready #writings-section.ready {
 /* Opacity/transform only — no filter here, so the caption (also inside
    .memory-card) never gets blurred along with the photo. Holds near-full
    visibility from ~28%-50% so there's an actual window to look at the
-   photo and read the caption, not just an instantaneous peak. */
+   photo and read the caption, not just an instantaneous peak. No tilt
+   here any more — see .memory-tilt for that. */
 @keyframes memory-drift {
-  /* --tilt-x/--tilt-y are set per-instance in JS (random magnitude/sign,
-     never zero) — every keyframe stop here is that base angle times a
-     positive multiplier, so the tilt drifts slowly throughout the whole
-     lifetime but never crosses through flat/0deg. Entrance/exit swing
-     wider (more dramatic, but also more blurred/transparent there anyway)
-     while the held middle stretch stays close to the base angle so the
-     image reads clearly. */
-  0%   { opacity: 0;    transform: perspective(900px) translateZ(-200px) rotateX(calc(var(--tilt-x, 10deg) * 1.8))  rotateY(calc(var(--tilt-y, 10deg) * 1.8))  scale(0.86) translateY(20px); }
-  14%  { opacity: 0.78; transform: perspective(900px) translateZ(-60px)  rotateX(calc(var(--tilt-x, 10deg) * 1.2))  rotateY(calc(var(--tilt-y, 10deg) * 1.2))  scale(0.96) translateY(6px); }
-  28%  { opacity: 0.92; transform: perspective(900px) translateZ(0)      rotateX(var(--tilt-x, 10deg))               rotateY(var(--tilt-y, 10deg))               scale(1)    translateY(0); }
-  50%  { opacity: 0.88; transform: perspective(900px) translateZ(-8px)  rotateX(calc(var(--tilt-x, 10deg) * 1.15)) rotateY(calc(var(--tilt-y, 10deg) * 0.85)) scale(1)    translateY(-2px); }
-  72%  { opacity: 0.6;  transform: perspective(900px) translateZ(-110px) rotateX(calc(var(--tilt-x, 10deg) * 1.4))  rotateY(calc(var(--tilt-y, 10deg) * 1.3))  scale(1)    translateY(-16px); }
-  100% { opacity: 0;    transform: perspective(900px) translateZ(-360px) rotateX(calc(var(--tilt-x, 10deg) * 1.8))  rotateY(calc(var(--tilt-y, 10deg) * 1.6))  scale(1.04) translateY(-48px); }
+  0%   { opacity: 0;    transform: perspective(900px) translateZ(-200px) scale(0.86) translateY(20px); }
+  14%  { opacity: 0.78; transform: perspective(900px) translateZ(-60px)  scale(0.96) translateY(6px); }
+  28%  { opacity: 0.92; transform: perspective(900px) translateZ(0)      scale(1)    translateY(0); }
+  50%  { opacity: 0.88; transform: perspective(900px) translateZ(-8px)  scale(1)    translateY(-2px); }
+  72%  { opacity: 0.6;  transform: perspective(900px) translateZ(-110px) scale(1)    translateY(-16px); }
+  100% { opacity: 0;    transform: perspective(900px) translateZ(-360px) scale(1.04) translateY(-48px); }
 }
-/* Mirrors the timing above exactly so the photo's fog-in/fog-out tracks
-   its own opacity/position, just isolated to this element. */
+/* --tilt-x/--tilt-y are set per-instance in JS (random magnitude/sign,
+   never zero) and inherited down to .memory-tilt as custom properties.
+   Every stop here is that base angle times a positive multiplier, so the
+   tilt drifts slowly and continuously but never crosses through flat/0deg
+   — and crucially never stops, even while the fade/recede is paused on
+   hover. */
+@keyframes memory-tilt-drift {
+  0%   { transform: rotateX(var(--tilt-x, 10deg))                          rotateY(calc(var(--tilt-y, 10deg) * 1.15)); }
+  33%  { transform: rotateX(calc(var(--tilt-x, 10deg) * 1.3))               rotateY(calc(var(--tilt-y, 10deg) * 0.85)); }
+  66%  { transform: rotateX(calc(var(--tilt-x, 10deg) * 0.9))               rotateY(calc(var(--tilt-y, 10deg) * 1.25)); }
+  100% { transform: rotateX(var(--tilt-x, 10deg))                          rotateY(calc(var(--tilt-y, 10deg) * 1.15)); }
+}
+@keyframes memory-smoke-drift {
+  0%   { transform: scale(1)     translate(0, 0); }
+  50%  { transform: scale(1.14) translate(2%, -3%); }
+  100% { transform: scale(1)     translate(0, 0); }
+}
+/* Mirrors the drift timing above exactly so the photo's fog-in/fog-out
+   tracks its own opacity/position, just isolated to this element. */
 @keyframes memory-photo-blur {
   0%   { filter: blur(20px); }
   14%  { filter: blur(7px); }
@@ -565,6 +638,17 @@ body.ui-ready #writings-section.ready {
   72%  { filter: blur(6px); }
   100% { filter: blur(20px); }
 }
+/* The cheese holes drift continuously and slowly regardless of whether
+   the mask is currently in use — cheap (four SVG circles), and means the
+   holes are already mid-motion the instant a hover swaps the mask in. */
+@keyframes cheese-drift-1 { 0%, 100% { cx: 0.3;  cy: 0.32; } 50% { cx: 0.34; cy: 0.27; } }
+@keyframes cheese-drift-2 { 0%, 100% { cx: 0.7;  cy: 0.24; } 50% { cx: 0.65; cy: 0.29; } }
+@keyframes cheese-drift-3 { 0%, 100% { cx: 0.56; cy: 0.58; } 50% { cx: 0.6;  cy: 0.52; } }
+@keyframes cheese-drift-4 { 0%, 100% { cx: 0.22; cy: 0.68; } 50% { cx: 0.27; cy: 0.63; } }
+.cheese-hole-1 { animation: cheese-drift-1 8s  ease-in-out infinite; }
+.cheese-hole-2 { animation: cheese-drift-2 11s ease-in-out infinite; }
+.cheese-hole-3 { animation: cheese-drift-3 9s  ease-in-out infinite; }
+.cheese-hole-4 { animation: cheese-drift-4 13s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
   #memory-fog { display: none; }
 }
@@ -3401,6 +3485,22 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 <!-- Experimental — see "MEMORY FOG" CSS/JS blocks. Remove this div +
      those blocks to fully undo. -->
 <div id="memory-fog"></div>
+<!-- Swiss-cheese hover mask for memory-fog photos — referenced by
+     .memory-card.paused .memory-photo. Holes drift continuously and
+     slowly (cheap: a handful of SVG attribute animations, no per-frame
+     JS), so they're already "alive" the instant the mask gets switched
+     on by hovering a photo. Remove together with the MEMORY FOG blocks. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <mask id="memory-cheese-mask" maskContentUnits="objectBoundingBox" maskUnits="objectBoundingBox">
+      <rect x="0" y="0" width="1" height="1" fill="#fff"/>
+      <circle class="cheese-hole cheese-hole-1" cx="0.3" cy="0.32" r="0.1" fill="#000"/>
+      <circle class="cheese-hole cheese-hole-2" cx="0.7" cy="0.24" r="0.08" fill="#000"/>
+      <circle class="cheese-hole cheese-hole-3" cx="0.56" cy="0.58" r="0.12" fill="#000"/>
+      <circle class="cheese-hole cheese-hole-4" cx="0.22" cy="0.68" r="0.07" fill="#000"/>
+    </mask>
+  </defs>
+</svg>
 <div class="esc-hint" id="esc-hint"></div>
 <div id="writings-section">
   <div id="writings-header">
@@ -5224,15 +5324,21 @@ const NAV_LABELS = {};  // key → display label
 
 // ═══════════════════════════════════════════════════
 //  MEMORY FOG — EXPERIMENTAL (may be reverted — see CSS block of the same
-//  name and the #memory-fog div in the markup for the rest of this
-//  feature; deleting all three undoes it cleanly)
+//  name, the #memory-fog div, and the SVG mask defs in the markup for the
+//  rest of this feature; deleting all of it undoes it cleanly)
 //
-//  Tracks mouse distance from the screen centre. Near centre: quotes play
-//  as before. Away from centre: random photos pulled from
+//  Quotes only get the centre spot once the page has been idle 60s+ or the
+//  mouse has left the page entirely — any other time (mouse present and
+//  moving anywhere on the page), random photos pulled from
 //  content/gallery.json drift in and out of the same spot one at a time,
-//  feathered and translucent via the .memory-photo CSS. Desktop/fine-
-//  pointer only — touch devices have no hover concept, so quotes just
-//  keep behaving as they always have there.
+//  feathered and translucent via the .memory-photo CSS. Hovering the
+//  current photo "touches" it: the fade/recede freezes in place
+//  (animation-play-state, not removed) while a separate, never-paused
+//  tilt animation keeps it gently turning in 3D, the photo dissolves into
+//  a slowly-drifting swiss-cheese mask backed by a soft smoke glow, and a
+//  fixed line of text fades in behind it. Desktop/fine-pointer only —
+//  touch devices have no hover concept, so quotes just keep behaving as
+//  they always have there.
 // ═══════════════════════════════════════════════════
 (function () {
   const hasFinePointer = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -5240,15 +5346,11 @@ const NAV_LABELS = {};  // key → display label
   const container = document.getElementById('memory-fog');
   if (!hasFinePointer || prefersReduced || !container || window.innerWidth <= 768) return;
 
-  // Hysteresis band: exit the centre zone past 55% of the half-viewport
-  // radius, but don't re-enter it until back inside 42% — avoids flicker
-  // for anyone hovering right at the boundary. Sized generously so quotes
-  // get most of the screen and memory-fog only kicks in once the mouse is
-  // genuinely out near the edges/corners.
-  const CENTER_EXIT  = 0.55;
-  const CENTER_ENTER = 0.42;
+  const HOVER_TEXT = 'if we could touch our memories, we would never return to the present moment.';
+  const IDLE_MS = 60000; // 1 minute of no mouse movement hands the centre back to quotes
 
-  let photos = null, lastIdx = -1, nearCenter = true, active = false;
+  let photos = null, lastIdx = -1, active = false;
+  let currentCard = null; // the .memory-card currently in the DOM, if any
 
   function loadPhotos() {
     if (photos) return Promise.resolve(photos);
@@ -5276,38 +5378,62 @@ const NAV_LABELS = {};  // key → display label
     lastIdx = idx;
     const p = photos[idx];
 
-    // .memory-card is the single element the memory-drift animation runs
-    // on — img + caption both sit inside it with no animation of their
-    // own, so they appear together and move/fade as one rigid unit.
+    // .memory-card carries the fade/recede animation only (pausable on
+    // hover). .memory-tilt is the inner wrapper that carries the
+    // continuous, never-paused 3D tilt, so the two motions are fully
+    // decoupled — pausing one never touches the other.
     const card = document.createElement('div');
     card.className = 'memory-card';
-    // Random per-image tilt, read by the memory-drift keyframes via
-    // var(--tilt-x)/var(--tilt-y). Magnitude (7-15deg) is kept modest so
-    // the image stays readable; sign is independently randomised per axis
-    // so different images lean different directions.
+    // Random per-image tilt, read by the memory-tilt-drift keyframes via
+    // var(--tilt-x)/var(--tilt-y) (inherited down to .memory-tilt).
+    // Magnitude (7-15deg) is kept modest so the image stays readable;
+    // sign is independently randomised per axis so different images lean
+    // different directions.
     const tiltX = (Math.random() < 0.5 ? -1 : 1) * (7 + Math.random() * 8);
     const tiltY = (Math.random() < 0.5 ? -1 : 1) * (7 + Math.random() * 8);
     card.style.setProperty('--tilt-x', tiltX.toFixed(1) + 'deg');
     card.style.setProperty('--tilt-y', tiltY.toFixed(1) + 'deg');
 
+    const tilt = document.createElement('div');
+    tilt.className = 'memory-tilt';
+
+    const hoverText = document.createElement('div');
+    hoverText.className = 'memory-hover-text';
+    hoverText.textContent = HOVER_TEXT;
+    tilt.appendChild(hoverText);
+
+    const smoke = document.createElement('div');
+    smoke.className = 'memory-smoke';
+    tilt.appendChild(smoke);
+
     const img = document.createElement('img');
     img.className = 'memory-photo';
     img.src = p.src;
     img.alt = '';
-    card.appendChild(img);
+    tilt.appendChild(img);
 
     if (p.caption) {
       const cap = document.createElement('div');
       cap.className = 'memory-caption';
       cap.textContent = p.caption;
-      card.appendChild(cap);
+      tilt.appendChild(cap);
     }
+
+    card.appendChild(tilt);
+
+    // "Touching" the photo pauses the fade/recede in place (the tilt above
+    // keeps running independently) and reveals the cheese/smoke/hover-text
+    // — all driven off the single .paused class via CSS.
+    card.addEventListener('mouseenter', () => card.classList.add('paused'));
+    card.addEventListener('mouseleave', () => card.classList.remove('paused'));
 
     container.innerHTML = '';
     container.appendChild(card);
+    currentCard = card;
 
     card.addEventListener('animationend', () => {
       if (card.parentNode) card.parentNode.removeChild(card);
+      if (currentCard === card) currentCard = null;
       if (active) setTimeout(showNextMemory, 500 + Math.random() * 400);
     }, { once: true });
   }
@@ -5319,40 +5445,57 @@ const NAV_LABELS = {};  // key → display label
   }
   function stopMemoryLoop() {
     active = false;
+    currentCard = null;
     container.innerHTML = '';
   }
 
-  function setNearCenter(v) {
-    if (v === nearCenter) return;
-    nearCenter = v;
-    if (window._setQuoteCenterPaused) window._setQuoteCenterPaused(!v);
-    if (v) stopMemoryLoop(); else startMemoryLoop();
+  // quotesMode: true means the centre belongs to quotes right now (idle
+  // 60s+, or mouse off the page); false means memory-fog runs instead.
+  // Starts true so nothing fires before the first real signal arrives.
+  let quotesMode = true;
+  let suspended = false; // forced off by other UI (carousel/nav hover) regardless of quotesMode
+  let lastMove = Date.now();
+  let mouseOnPage = true;
+
+  function applyMode() {
+    if (suspended) { stopMemoryLoop(); return; }
+    if (quotesMode) stopMemoryLoop(); else startMemoryLoop();
   }
 
-  // Lets other UI (currently: hovering the carousel) force memory-fog off
-  // regardless of mouse-distance-from-centre, then hand control back to
-  // the normal nearCenter-driven logic once that's done.
-  window._setMemoryFogSuspended = (suspended) => {
-    if (suspended) stopMemoryLoop();
-    else if (!nearCenter) startMemoryLoop();
+  function evaluate() {
+    if (!document.body.classList.contains('ui-ready')) return; // never during the intro
+    const idle = (Date.now() - lastMove) >= IDLE_MS;
+    const shouldQuotes = idle || !mouseOnPage;
+    if (shouldQuotes === quotesMode) return;
+    quotesMode = shouldQuotes;
+    if (window._setQuoteCenterPaused) window._setQuoteCenterPaused(!quotesMode);
+    applyMode();
+  }
+
+  // Lets other UI (carousel hover, nav-item hover) force memory-fog off
+  // regardless of the idle/quotes state, then hand control back once
+  // that's done.
+  window._setMemoryFogSuspended = (v) => {
+    suspended = v;
+    applyMode();
   };
 
-  let ticking = false;
-  document.addEventListener('mousemove', e => {
-    if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(() => {
-      ticking = false;
-      // Wait for the intro/big-bang to finish — same gate the rest of the
-      // UI uses — so memory-fog can never kick in mid-intro.
-      if (!document.body.classList.contains('ui-ready')) return;
-      const r = Math.min(window.innerWidth, window.innerHeight) / 2;
-      const dist = Math.hypot(e.clientX - window.innerWidth / 2, e.clientY - window.innerHeight / 2) / r;
-      if (nearCenter && dist > CENTER_EXIT) setNearCenter(false);
-      else if (!nearCenter && dist < CENTER_ENTER) setNearCenter(true);
-    });
+  document.addEventListener('mousemove', () => {
+    lastMove = Date.now();
+    mouseOnPage = true;
+    evaluate();
   });
-  document.addEventListener('mouseleave', () => setNearCenter(true));
+  document.addEventListener('mouseenter', () => {
+    mouseOnPage = true;
+    lastMove = Date.now();
+    evaluate();
+  });
+  document.addEventListener('mouseleave', () => {
+    mouseOnPage = false;
+    evaluate();
+  });
+  // Catches the idle-timeout transition even when no mouse event fires.
+  setInterval(evaluate, 1000);
 })();
 
 // ═══════════════════════════════════════════════════
