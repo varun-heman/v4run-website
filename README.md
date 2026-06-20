@@ -80,28 +80,36 @@ Items published within 2 months show a NEW badge. The overlay is filterable by t
 
 The Pics overlay has three views:
 
-1. **Recent** — last 5 photos across all albums, in a 5-column grid.
+1. **Recent** — last 5 items across all albums, in a 5-column grid.
 2. **Albums** — auto-scanned from `images/gallery/` subdirectories.
-3. **Album view** — all photos in an album, with a back button.
+3. **Album view** — all items in an album, with a back button.
 
-Clicking any thumbnail opens an immersive **lightbox** (full-screen, black background, `object-fit: contain`). Caption, date, and location are overlaid at the bottom with a gradient. Arrow keys and click to navigate.
+Albums can mix photos, local video clips, and YouTube videos freely — they all sit in the same grid and open in the same lightbox.
 
-Hovering a thumbnail reveals a slide-up overlay with the caption and metadata chips.
+Clicking any thumbnail opens an immersive **lightbox** (full-screen, black background). Photos and local videos use `object-fit: contain`; YouTube opens in a boxed 16:9 embed. Caption, date, and location are overlaid at the bottom with a gradient. Arrow keys and click to navigate — moving to the next/previous item or closing the lightbox always stops whatever video was playing.
+
+Hovering a thumbnail reveals a slide-up overlay with the caption and metadata chips. Video and YouTube thumbnails also get a small play-icon badge so they're distinguishable from photos at a glance.
 
 ### Gallery metadata
 
-Each album lives in `images/gallery/<album-name>/`. An optional `meta.md` file in each album provides per-photo metadata:
+Each album lives in `images/gallery/<album-name>/`. An optional `meta.md` file in each album provides per-item metadata:
 
 ```
 # filename | caption | date (YYYY-MM-DD) | location
 arch-01.jpg | Pillared corridor, Mysore Palace | 2026-01-28 | Mysore, India
+clip-01.mp4 | A short clip from the same trip   | 2026-01-28 |
+youtube:dQw4w9WgXcQ | A YouTube video             | 2026-01-29 | Mysore, India
 ```
 
 Dates and locations are optional — just leave the field blank.
 
+**Local videos** (`.mp4`, `.webm`, `.mov`, `.m4v`) just sit in the album folder alongside photos — no separate setup. There's no automatic poster-frame generation (no ffmpeg dependency); the browser shows the video's own first frame as its thumbnail.
+
+**YouTube videos** aren't files on disk, so they're declared as a `meta.md` line instead, using `youtube:` in place of a filename — either a bare 11-character video ID or a full URL (`youtube:https://youtu.be/dQw4w9WgXcQ`, `.../watch?v=...`, or `.../shorts/...` all work). Thumbnails come from YouTube's public thumbnail CDN, no API key needed.
+
 ### Gallery build step
 
-The gallery JSON is generated pre-deploy by `scripts/gen-gallery.js`. It scans `images/gallery/*/` for image files and writes `content/gallery.json` with all albums and the 5 most recent photos.
+The gallery JSON is generated pre-deploy by `scripts/gen-gallery.js`. It scans `images/gallery/*/` for image and video files, parses each album's `meta.md` for YouTube entries, and writes `content/gallery.json` with all albums and the 5 most recent items.
 
 `netlify.toml` wires this up automatically on Netlify. For local testing, run:
 

@@ -2707,12 +2707,25 @@ body.strip-hovered #viewall-btn {
   aspect-ratio: 4/3; overflow: hidden; cursor: pointer;
   background: rgba(10,18,12,0.9); position: relative;
 }
-.gallery-recent-thumb img {
+.gallery-recent-thumb img,
+.gallery-recent-thumb video {
   width: 100%; height: 100%; object-fit: cover;
   transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
   display: block;
 }
-.gallery-recent-thumb:hover img { transform: scale(1.05); }
+.gallery-recent-thumb:hover img,
+.gallery-recent-thumb:hover video { transform: scale(1.05); }
+/* Play badge — centered, shown on video/YouTube thumbnails only */
+.thumb-play {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(3,8,5,0.6); border: 1px solid rgba(255,255,255,0.25);
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.92); font-size: 12px;
+  pointer-events: none; z-index: 2;
+  backdrop-filter: blur(2px);
+}
+.thumb-play i { margin-left: 1px; } /* optical centering for the play triangle */
 .gallery-recent-thumb .thumb-info,
 .gallery-album-thumb .thumb-info {
   position: absolute; inset: 0;
@@ -2762,12 +2775,14 @@ body.strip-hovered #viewall-btn {
 .gallery-album-cover {
   aspect-ratio: 4/3; overflow: hidden; position: relative;
 }
-.gallery-album-cover img {
+.gallery-album-cover img,
+.gallery-album-cover video {
   width: 100%; height: 100%; object-fit: cover;
   transition: opacity 0.15s, transform 0.22s;
   display: block; filter: brightness(0.85);
 }
-.gallery-album-card:hover .gallery-album-cover img { opacity: 0.9; transform: scale(1.04); }
+.gallery-album-card:hover .gallery-album-cover img,
+.gallery-album-card:hover .gallery-album-cover video { opacity: 0.9; transform: scale(1.04); }
 .gallery-album-info {
   padding: 9px 10px 10px;
 }
@@ -2799,11 +2814,13 @@ body.strip-hovered #viewall-btn {
   aspect-ratio: 4/3; overflow: hidden; cursor: pointer;
   background: rgba(10,18,12,0.9); position: relative;
 }
-.gallery-album-thumb img {
+.gallery-album-thumb img,
+.gallery-album-thumb video {
   width: 100%; height: 100%; object-fit: cover;
   transition: transform 0.3s cubic-bezier(0.16,1,0.3,1); display: block;
 }
-.gallery-album-thumb:hover img { transform: scale(1.05); }
+.gallery-album-thumb:hover img,
+.gallery-album-thumb:hover video { transform: scale(1.05); }
 
 /* Lightbox */
 #gallery-lightbox {
@@ -2822,12 +2839,22 @@ body.strip-hovered #viewall-btn {
   cursor: pointer; transition: color 0.15s; z-index: 4; line-height: 1;
 }
 #lb-close:hover { color: #e03030; }
-#lb-img {
+#lb-img, #lb-video {
   max-width: 100vw; max-height: 100vh;
   width: 100%; height: 100%;
   object-fit: contain; display: block;
   position: relative; z-index: 1;
 }
+/* YouTube has no intrinsic size to "contain" within, so it's boxed to a
+   16:9 frame instead, sized to whichever of width/height is the tighter
+   constraint — same visual footprint as a contained photo/video. */
+#lb-youtube {
+  width: min(92vw, calc((100vh - 80px) * 16 / 9));
+  aspect-ratio: 16 / 9;
+  border: none; display: block; position: relative; z-index: 1;
+  background: #000;
+}
+#lb-img.lb-hidden, #lb-video.lb-hidden, #lb-youtube.lb-hidden { display: none; }
 #lb-prev, #lb-next {
   position: absolute; top: 50%; transform: translateY(-50%);
   font-size: 32px; color: rgba(255,255,255,0.25); background: none; border: none;
@@ -3395,6 +3422,8 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
     <button id="lb-prev">‹</button>
     <button id="lb-next">›</button>
     <img id="lb-img" src="" alt="">
+    <video id="lb-video" class="lb-hidden" controls playsinline></video>
+    <iframe id="lb-youtube" class="lb-hidden" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
     <div id="lb-meta">
       <div id="lb-caption"></div>
       <div id="lb-details"></div>
@@ -5762,6 +5791,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   const emptyMsg    = document.getElementById('gallery-empty');
   const lightbox    = document.getElementById('gallery-lightbox');
   const lbImg       = document.getElementById('lb-img');
+  const lbVideo     = document.getElementById('lb-video');
+  const lbYoutube   = document.getElementById('lb-youtube');
   const lbCaption   = document.getElementById('lb-caption');
   const lbDetails   = document.getElementById('lb-details');
   const lbClose     = document.getElementById('lb-close');
@@ -5795,8 +5826,16 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     window._modalOpen = true;
     if (!skipHash) history.pushState({ panel: 'pics', album: currentAlbumSlug, photo: index }, '', lbHashPath(index));
   }
+  // Pauses/clears whichever media element is currently playing — called
+  // before swapping to a new item and on close, so a video or YouTube
+  // embed never keeps playing in the background once it's off-screen.
+  function stopActiveMedia() {
+    if (!lbVideo.classList.contains('lb-hidden')) { lbVideo.pause(); lbVideo.removeAttribute('src'); lbVideo.load(); }
+    if (!lbYoutube.classList.contains('lb-hidden')) { lbYoutube.src = ''; }
+  }
   function closeLightbox(skipHash) {
     lightbox.classList.remove('open');
+    stopActiveMedia();
     if (overlay.classList.contains('open')) {
       window._modalOpen = true;
       if (!skipHash) {
@@ -5810,8 +5849,20 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   function showLbPhoto(replaceHash) {
     const p = lbPhotos[lbIndex];
     if (!p) return;
-    lbImg.src = p.src;
-    lbImg.alt = p.caption || '';
+    stopActiveMedia();
+    const type = p.type || 'image';
+    lbImg.classList.toggle('lb-hidden', type !== 'image');
+    lbVideo.classList.toggle('lb-hidden', type !== 'video');
+    lbYoutube.classList.toggle('lb-hidden', type !== 'youtube');
+    if (type === 'image') {
+      lbImg.src = p.src;
+      lbImg.alt = p.caption || '';
+    } else if (type === 'video') {
+      lbVideo.src = p.src;
+      lbVideo.load();
+    } else if (type === 'youtube') {
+      lbYoutube.src = `https://www.youtube.com/embed/${p.youtubeId}?autoplay=1&rel=0`;
+    }
     lbCaption.textContent = p.caption || '';
     lbCaption.style.display = p.caption ? 'block' : 'none';
     lbDetails.innerHTML = '';
@@ -5888,13 +5939,33 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   window._closeLightboxOnly = () => closeLightbox(true);
 
   // ── Build thumb elements ───────────────────────────
+  function youtubeThumbUrl(id) { return `https://img.youtube.com/vi/${id}/hqdefault.jpg`; }
+
   function makeThumb(photo, photos, index, cls) {
     const div = document.createElement('div');
     div.className = cls;
-    const img = document.createElement('img');
-    img.src = photo.src; img.alt = photo.caption || '';
-    img.loading = 'lazy';
-    div.appendChild(img);
+    const type = photo.type || 'image';
+    if (type === 'video') {
+      // No poster image (no ffmpeg dependency) — the browser shows the
+      // video's own first frame once metadata loads, which is enough for
+      // a thumbnail.
+      const video = document.createElement('video');
+      video.src = photo.src; video.muted = true; video.playsInline = true;
+      video.preload = 'metadata';
+      div.appendChild(video);
+    } else {
+      const img = document.createElement('img');
+      img.src = type === 'youtube' ? youtubeThumbUrl(photo.youtubeId) : photo.src;
+      img.alt = photo.caption || '';
+      img.loading = 'lazy';
+      div.appendChild(img);
+    }
+    if (type === 'video' || type === 'youtube') {
+      const play = document.createElement('span');
+      play.className = 'thumb-play';
+      play.innerHTML = '<i class="fa-solid fa-play"></i>';
+      div.appendChild(play);
+    }
     // NEW badge — always visible, top-right
     if (photo._isNew) {
       const badge = document.createElement('span');
@@ -5957,11 +6028,19 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     // Albums
     data.albums.forEach(album => {
       const albumHasNew = (album.photos || []).some(p => p._isNew);
+      const cover = album.cover || {};
+      const coverType = cover.type || 'image';
+      const coverMedia = coverType === 'video'
+        ? `<video src="${cover.src}" muted playsinline preload="metadata"></video>`
+        : `<img src="${coverType === 'youtube' ? youtubeThumbUrl(cover.youtubeId) : cover.src}" alt="${album.title}" loading="lazy">`;
+      const coverPlay = (coverType === 'video' || coverType === 'youtube')
+        ? '<span class="thumb-play"><i class="fa-solid fa-play"></i></span>' : '';
       const card = document.createElement('div');
       card.className = 'gallery-album-card';
       card.innerHTML = `
         <div class="gallery-album-cover">
-          <img src="${album.cover}" alt="${album.title}" loading="lazy">
+          ${coverMedia}
+          ${coverPlay}
           ${albumHasNew ? '<span class="thumb-new">NEW</span>' : ''}
         </div>
         <div class="gallery-album-info">
