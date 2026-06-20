@@ -3069,15 +3069,24 @@ body.strip-hovered .corner-br {
   background: #000;
 }
 #lb-img.lb-hidden, #lb-video.lb-hidden, #lb-youtube.lb-hidden { display: none; }
+/* Faint white-on-transparent used to vanish against the lightbox's own
+   black background whenever a photo doesn't fill the screen (portrait
+   photos, letterboxed video) — the arrows sit right over that black
+   margin. A subtle circular backdrop + higher-contrast glyph keeps them
+   visible against either the black background or a bright photo. */
 #lb-prev, #lb-next {
   position: absolute; top: 50%; transform: translateY(-50%);
-  font-size: 32px; color: rgba(255,255,255,0.25); background: none; border: none;
-  cursor: pointer; padding: 20px 16px; transition: color 0.15s; z-index: 4;
-  user-select: none; line-height: 1;
+  font-size: 28px; color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18); border-radius: 50%;
+  width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; padding: 0; transition: color 0.15s, background 0.15s, border-color 0.15s;
+  z-index: 4; user-select: none; line-height: 1;
 }
-#lb-prev:hover, #lb-next:hover { color: rgba(255,255,255,0.8); }
-#lb-prev { left: 0; }
-#lb-next { right: 0; }
+#lb-prev:hover, #lb-next:hover {
+  color: #fff; background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.32);
+}
+#lb-prev { left: 16px; }
+#lb-next { right: 16px; }
 #lb-meta {
   position: absolute; bottom: 0; left: 0; right: 0; z-index: 3;
   padding: 60px 32px 28px;
@@ -3106,7 +3115,8 @@ body.strip-hovered .corner-br {
   #gallery-album-grid   { grid-template-columns: repeat(3, 1fr); gap: 6px; }
   #lb-img { max-width: calc(100vw - 60px); max-height: calc(100vh - 140px); }
   #lb-meta { padding: 14px 16px; }
-  #lb-prev { left: 2px; } #lb-next { right: 2px; }
+  #lb-prev, #lb-next { width: 38px; height: 38px; font-size: 24px; }
+  #lb-prev { left: 4px; } #lb-next { right: 4px; }
 }
 
 /* ── SCREEN GLITCH (random, whole-viewport) ──────────────────────────────
