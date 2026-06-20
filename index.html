@@ -541,12 +541,16 @@ body.ui-ready #writings-section.ready {
    visibility from ~28%-50% so there's an actual window to look at the
    photo and read the caption, not just an instantaneous peak. */
 @keyframes memory-drift {
-  0%   { opacity: 0;    transform: perspective(900px) translateZ(-160px) rotateX(6deg)  translateY(16px); }
-  14%  { opacity: 0.78; transform: perspective(900px) translateZ(-40px)  rotateX(2deg)  translateY(4px); }
-  28%  { opacity: 0.92; transform: perspective(900px) translateZ(0)       rotateX(0deg) translateY(0); }
-  50%  { opacity: 0.88; transform: perspective(900px) translateZ(-8px)   rotateX(1deg)  translateY(-2px); }
-  72%  { opacity: 0.6;  transform: perspective(900px) translateZ(-110px) rotateX(8deg)  translateY(-16px); }
-  100% { opacity: 0;    transform: perspective(900px) translateZ(-360px) rotateX(24deg) translateY(-48px); }
+  /* Entrance tilts in on two axes (rotateX + rotateY) and grows from
+     slightly small, so it reads as something with real depth turning
+     into frontal view out of the fog — not just a flat fade-up. Exit
+     keeps the original recede-into-the-distance feel. */
+  0%   { opacity: 0;    transform: perspective(900px) translateZ(-200px) rotateX(-24deg) rotateY(13deg) scale(0.86) translateY(20px); }
+  14%  { opacity: 0.78; transform: perspective(900px) translateZ(-60px)  rotateX(-8deg)  rotateY(4deg)  scale(0.96) translateY(6px); }
+  28%  { opacity: 0.92; transform: perspective(900px) translateZ(0)      rotateX(0deg)   rotateY(0deg)  scale(1)    translateY(0); }
+  50%  { opacity: 0.88; transform: perspective(900px) translateZ(-8px)  rotateX(1deg)   rotateY(0deg)  scale(1)    translateY(-2px); }
+  72%  { opacity: 0.6;  transform: perspective(900px) translateZ(-110px) rotateX(8deg)  rotateY(0deg)  scale(1)    translateY(-16px); }
+  100% { opacity: 0;    transform: perspective(900px) translateZ(-360px) rotateX(24deg) rotateY(0deg)  scale(1.04) translateY(-48px); }
 }
 /* Mirrors the timing above exactly so the photo's fog-in/fog-out tracks
    its own opacity/position, just isolated to this element. */
