@@ -37,10 +37,10 @@ On the very first visit to the root domain, a terminal-style **access gate** is 
 - **Writing** — clicking opens the full "View All" writing overlay (with year/tag filters).
 - **Reads** — clicking opens the Recommended Reads overlay (vertically scrollable link list with descriptions).
 - **Projects** — clicking opens the Projects overlay. Each project row is a hoverable card — transparent border at rest, green box highlight + background tint on hover, with a green border flash animation on open.
-- **Pics** — opens the photo gallery overlay.
+- **Memories** — opens the photo gallery overlay. Labelled "Memories" in the nav (internal key/deep-link slug is still `pics`, unchanged for backwards-compatible links).
 - **NEW badges** — a green dot appears next to a nav item when any of its content was published within the last 60 days (Reads uses a 2-month window). Individual new items also carry a NEW badge.
 - All nav items are **deep-linkable** — `/#about`, `/#work`, `/#projects`, `/#writing`, `/#reads`, `/#pics` open their panels directly. Browser back/forward navigation works.
-- On **desktop**, Writing, Reads, and Pics are in the nav bar. On **mobile**, they are appended as extra nav items at the bottom.
+- On **desktop**, Writing, Reads, and Memories are in the nav bar. On **mobile**, they are appended as extra nav items at the bottom.
 
 ## Social dock
 
@@ -78,7 +78,7 @@ Items published within 2 months show a NEW badge. The overlay is filterable by t
 
 ## Photo gallery
 
-The Pics overlay has three views:
+The Memories overlay has three views:
 
 1. **Recent** — last 5 items across all albums, in a 5-column grid.
 2. **Albums** — auto-scanned from `images/gallery/` subdirectories.
@@ -233,7 +233,7 @@ For GitHub Pages, push to `main` and enable Pages from repo Settings → Pages (
 
 On screens ≤ 768px:
 - Nav moves to a horizontal strip at the bottom of the screen
-- Writing, Reads, and Pics nav items are appended (desktop carousel and gallery link are hidden on mobile)
+- Writing, Reads, and Memories nav items are appended (desktop carousel and gallery link are hidden on mobile)
 - Bio, photo popup, and article carousel are hidden
 - Modal expands to 94vw
 - Particle count is halved for performance

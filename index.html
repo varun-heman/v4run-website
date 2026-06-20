@@ -512,7 +512,7 @@ body.ui-ready #writings-section.ready {
      without touching the independent tilt animation on the child below.
      pointer-events stays none throughout — nothing here ever needs to
      capture mouse events directly any more. */
-  animation: memory-drift 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
+  animation: memory-drift 10s cubic-bezier(0.22,0.61,0.36,1) forwards;
 }
 /* opacity is forced (!important) rather than just relying on the pause —
    if you happen to start hovering while memory-drift had already faded
@@ -552,7 +552,7 @@ body.ui-ready #writings-section.ready {
   /* Blur lives on the frame, on its own timeline — it used to be on the
      shared wrapper, which blurred the caption text along with the image
      and made it unreadable. */
-  animation: memory-photo-blur 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
+  animation: memory-photo-blur 10s cubic-bezier(0.22,0.61,0.36,1) forwards;
 }
 .memory-photo-media {
   position: absolute; inset: 0;
@@ -563,7 +563,7 @@ body.ui-ready #writings-section.ready {
      --kb-y (inherited down from .memory-card) — slow zoom-and-drift over
      the photo's visible lifetime, clipped to the static frame above so
      only the content moves, never the feathered edge itself. */
-  animation: memory-kenburns 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
+  animation: memory-kenburns 10s cubic-bezier(0.22,0.61,0.36,1) forwards;
 }
 /* Touching a photo just dims it down — kept deliberately simple after a
    patchy "disappearing in parts" overlay (multiple blurred screen-blend
@@ -573,7 +573,7 @@ body.ui-ready #writings-section.ready {
    apply on top of it unchanged. */
 /* memory-photo-blur lives on .memory-photo itself, not .memory-card, so
    pausing the card's own animation doesn't touch it — it kept ticking
-   through its full 5.6s timeline regardless of hover and would lock at
+   through its full 10s timeline regardless of hover and would lock at
    its blurred end state after a few seconds of touching, which read as
    the image vanishing and never coming back until the card was replaced.
    Pausing it here too, and forcing a guaranteed-sharp filter for the same
@@ -643,10 +643,10 @@ body.ui-ready #writings-section.ready {
   /* Starts hidden and fades in on its own slight delay — text doesn't
      need to "resolve focus" the way the photo does, so at identical
      timing it was reading as legible before the photo behind it had come
-     into focus. ~1.5s roughly matches when memory-photo-blur clears to
-     its sharpest point (28% of 5.6s ≈ 1.57s). */
+     into focus. ~2.2s roughly matches when memory-photo-blur clears to
+     its sharpest point (22% of 10s = 2.2s). */
   animation: memory-caption-in 0.8s ease forwards;
-  animation-delay: 1.5s;
+  animation-delay: 2.2s;
 }
 /* Hidden while paused — the hover text takes over that same screen
    region and the two were competing for attention. !important since the
@@ -654,16 +654,18 @@ body.ui-ready #writings-section.ready {
    anyone could be touching a photo, and would otherwise outrank this. */
 .memory-card.paused .memory-caption { opacity: 0 !important; }
 /* Opacity/transform only — no filter here, so the caption (also inside
-   .memory-card) never gets blurred along with the photo. Holds near-full
-   visibility from ~28%-50% so there's an actual window to look at the
-   photo and read the caption, not just an instantaneous peak. No tilt
-   here any more — see .memory-tilt for that. */
+   .memory-card) never gets blurred along with the photo. Total lifecycle
+   is 10s (see the matching "animation: memory-drift 10s ..." up top) —
+   holds near-full visibility/clarity from 22%-65% (≈2.2s-6.5s, a good
+   4.3s window) so there's actually enough time to look at the photo and
+   read the caption, not just a blink. No tilt here any more — see
+   .memory-tilt for that. */
 @keyframes memory-drift {
   0%   { opacity: 0;    transform: perspective(900px) translateZ(-200px) scale(0.86) translateY(20px); }
-  14%  { opacity: 0.78; transform: perspective(900px) translateZ(-60px)  scale(0.96) translateY(6px); }
-  28%  { opacity: 0.92; transform: perspective(900px) translateZ(0)      scale(1)    translateY(0); }
-  50%  { opacity: 0.88; transform: perspective(900px) translateZ(-8px)  scale(1)    translateY(-2px); }
-  72%  { opacity: 0.6;  transform: perspective(900px) translateZ(-110px) scale(1)    translateY(-16px); }
+  12%  { opacity: 0.78; transform: perspective(900px) translateZ(-60px)  scale(0.96) translateY(6px); }
+  22%  { opacity: 0.92; transform: perspective(900px) translateZ(0)      scale(1)    translateY(0); }
+  65%  { opacity: 0.88; transform: perspective(900px) translateZ(-8px)  scale(1)    translateY(-2px); }
+  85%  { opacity: 0.6;  transform: perspective(900px) translateZ(-110px) scale(1)    translateY(-16px); }
   100% { opacity: 0;    transform: perspective(900px) translateZ(-360px) scale(1.04) translateY(-48px); }
 }
 /* --tilt-x/--tilt-y are set per-instance in JS (random magnitude/sign,
@@ -686,7 +688,7 @@ body.ui-ready #writings-section.ready {
 /* --kb-scale/--kb-x/--kb-y are set per-instance in JS (random within a
    modest range) and inherited down from .memory-card. Slow, one-way
    zoom-and-drift — deliberately not a back-and-forth loop, since the
-   photo itself only lives once through this same 5.6s span. */
+   photo itself only lives once through this same 10s span. */
 @keyframes memory-kenburns {
   0%   { transform: scale(1) translate(0%, 0%); }
   100% { transform: scale(var(--kb-scale, 1.1)) translate(var(--kb-x, -3%), var(--kb-y, 2%)); }
@@ -699,10 +701,10 @@ body.ui-ready #writings-section.ready {
    tracks its own opacity/position, just isolated to this element. */
 @keyframes memory-photo-blur {
   0%   { filter: blur(20px); }
-  14%  { filter: blur(7px); }
-  28%  { filter: blur(1.5px); }
-  50%  { filter: blur(1.5px); }
-  72%  { filter: blur(6px); }
+  12%  { filter: blur(7px); }
+  22%  { filter: blur(1.5px); }
+  65%  { filter: blur(1.5px); }
+  85%  { filter: blur(6px); }
   100% { filter: blur(20px); }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -3645,7 +3647,7 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 <!-- ── GALLERY OVERLAY ────────────────────────────────── -->
 <div id="gallery-overlay">
   <div id="gallery-head">
-    <span id="gallery-title">Pics</span>
+    <span id="gallery-title">Memories</span>
     <span id="gallery-close">×</span>
   </div>
   <div id="gallery-body">
@@ -5424,7 +5426,15 @@ const NAV_LABELS = {};  // key → display label
   let currentHoverText = null; // its .memory-hover-text element
   let touching = false;        // true while the mouse is inside the small centre touch zone
 
-  const MAX_PHOTOS = 20; // capped pool size — see the shuffle below
+  const MAX_PHOTOS = 30; // capped pool size — see the mix logic below
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
 
   function loadPhotos() {
     if (photos) return Promise.resolve(photos);
@@ -5438,16 +5448,25 @@ const NAV_LABELS = {};  // key → display label
         // videos are eligible too (rendered as autoplaying/looping/muted
         // <video>, see showNextMemory) — YouTube entries aren't real files
         // on disk, so those stay excluded.
-        const eligible = all.filter(p => (p.type === 'image' || p.type === 'video') && p.src);
-        // Fisher-Yates shuffle, then cap at MAX_PHOTOS. This runs once per
-        // page load (photos is cached above), so a refresh re-shuffles and
-        // picks a different random 20 from the full gallery each time,
-        // while the rest of this session just cycles within that set.
-        for (let i = eligible.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [eligible[i], eligible[j]] = [eligible[j], eligible[i]];
+        const images = shuffle(all.filter(p => p.type === 'image' && p.src));
+        const videos = shuffle(all.filter(p => p.type === 'video' && p.src));
+
+        // This runs once per page load (photos is cached above), so a
+        // refresh redraws the pool each time, while the rest of that
+        // session just cycles within it. If there are videos at all,
+        // reserve a proportional (but guaranteed non-zero) share of the
+        // cap for them rather than leaving the mix up to pure chance —
+        // with a small video count relative to a big photo library, a
+        // flat shuffle-then-slice could easily draw 20 photos and no
+        // video in a given session.
+        if (!videos.length) {
+          photos = images.slice(0, MAX_PHOTOS);
+        } else {
+          const videoShare = Math.max(1, Math.round(MAX_PHOTOS * videos.length / (images.length + videos.length)));
+          const videoCount = Math.min(videos.length, videoShare, MAX_PHOTOS - 1); // always leave room for >=1 photo too
+          const imageCount = MAX_PHOTOS - videoCount;
+          photos = shuffle(images.slice(0, imageCount).concat(videos.slice(0, videoCount)));
         }
-        photos = eligible.slice(0, MAX_PHOTOS);
         return photos;
       })
       .catch(() => { photos = []; return photos; });

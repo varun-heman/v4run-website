@@ -192,7 +192,7 @@
         "date": "2019-02-25",
         "location": ""
       },
-      "count": 6,
+      "count": 7,
       "photos": [
         {
           "type": "image",
@@ -227,6 +227,13 @@
           "src": "images/gallery/places/misty-green-hills.jpg",
           "caption": "Somewhere between a postcard and a memory.",
           "date": "2021-09-29",
+          "location": ""
+        },
+        {
+          "type": "video",
+          "src": "images/gallery/places/mountain-pass-ride.mp4",
+          "caption": "Some roads don't care where you're headed, only that you're moving.",
+          "date": "2017-12-30",
           "location": ""
         },
         {
@@ -290,17 +297,17 @@
       "location": ""
     },
     {
-      "type": "image",
-      "src": "images/gallery/places/misty-green-hills.jpg",
-      "caption": "Somewhere between a postcard and a memory.",
-      "date": "2021-09-29",
+      "type": "video",
+      "src": "images/gallery/places/mountain-pass-ride.mp4",
+      "caption": "Some roads don't care where you're headed, only that you're moving.",
+      "date": "2017-12-30",
       "location": ""
     },
     {
       "type": "image",
-      "src": "images/gallery/places/hilltop-sunset-view.jpg",
-      "caption": "We came up for the view, stayed for the quiet.",
-      "date": "2019-04-10",
+      "src": "images/gallery/places/misty-green-hills.jpg",
+      "caption": "Somewhere between a postcard and a memory.",
+      "date": "2021-09-29",
       "location": ""
     }
   ]
