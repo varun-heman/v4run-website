@@ -501,8 +501,12 @@ body.ui-ready #writings-section.ready {
 }
 /* One-time 8s preloader shown the first time memory fog activates —
    see startMemoryLoop() in the JS. Centred the same way #memory-fog is,
-   so it hands off to the first real photo without any visual jump. */
-#memory-fog-preloader {
+   so it hands off to the first real photo without any visual jump.
+   #quotes-preloader shares the same look (same ring/text classes below)
+   but is its own element with its own show/hide state, since unlike the
+   memory-fog one it's meant to reappear every single time — see the
+   "ENTERING QUOTES MODE" block further down in the JS. */
+#memory-fog-preloader, #quotes-preloader {
   position: fixed; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   z-index: 11;
@@ -511,9 +515,9 @@ body.ui-ready #writings-section.ready {
   opacity: 0; visibility: hidden;
   transition: opacity 0.5s ease, visibility 0.5s ease;
 }
-#memory-fog-preloader.visible { opacity: 1; visibility: visible; }
-#memory-fog-preloader .mf-preloader-ring { overflow: visible; flex: none; }
-#memory-fog-preloader .mf-preloader-ring circle { fill: none; }
+#memory-fog-preloader.visible, #quotes-preloader.visible { opacity: 1; visibility: visible; }
+#memory-fog-preloader .mf-preloader-ring, #quotes-preloader .mf-preloader-ring { overflow: visible; flex: none; }
+#memory-fog-preloader .mf-preloader-ring circle, #quotes-preloader .mf-preloader-ring circle { fill: none; }
 .mf-ring-track { stroke: rgba(184,240,210,0.14); stroke-width: 2; }
 /* Two rings, opposite directions/speeds, each a short "comet" arc
    (stroke-dasharray) rather than a full circle — reads as a more alive,
@@ -3612,6 +3616,17 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
   </svg>
   <span class="mf-preloader-text">LOADING MEMORY FOG...</span>
 </div>
+<!-- Shown every time (not just once) the centre is about to hand over
+     to quotes — see the "ENTERING QUOTES MODE" block in the memory-fog
+     JS IIFE. Purely decorative; safe to remove along with that block. -->
+<div id="quotes-preloader" aria-hidden="true">
+  <svg class="mf-preloader-ring" viewBox="0 0 100 100" width="56" height="56">
+    <circle class="mf-ring-track" cx="50" cy="50" r="42"></circle>
+    <circle class="mf-ring-sweep-a" cx="50" cy="50" r="42"></circle>
+    <circle class="mf-ring-sweep-b" cx="50" cy="50" r="30"></circle>
+  </svg>
+  <span class="mf-preloader-text">LOADING WORDS I LIVE BY...</span>
+</div>
 <div class="esc-hint" id="esc-hint"></div>
 <div id="writings-section">
   <div id="writings-header">
@@ -4913,6 +4928,12 @@ const NAV_LABELS = {};  // key → display label
   // pause sources (modal/nav-hover vs. mouse-position) never fight over
   // who gets to resume the loop.
   let centerPaused = false;
+  // One-shot hook fired the moment a quote finishes its full type/hold/
+  // delete cycle — used by the MEMORY FOG IIFE to guarantee at least one
+  // quote plays out after its quotes-preloader, before mode-switching is
+  // allowed to hand the centre back to memory fog again.
+  let onQuoteComplete = null;
+  window._onFirstQuoteComplete = (cb) => { onQuoteComplete = cb; };
 
   function showNextQuote() {
     if (isNavHover || centerPaused || quotes.length === 0) return;
@@ -4988,6 +5009,7 @@ const NAV_LABELS = {};  // key → display label
       } else {
         cursor.style.display = 'none';
         lbl.classList.remove('visible');
+        if (onQuoteComplete) { const cb = onQuoteComplete; onQuoteComplete = null; cb(); }
         _twTimer = setTimeout(() => { if (!isNavHover) showNextQuote(); }, 600);
       }
     }
@@ -5785,15 +5807,58 @@ const NAV_LABELS = {};  // key → display label
     if (quotesMode) stopMemoryLoop(); else startMemoryLoop();
   }
 
+  // ── ENTERING QUOTES MODE: preloader + "show at least one quote" lock ──
+  // Unlike the memory-fog preloader above (shown once per session), this
+  // one is meant to reappear every single time the centre hands over to
+  // quotes. quotesLocked also blocks evaluate() from immediately handing
+  // back to memory fog — e.g. if the mouse twitches right after going
+  // idle — until one full quote has actually played out.
+  const QUOTES_PRELOADER_MS_MIN = 3000;
+  const QUOTES_PRELOADER_MS_MAX = 4000;
+  const quotesPreloaderEl   = document.getElementById('quotes-preloader');
+  const quotesPreloaderText = quotesPreloaderEl && quotesPreloaderEl.querySelector('.mf-preloader-text');
+  let quotesLocked = false;
+
+  function unlockQuotes() {
+    if (!quotesLocked) return;
+    quotesLocked = false;
+    evaluate(); // mouse may have already moved back — re-check now the lock's off
+  }
+
+  function showQuotesPreloader(callback) {
+    if (!quotesPreloaderEl) { callback(); return; }
+    quotesPreloaderEl.classList.add('visible');
+    if (quotesPreloaderText) {
+      const orig = quotesPreloaderText.textContent;
+      glitchLoop(quotesPreloaderText, orig, () => quotesPreloaderEl.classList.contains('visible'));
+    }
+    const ms = QUOTES_PRELOADER_MS_MIN + Math.random() * (QUOTES_PRELOADER_MS_MAX - QUOTES_PRELOADER_MS_MIN);
+    setTimeout(() => {
+      quotesPreloaderEl.classList.remove('visible');
+      callback();
+    }, ms);
+  }
+
   function evaluate() {
     if (!document.body.classList.contains('ui-ready')) return; // never during the intro
     if (cardHovered) return; // never switch modes out from under an active hover
+    if (quotesLocked) return; // a quotes-preloader + its guaranteed first quote are in progress
     const idle = (Date.now() - lastMove) >= IDLE_MS;
     const shouldQuotes = idle || !mouseOnPage;
     if (shouldQuotes === quotesMode) return;
     quotesMode = shouldQuotes;
-    if (window._setQuoteCenterPaused) window._setQuoteCenterPaused(!quotesMode);
-    applyMode();
+    applyMode(); // clears memory-fog's own DOM immediately either way
+    if (quotesMode) {
+      quotesLocked = true;
+      showQuotesPreloader(() => {
+        if (window._setQuoteCenterPaused) window._setQuoteCenterPaused(false);
+        if (window._onFirstQuoteComplete) window._onFirstQuoteComplete(unlockQuotes);
+        else unlockQuotes();
+      });
+      setTimeout(unlockQuotes, 15000); // safety net in case the quote-complete hook never fires (e.g. a modal is open the whole time)
+    } else {
+      if (window._setQuoteCenterPaused) window._setQuoteCenterPaused(true);
+    }
   }
 
   // Lets other UI (carousel hover, nav-item hover) force memory-fog off
