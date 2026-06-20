@@ -499,6 +499,46 @@ body.ui-ready #writings-section.ready {
   z-index: 11; /* above the carousel (10) */
   pointer-events: none;
 }
+/* One-time 8s preloader shown the first time memory fog activates —
+   see startMemoryLoop() in the JS. Centred the same way #memory-fog is,
+   so it hands off to the first real photo without any visual jump. */
+#memory-fog-preloader {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 11;
+  display: flex; align-items: center; gap: 16px;
+  pointer-events: none;
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+#memory-fog-preloader.visible { opacity: 1; visibility: visible; }
+#memory-fog-preloader .mf-preloader-ring { overflow: visible; flex: none; }
+#memory-fog-preloader .mf-preloader-ring circle { fill: none; }
+.mf-ring-track { stroke: rgba(184,240,210,0.14); stroke-width: 2; }
+/* Two rings, opposite directions/speeds, each a short "comet" arc
+   (stroke-dasharray) rather than a full circle — reads as a more alive,
+   less generic spinner than one ring slowly rotating. */
+.mf-ring-sweep-a {
+  stroke: rgba(184,240,210,0.92); stroke-width: 3; stroke-linecap: round;
+  stroke-dasharray: 50 214; /* circumference of r=42 is ~264 */
+  filter: drop-shadow(0 0 6px rgba(184,240,210,0.55));
+  transform-origin: 50px 50px;
+  animation: mf-ring-spin 1.4s linear infinite;
+}
+.mf-ring-sweep-b {
+  stroke: rgba(184,240,210,0.5); stroke-width: 2; stroke-linecap: round;
+  stroke-dasharray: 26 162; /* circumference of r=30 is ~188 */
+  transform-origin: 50px 50px;
+  animation: mf-ring-spin-reverse 2.1s linear infinite;
+}
+@keyframes mf-ring-spin { to { transform: rotate(360deg); } }
+@keyframes mf-ring-spin-reverse { to { transform: rotate(-360deg); } }
+.mf-preloader-text {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase; white-space: nowrap;
+  color: rgba(184,240,210,0.85);
+  text-shadow: 0 0 10px rgba(184,240,210,0.4);
+}
 .memory-card {
   position: relative;
   display: flex; flex-direction: column; align-items: center;
@@ -3560,6 +3600,17 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 <!-- Experimental — see "MEMORY FOG" CSS/JS blocks. Remove this div +
      those blocks to fully undo. -->
 <div id="memory-fog"></div>
+<!-- One-time, 8s "loading" beat shown the very first time memory fog
+     activates in a session — see startMemoryLoop() in the memory-fog
+     JS IIFE. Purely decorative; safe to remove along with that block. -->
+<div id="memory-fog-preloader" aria-hidden="true">
+  <svg class="mf-preloader-ring" viewBox="0 0 100 100" width="56" height="56">
+    <circle class="mf-ring-track" cx="50" cy="50" r="42"></circle>
+    <circle class="mf-ring-sweep-a" cx="50" cy="50" r="42"></circle>
+    <circle class="mf-ring-sweep-b" cx="50" cy="50" r="30"></circle>
+  </svg>
+  <span class="mf-preloader-text">LOADING MEMORY FOG...</span>
+</div>
 <div class="esc-hint" id="esc-hint"></div>
 <div id="writings-section">
   <div id="writings-header">
@@ -5661,10 +5712,38 @@ const NAV_LABELS = {};  // key → display label
     if (currentCard) currentCard.classList.remove('paused');
   }
 
+  // One-time 8s "loading" beat the very first time memory fog activates
+  // in a session — every later resume (after a modal closes, the
+  // carousel stops being hovered, idle hands back over, etc.) skips
+  // straight to showNextMemory() as before. Purely time-based (not tied
+  // to the actual gallery.json fetch, which is far faster than 8s) —
+  // loadPhotos() just runs alongside it so there's no extra wait once
+  // the preloader's own timer is up.
+  const PRELOADER_MS = 8000;
+  const preloaderEl   = document.getElementById('memory-fog-preloader');
+  const preloaderText = preloaderEl && preloaderEl.querySelector('.mf-preloader-text');
+  let preloaderShown = false;
+
   function startMemoryLoop() {
     if (active) return;
     active = true;
-    loadPhotos().then(() => { if (active) showNextMemory(); });
+    if (!preloaderShown && preloaderEl) {
+      preloaderShown = true;
+      preloaderEl.classList.add('visible');
+      if (preloaderText) {
+        const orig = preloaderText.textContent;
+        glitchLoop(preloaderText, orig, () => active && preloaderEl.classList.contains('visible'));
+      }
+      Promise.all([
+        new Promise(resolve => setTimeout(resolve, PRELOADER_MS)),
+        loadPhotos(),
+      ]).then(() => {
+        preloaderEl.classList.remove('visible');
+        if (active) showNextMemory();
+      });
+    } else {
+      loadPhotos().then(() => { if (active) showNextMemory(); });
+    }
   }
   function stopMemoryLoop() {
     active = false;
@@ -5673,6 +5752,7 @@ const NAV_LABELS = {};  // key → display label
     touching = false;
     cardHovered = false;
     container.innerHTML = '';
+    if (preloaderEl) preloaderEl.classList.remove('visible'); // in case it was mid-loader
   }
 
   // quotesMode: true means the centre belongs to quotes right now (idle
