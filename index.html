@@ -497,7 +497,7 @@ body.ui-ready #writings-section.ready {
   position: fixed; top: 50%; left: 50%;
   width: min(64vw, 640px);
   transform: translate(-50%, -50%);
-  z-index: 4; /* just under .sphere-label (5), above the canvas */
+  z-index: 11; /* above the carousel (10) so the caption never gets covered by it */
   pointer-events: none;
 }
 .memory-card {
@@ -518,12 +518,13 @@ body.ui-ready #writings-section.ready {
      image and made it unreadable. */
   animation: memory-photo-blur 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
 }
-/* Sits over the bottom third of the photo (not below it — it was getting
-   lost down there in the gap) with a soft dark pad behind the text for
-   contrast against whatever the photo looks like underneath. */
+/* Sits over the lower third of the photo (not below it — it was getting
+   lost down there in the gap), pulled up from the very bottom edge so it
+   clears the carousel strip rather than landing right behind it, with a
+   soft dark pad behind the text for contrast against the photo. */
 .memory-caption {
   position: absolute;
-  left: 10%; right: 10%; bottom: 6%;
+  left: 10%; right: 10%; bottom: 24%;
   padding: 22px 4% 10px;
   background: linear-gradient(to top, rgba(3,8,5,0.65) 25%, transparent);
   max-width: none;
@@ -5303,6 +5304,9 @@ const NAV_LABELS = {};  // key → display label
     ticking = true;
     requestAnimationFrame(() => {
       ticking = false;
+      // Wait for the intro/big-bang to finish — same gate the rest of the
+      // UI uses — so memory-fog can never kick in mid-intro.
+      if (!document.body.classList.contains('ui-ready')) return;
       const r = Math.min(window.innerWidth, window.innerHeight) / 2;
       const dist = Math.hypot(e.clientX - window.innerWidth / 2, e.clientY - window.innerHeight / 2) / r;
       if (nearCenter && dist > CENTER_EXIT) setNearCenter(false);
