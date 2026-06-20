@@ -5663,6 +5663,27 @@ const NAV_LABELS = {};  // key → display label
     applyMode();
   };
 
+  // Any modal/overlay being open should also suspend memory-fog outright
+  // (not just pause spawning new photos — the existing showNextMemory()
+  // check for window._modalOpen only skipped starting a *new* card, so a
+  // card already mid-animation kept playing for up to its full 10s after
+  // a modal opened). window._modalOpen is set directly (not through one
+  // shared function) from many places across the file — the gallery,
+  // reads, projects, writing overlays, the lightbox, etc. — so rather
+  // than hunting down and editing every call site, this turns the plain
+  // property into an accessor: every assignment anywhere automatically
+  // routes through the same suspend/resume path as the carousel/nav hover
+  // above.
+  let _modalOpenValue = false;
+  Object.defineProperty(window, '_modalOpen', {
+    configurable: true,
+    get() { return _modalOpenValue; },
+    set(v) {
+      _modalOpenValue = v;
+      window._setMemoryFogSuspended(!!v);
+    },
+  });
+
   document.addEventListener('mousemove', () => {
     lastMove = Date.now();
     mouseOnPage = true;
