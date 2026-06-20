@@ -3014,70 +3014,65 @@ body.crt-off .crt-off-line {
 }
 
 /* ── HUD BOOT SEQUENCE — first-visit only, plays once as the interface
-   settles in after the big bang. Thin scan-lines sweep in toward where the
-   nav and carousel are about to fade in, and small corner brackets flash at
-   each actual corner, hinting at the corner content before it appears —
-   then everything clears out of the way for the real UI. ~1.1s total. */
+   settles in after the big bang. An SVG overlay of angular, staggered
+   traces "draws itself" — staircase paths converging on the nav/carousel
+   regions, bracket-trace circuits at each corner, and one longer diagonal
+   sweep cutting across — like a game HUD initializing, before clearing out
+   of the way for the real UI. Drawing uses the pathLength=100 trick so each
+   path animates via stroke-dashoffset without needing real length math. */
 #hud-boot-overlay {
   position: fixed; inset: 0; z-index: 30;
   pointer-events: none; opacity: 0;
 }
+#hud-boot-overlay svg { width: 100%; height: 100%; display: block; }
 body.hud-boot #hud-boot-overlay { opacity: 1; }
 
-.hud-line {
-  position: absolute;
-  background: linear-gradient(90deg, transparent, rgba(100,255,160,0.85), transparent);
+.hud-trace {
+  fill: none;
+  stroke: rgba(100,255,160,0.85);
+  stroke-width: 0.18;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
   opacity: 0;
+  filter: drop-shadow(0 0 2px rgba(100,255,160,0.55));
 }
-.hud-line--nav {
-  left: 0; top: 50%; width: 0; height: 1px; transform: translateY(-50%);
+body.hud-boot .hud-trace { animation: hud-trace-draw 1.3s cubic-bezier(0.16,1,0.3,1) forwards; }
+@keyframes hud-trace-draw {
+  0%   { stroke-dashoffset: 100; opacity: 0; }
+  4%   { opacity: 1; }
+  55%  { stroke-dashoffset: 0; opacity: 1; }
+  78%  { stroke-dashoffset: 0; opacity: 0.5; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
 }
-body.hud-boot .hud-line--nav { animation: hud-line-nav 1.1s cubic-bezier(0.16,1,0.3,1) forwards; }
-@keyframes hud-line-nav {
-  0%   { width: 0;     opacity: 0; }
-  8%   { opacity: 1; }
-  42%  { width: 220px; opacity: 1; }
-  70%  { width: 220px; opacity: 0.5; }
-  100% { width: 220px; opacity: 0; }
-}
+body.hud-boot .hud-trace--c2        { animation-delay: 0.05s; }
+body.hud-boot .hud-trace--c3        { animation-delay: 0.1s; }
+body.hud-boot .hud-trace--c4        { animation-delay: 0.15s; }
+body.hud-boot .hud-trace--nav       { animation-delay: 0.08s; }
+body.hud-boot .hud-trace--carousel  { animation-delay: 0.18s; }
+body.hud-boot .hud-trace--sweep     { animation-delay: 0.02s; animation-duration: 1.4s; }
 
-.hud-line--carousel {
-  left: 50%; bottom: 92px; width: 0; height: 1px; transform: translateX(-50%);
+.hud-node {
+  fill: rgba(140,255,190,0.95);
+  opacity: 0;
+  filter: drop-shadow(0 0 3px rgba(100,255,160,0.8));
 }
-body.hud-boot .hud-line--carousel { animation: hud-line-carousel 1.1s cubic-bezier(0.16,1,0.3,1) 0.1s forwards; }
-@keyframes hud-line-carousel {
-  0%   { width: 0;             opacity: 0; }
-  10%  { opacity: 1; }
-  48%  { width: min(900px, 86vw); opacity: 1; }
-  75%  { opacity: 0.4; }
-  100% { width: min(900px, 86vw); opacity: 0; }
-}
-
-.hud-bracket {
-  position: absolute; width: 22px; height: 22px;
-  border: 1px solid rgba(100,255,160,0.75); opacity: 0;
-}
-.hud-bracket--tl { top: 22px;    left: 26px;  border-width: 1px 0 0 1px; }
-.hud-bracket--tr { top: 22px;    right: 26px; border-width: 1px 1px 0 0; }
-.hud-bracket--bl { bottom: 22px; left: 26px;  border-width: 0 0 1px 1px; }
-.hud-bracket--br { bottom: 22px; right: 26px; border-width: 0 1px 1px 0; }
-body.hud-boot .hud-bracket { animation: hud-bracket-flash 1.05s cubic-bezier(0.16,1,0.3,1) forwards; }
-body.hud-boot .hud-bracket--tr { animation-delay: 0.05s; }
-body.hud-boot .hud-bracket--bl { animation-delay: 0.1s; }
-body.hud-boot .hud-bracket--br { animation-delay: 0.15s; }
-@keyframes hud-bracket-flash {
-  0%   { opacity: 0;    transform: scale(0.7); }
-  18%  { opacity: 1;    transform: scale(1.08); }
-  32%  { opacity: 0.85; transform: scale(1); }
-  70%  { opacity: 0.5; }
-  100% { opacity: 0; }
+body.hud-boot .hud-node { animation: hud-node-pulse 1.3s ease-out forwards; }
+body.hud-boot .hud-node--1 { animation-delay: 0.08s; }
+body.hud-boot .hud-node--2 { animation-delay: 0.18s; }
+body.hud-boot .hud-node--3 { animation-delay: 0.02s; }
+@keyframes hud-node-pulse {
+  0%, 40% { opacity: 0;   r: 0.3; }
+  50%     { opacity: 1;   r: 1.1; }
+  62%     { opacity: 0.8; r: 0.6; }
+  100%    { opacity: 0;   r: 0.6; }
 }
 @media (prefers-reduced-motion: reduce) {
   #hud-boot-overlay { display: none; }
 }
 @media (max-width: 768px) {
-  .hud-line--nav { display: none; } /* nav lives at the bottom on mobile, not the left edge */
-  .hud-bracket--bl, .hud-bracket--br { display: none; } /* those corners are hidden on mobile too */
+  /* nav lives at the bottom on mobile, and corner-bl/br are hidden there too */
+  .hud-trace--nav, .hud-trace--c3, .hud-trace--c4 { display: none; }
 }
 </style>
 </head>
@@ -3144,12 +3139,18 @@ body.hud-boot .hud-bracket--br { animation-delay: 0.15s; }
 <div id="crt-off-overlay"><div class="crt-off-line"></div></div>
 <!-- HUD boot sequence — first visit only, plays as the interface settles in after the big bang -->
 <div id="hud-boot-overlay">
-  <div class="hud-line hud-line--nav"></div>
-  <div class="hud-line hud-line--carousel"></div>
-  <span class="hud-bracket hud-bracket--tl"></span>
-  <span class="hud-bracket hud-bracket--tr"></span>
-  <span class="hud-bracket hud-bracket--bl"></span>
-  <span class="hud-bracket hud-bracket--br"></span>
+  <svg viewBox="0 0 100 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path class="hud-trace hud-trace--c1" pathLength="100" d="M2,24 L2,8 L9,8 L9,2 L26,2"/>
+    <path class="hud-trace hud-trace--c2" pathLength="100" d="M98,24 L98,8 L91,8 L91,2 L74,2"/>
+    <path class="hud-trace hud-trace--c3" pathLength="100" d="M2,76 L2,92 L9,92 L9,98 L26,98"/>
+    <path class="hud-trace hud-trace--c4" pathLength="100" d="M98,76 L98,92 L91,92 L91,98 L74,98"/>
+    <path class="hud-trace hud-trace--nav" pathLength="100" d="M4,16 L14,16 L14,32 L6,32 L6,50 L17,50"/>
+    <path class="hud-trace hud-trace--carousel" pathLength="100" d="M47,57 L47,69 L35,69 L35,81 L51,81 L51,91"/>
+    <path class="hud-trace hud-trace--sweep" pathLength="100" d="M0,64 L21,64 L21,40 L45,40 L45,15 L73,15 L73,30"/>
+    <circle class="hud-node hud-node--1" cx="14" cy="32" r="0.6"/>
+    <circle class="hud-node hud-node--2" cx="35" cy="69" r="0.6"/>
+    <circle class="hud-node hud-node--3" cx="45" cy="40" r="0.6"/>
+  </svg>
 </div>
 <audio id="bg-music" src="audio/bg_score.mp3" loop preload="auto"></audio>
 <audio id="bang-sound" src="audio/big_bang.mp3" preload="auto"></audio>
@@ -4058,7 +4059,7 @@ window.addEventListener('pageshow', (e) => {
           const hudSfx = document.getElementById('hud-in-sound');
           if (hudSfx) { hudSfx.volume = 0.5; hudSfx.play().catch(() => {}); }
           document.body.classList.add('hud-boot');
-          setTimeout(() => document.body.classList.remove('hud-boot'), 1300);
+          setTimeout(() => document.body.classList.remove('hud-boot'), 1450);
         }
       }, window._isFirstVisit ? 6700 : 2700);
     }, 1000);
