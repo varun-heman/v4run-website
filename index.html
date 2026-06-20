@@ -3050,11 +3050,21 @@ body.hud-boot .hud-trace { animation-name: hud-trace-draw; animation-timing-func
   100% { stroke-dashoffset: 0; opacity: 0; }
 }
 
-/* Bright dot riding the leading edge of each trace, like a laser head. */
+/* Bright dot riding the leading edge of each trace, like a laser head.
+   Drawn as a near-zero-radius circle with a thick *stroke* rather than a
+   filled circle — vector-effect:non-scaling-stroke makes stroke-width
+   immune to the viewBox's non-uniform x/y scaling (same trick .hud-trace
+   uses for its line weight), so the dot stays a true circle sized
+   relative to the trace's own stroke width, on any screen/aspect ratio.
+   A normal fill-based circle/ellipse radius doesn't get that exemption,
+   which is what made earlier dots oversized and egg-shaped. */
 .hud-laser-tip {
-  fill: #eafff0;
+  fill: none;
+  stroke: #eafff0;
+  vector-effect: non-scaling-stroke;
+  stroke-width: 0.4;
   opacity: 0;
-  filter: drop-shadow(0 0 2.5px rgba(170,255,210,0.95)) drop-shadow(0 0 6px rgba(100,255,160,0.6));
+  filter: drop-shadow(0 0 1.5px rgba(170,255,210,0.95));
 }
 body.hud-boot .hud-laser-tip { animation-name: hud-laser-travel; animation-timing-function: linear; animation-fill-mode: forwards; }
 @keyframes hud-laser-travel {
@@ -3066,18 +3076,19 @@ body.hud-boot .hud-laser-tip { animation-name: hud-laser-travel; animation-timin
 }
 
 .hud-node {
-  fill: rgba(140,255,190,0.95);
+  fill: none;
+  stroke: rgba(140,255,190,0.95);
+  vector-effect: non-scaling-stroke;
+  stroke-width: 0;
   opacity: 0;
-  filter: drop-shadow(0 0 3px rgba(100,255,160,0.8));
-  transform-box: fill-box;
-  transform-origin: center;
+  filter: drop-shadow(0 0 1.5px rgba(100,255,160,0.8));
 }
 body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-function: ease-out; animation-fill-mode: forwards; }
 @keyframes hud-node-pulse {
-  0%, 40% { opacity: 0;   transform: scale(0); }
-  50%     { opacity: 1;   transform: scale(1.83); }
-  62%     { opacity: 0.8; transform: scale(1); }
-  100%    { opacity: 0;   transform: scale(1); }
+  0%, 40% { opacity: 0;   stroke-width: 0; }
+  50%     { opacity: 1;   stroke-width: 0.55; }
+  62%     { opacity: 0.8; stroke-width: 0.3; }
+  100%    { opacity: 0;   stroke-width: 0.3; }
 }
 @media (prefers-reduced-motion: reduce) {
   #hud-boot-overlay { display: none; }
@@ -4083,15 +4094,6 @@ window.addEventListener('pageshow', (e) => {
       ? ['c1', 'c2', 'navBottom']
       : ['c1', 'c2', 'c3', 'c4', 'navLeft', 'carousel'];
 
-    // The viewBox is stretched non-uniformly to fill the screen
-    // (preserveAspectRatio="none"), so a plain circle renders as an egg —
-    // wider or taller depending on the screen's aspect ratio. Dots are
-    // drawn as ellipses with rx/ry compensated for the current aspect so
-    // they read as true circles; vector-effect already handles this for
-    // stroke width on the traces themselves, but there's no equivalent for
-    // fill geometry, hence the manual compensation here.
-    const ar = window.innerWidth / window.innerHeight;
-
     // Slice each right-angle corner into a short 45° diagonal cut instead
     // of a sharp 90° turn — every bend in these point lists is exactly
     // axis-aligned, so cutting an equal-length notch off both adjacent
@@ -4134,10 +4136,12 @@ window.addEventListener('pageshow', (e) => {
       svg.appendChild(path);
 
       // Bright dot riding the same path, leading the line like a laser head.
-      const tip = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+      // A near-zero-radius circle stroked thick (see .hud-laser-tip) — the
+      // stroke is exempt from the viewBox's uneven scaling, so this stays a
+      // true circle sized off the trace's own line weight, not a fill blob.
+      const tip = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       tip.setAttribute('class', 'hud-laser-tip');
-      tip.setAttribute('rx', '0.85');
-      tip.setAttribute('ry', (0.85 * ar).toFixed(2));
+      tip.setAttribute('r', '0.001');
       tip.setAttribute('cx', '0');
       tip.setAttribute('cy', '0');
       tip.style.offsetPath = "path('" + d + "')";
@@ -4150,12 +4154,11 @@ window.addEventListener('pageshow', (e) => {
 
     // A couple of small glowing pulses at random bend points, for flavor.
     nodeCandidates.sort(() => Math.random() - 0.5).slice(0, 2).forEach(({ pt, delay }) => {
-      const c = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       c.setAttribute('class', 'hud-node');
       c.setAttribute('cx', pt[0].toFixed(2));
       c.setAttribute('cy', pt[1].toFixed(2));
-      c.setAttribute('rx', '0.6');
-      c.setAttribute('ry', (0.6 * ar).toFixed(2));
+      c.setAttribute('r', '0.001');
       c.style.animationDelay    = (delay + 0.04).toFixed(2) + 's';
       c.style.animationDuration = '1.1s';
       svg.appendChild(c);
