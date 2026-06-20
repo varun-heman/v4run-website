@@ -8,7 +8,10 @@
         "src": "images/gallery/heart/beagle-nap-time.jpg",
         "caption": "The only creature here with nothing left to prove.",
         "date": "2021-07-05",
-        "location": ""
+        "location": "",
+        "tags": [
+          "memfog"
+        ]
       },
       "count": 5,
       "photos": [
@@ -17,35 +20,50 @@
           "src": "images/gallery/heart/beagle-nap-time.jpg",
           "caption": "The only creature here with nothing left to prove.",
           "date": "2021-07-05",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/heart/golden-retriever-gaze.jpg",
           "caption": "Loyalty doesn't blink first.",
           "date": "2021-07-05",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/heart/judy-girl.jpg",
           "caption": "You took a little of all of us with you. RIP.",
           "date": "2021-07-05",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/heart/pug-tongue-out.jpg",
           "caption": "Unimpressed, as a lifestyle.",
           "date": "2021-07-05",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/heart/trail-dogs-pause.jpg",
           "caption": "Still figuring out which way the fog goes.",
           "date": "2021-01-08",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         }
       ]
     },
@@ -57,7 +75,10 @@
         "src": "images/gallery/people/childhood-couch-four.jpg",
         "caption": "Before any of us knew what we'd become.",
         "date": "",
-        "location": ""
+        "location": "",
+        "tags": [
+          "memfog"
+        ]
       },
       "count": 11,
       "photos": [
@@ -66,77 +87,108 @@
           "src": "images/gallery/people/childhood-couch-four.jpg",
           "caption": "Before any of us knew what we'd become.",
           "date": "",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/people/couch-conversation.jpg",
           "caption": "Conversations that don't need to go anywhere to matter.",
           "date": "2021-01-11",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/people/evening-laughter.jpg",
           "caption": "Laughing at something neither of us can explain later.",
           "date": "2021-11-07",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/people/grandmothers-hands.jpg",
           "caption": "Hands remember what stories forget.",
           "date": "2021-09-05",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/people/haircut-night-chaos.jpg",
           "caption": "Chaos, but the kind you choose.",
           "date": "2018-12-09",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/people/haystack-group-photo.jpg",
           "caption": "Nine people, one hay bale, zero regrets.",
           "date": "",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/people/living-room-crew.jpg",
           "caption": "A room full of people who'd show up at 3am.",
           "date": "2019-04-10",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/people/quiet-grandmother.jpg",
           "caption": "Some people you only ever see from behind, holding everything together.",
           "date": "2021-09-05",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/people/rickshaw-ride-look.jpg",
           "caption": "Going somewhere, looking like I already arrived.",
           "date": "2019-01-24",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/people/siblings-childhood.jpg",
           "caption": "We were inseparable before we had a choice in the matter.",
           "date": "",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/people/steps-and-smiles.jpg",
           "caption": "Some thresholds you sit on instead of crossing.",
           "date": "2021-11-07",
-          "location": ""
+          "location": "",
+          "tags": []
         }
       ]
     },
@@ -148,7 +200,10 @@
         "src": "images/gallery/places/cafe-evening-glow.jpg",
         "caption": "Evenings that don't ask anything of you.",
         "date": "2019-02-25",
-        "location": ""
+        "location": "",
+        "tags": [
+          "memfog"
+        ]
       },
       "count": 6,
       "photos": [
@@ -157,42 +212,60 @@
           "src": "images/gallery/places/cafe-evening-glow.jpg",
           "caption": "Evenings that don't ask anything of you.",
           "date": "2019-02-25",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/places/concert-night-lights.jpg",
           "caption": "Lost in a crowd, found in the noise.",
           "date": "2021-08-11",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/places/festival-night-trio.jpg",
           "caption": "Loud nights make quiet friendships louder.",
           "date": "2018-12-07",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/places/hilltop-sunset-view.jpg",
           "caption": "We came up for the view, stayed for the quiet.",
           "date": "2019-04-10",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "video",
           "src": "images/gallery/places/mountain-pass-ride.mp4",
           "caption": "Some roads don't care where you're headed, only that you're moving.",
           "date": "2017-12-30",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         },
         {
           "type": "image",
           "src": "images/gallery/places/quiet-beach-path.jpg",
           "caption": "Empty places hold the loudest memories.",
           "date": "2021-01-08",
-          "location": ""
+          "location": "",
+          "tags": [
+            "memfog"
+          ]
         }
       ]
     },
@@ -204,7 +277,8 @@
         "src": "images/gallery/work/radio-studio-day.jpg",
         "caption": "Borrowed a voice for an hour, gave it back changed.",
         "date": "2018-11-30",
-        "location": ""
+        "location": "",
+        "tags": []
       },
       "count": 1,
       "photos": [
@@ -213,7 +287,8 @@
           "src": "images/gallery/work/radio-studio-day.jpg",
           "caption": "Borrowed a voice for an hour, gave it back changed.",
           "date": "2018-11-30",
-          "location": ""
+          "location": "",
+          "tags": []
         }
       ]
     }
@@ -224,35 +299,48 @@
       "src": "images/gallery/work/radio-studio-day.jpg",
       "caption": "Borrowed a voice for an hour, gave it back changed.",
       "date": "2018-11-30",
-      "location": ""
+      "location": "",
+      "tags": []
     },
     {
       "type": "image",
       "src": "images/gallery/places/quiet-beach-path.jpg",
       "caption": "Empty places hold the loudest memories.",
       "date": "2021-01-08",
-      "location": ""
+      "location": "",
+      "tags": [
+        "memfog"
+      ]
     },
     {
       "type": "video",
       "src": "images/gallery/places/mountain-pass-ride.mp4",
       "caption": "Some roads don't care where you're headed, only that you're moving.",
       "date": "2017-12-30",
-      "location": ""
+      "location": "",
+      "tags": [
+        "memfog"
+      ]
     },
     {
       "type": "image",
       "src": "images/gallery/places/hilltop-sunset-view.jpg",
       "caption": "We came up for the view, stayed for the quiet.",
       "date": "2019-04-10",
-      "location": ""
+      "location": "",
+      "tags": [
+        "memfog"
+      ]
     },
     {
       "type": "image",
       "src": "images/gallery/places/festival-night-trio.jpg",
       "caption": "Loud nights make quiet friendships louder.",
       "date": "2018-12-07",
-      "location": ""
+      "location": "",
+      "tags": [
+        "memfog"
+      ]
     }
   ]
 }

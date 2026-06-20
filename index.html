@@ -5454,13 +5454,21 @@ const NAV_LABELS = {};  // key → display label
     return arr;
   }
 
+  // Only photos/videos explicitly tagged "memfog" in their album's meta.md
+  // are eligible — see scripts/gen-gallery.js for the meta.md tags column.
+  // That tag is never shown anywhere in the gallery UI itself, it only
+  // gates this pool. If nothing's tagged yet, memory fog just stays empty
+  // (showNextMemory() no-ops on an empty pool) until something is.
+  const MEMFOG_TAG = 'memfog';
+
   function loadPhotos() {
     if (photos) return Promise.resolve(photos);
     return fetch('content/gallery.json')
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data) { photos = []; return photos; }
-        const all = (data.albums || []).flatMap(a => a.photos || []);
+        const all = (data.albums || []).flatMap(a => a.photos || [])
+          .filter(p => Array.isArray(p.tags) && p.tags.includes(MEMFOG_TAG));
         // Keep the full photo object (not just .src) — date/location travel
         // with it even though the caption itself isn't shown here. Local
         // videos are eligible too (rendered as autoplaying/looping/muted

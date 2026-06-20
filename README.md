@@ -95,13 +95,15 @@ Hovering a thumbnail reveals a slide-up overlay with the caption and metadata ch
 Each album lives in `images/gallery/<album-name>/`. An optional `meta.md` file in each album provides per-item metadata:
 
 ```
-# filename | caption | date (YYYY-MM-DD) | location
-quiet-beach-path.jpg | Empty places hold the loudest memories. | 2021-01-08 | Goa, India
-trail-dogs-walk.mp4  | A short clip from the same morning       | 2021-01-08 |
-youtube:dQw4w9WgXcQ  | A YouTube video                          | 2021-01-09 | Mysore, India
+# filename | caption | date (YYYY-MM-DD) | location | tags
+quiet-beach-path.jpg | Empty places hold the loudest memories. | 2021-01-08 | Goa, India | memfog
+trail-dogs-walk.mp4  | A short clip from the same morning       | 2021-01-08 |            |
+youtube:dQw4w9WgXcQ  | A YouTube video                          | 2021-01-09 | Mysore, India |
 ```
 
-Dates and locations are optional — just leave the field blank.
+Dates, locations, and tags are optional — just leave the field blank.
+
+**Tags** are a comma-separated list (`tags`, `tag1, tag2`) and are never shown anywhere on the front end — no chip, no caption text, purely backend metadata. The one tag the site actually reads is **`memfog`**: the memory-fog drift effect on the homepage only pulls from photos/videos tagged with it, instead of from the whole gallery. Tag whichever items you want eligible; if nothing's tagged yet, memory fog just stays empty until you do. See `loadPhotos()` in `index.html`'s memory-fog section.
 
 **Local videos** (`.mp4`, `.webm`, `.mov`, `.m4v`) just sit in the album folder alongside photos — no separate setup. There's no automatic poster-frame generation; the browser shows the video's own first frame as its thumbnail.
 

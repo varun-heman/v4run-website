@@ -15,7 +15,13 @@
  *   clip1.mp4        | A short clip       | 2026-06-02 |
  *   youtube:VIDEO_ID | A YouTube video    | 2026-06-03 | Mysore, India
  *
- * Fields: filename | caption | date | location  (all optional except filename)
+ * Fields: filename | caption | date | location | tags  (all optional except
+ * filename). tags is a comma-separated list, e.g. `memfog, favorite` — it's
+ * carried into gallery.json but never rendered anywhere in the gallery UI
+ * (no chip, no caption text). The one tag the front end actually reads is
+ * `memfog`: the memory-fog effect on the homepage only draws from photos/
+ * videos tagged with it, instead of the whole gallery. See index.html's
+ * loadPhotos() in the memory-fog section.
  *
  * Local videos (.mp4/.webm/.mov/.m4v) are scanned from the album folder
  * exactly like images — no separate setup. There's no automatic poster
@@ -77,6 +83,7 @@ function parseMeta(albumPath) {
       caption:  parts[1] || '',
       date:     parts[2] || '',
       location: parts[3] || '',
+      tags:     (parts[4] || '').split(',').map(s => s.trim()).filter(Boolean),
     };
     if (/^youtube:/i.test(key)) {
       const id = extractYouTubeId(key.slice(key.indexOf(':') + 1));
@@ -128,6 +135,7 @@ fs.readdirSync(galleryDir)
           caption:  m.caption  || '',
           date:     m.date     || '',
           location: m.location || '',
+          tags:     m.tags     || [],
         };
       });
 
