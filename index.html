@@ -574,6 +574,19 @@ body.ui-ready #writings-section.ready {
      only the content moves, never the feathered edge itself. */
   animation: memory-kenburns 10s cubic-bezier(0.22,0.61,0.36,1) forwards;
 }
+/* Green tint over every memory-fog photo/video. mix-blend-mode: color
+   takes this layer's hue/saturation but keeps the photo's own luminance,
+   so it reads as a tinted memory rather than a flat colour wash. Sits
+   inside .memory-photo (after the media, so it paints on top by DOM
+   order — no z-index needed) but isn't part of either the blur or Ken
+   Burns animation, so it stays put and doesn't fight either of those. */
+.memory-photo-tint {
+  position: absolute; inset: 0;
+  background: hsl(150, 50%, 32%);
+  mix-blend-mode: color;
+  opacity: 0.55;
+  pointer-events: none;
+}
 /* Touching a photo just dims it down — kept deliberately simple after a
    patchy "disappearing in parts" overlay (multiple blurred screen-blend
    glows) washed the whole thing out to a flat bright white blob instead
@@ -5571,6 +5584,9 @@ const NAV_LABELS = {};  // key → display label
       frame.className = 'memory-photo';
       media.className = 'memory-photo-media';
       frame.appendChild(media);
+      const tint = document.createElement('div');
+      tint.className = 'memory-photo-tint';
+      frame.appendChild(tint);
       tilt.appendChild(frame);
 
       card.appendChild(tilt);
