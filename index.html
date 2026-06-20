@@ -3069,6 +3069,31 @@ body.strip-hovered .corner-br {
   background: #000;
 }
 #lb-img.lb-hidden, #lb-video.lb-hidden, #lb-youtube.lb-hidden { display: none; }
+/* No native <video controls> any more — this is the only control. Sits
+   centred over the video regardless of its letterboxing. Visible by
+   default whenever paused (so it's discoverable on first load, since
+   the video doesn't autoplay); on every toggle it pops (lb-video-pop)
+   to acknowledge the click, then — once actually playing — fades out
+   of the way after a moment (lb-video-faded) so it doesn't sit over the
+   footage. Pausing always cancels the fade and brings it straight back. */
+#lb-video-toggle {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 3; width: 64px; height: 64px; border-radius: 50%;
+  background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.22);
+  color: rgba(255,255,255,0.92); font-size: 20px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; padding: 0; user-select: none;
+  opacity: 1; transition: opacity 0.3s ease;
+}
+#lb-video-toggle i.fa-play { margin-left: 2px; } /* optical centering for the triangle */
+#lb-video-toggle.lb-hidden { display: none; }
+#lb-video-toggle.lb-video-faded { opacity: 0; }
+#lb-video-toggle.lb-video-pop { animation: lb-video-pop 0.45s ease; }
+@keyframes lb-video-pop {
+  0%   { transform: translate(-50%, -50%) scale(0.7); }
+  45%  { transform: translate(-50%, -50%) scale(1.18); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
 /* Faint white-on-transparent used to vanish against the lightbox's own
    black background whenever a photo doesn't fill the screen (portrait
    photos, letterboxed video) — the arrows sit right over that black
@@ -3658,7 +3683,8 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
     <button id="lb-prev">‹</button>
     <button id="lb-next">›</button>
     <img id="lb-img" src="" alt="">
-    <video id="lb-video" class="lb-hidden" controls playsinline></video>
+    <video id="lb-video" class="lb-hidden" playsinline></video>
+    <button id="lb-video-toggle" class="lb-hidden" aria-label="Play/Pause"><i class="fa-solid fa-play"></i></button>
     <iframe id="lb-youtube" class="lb-hidden" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
     <div id="lb-meta">
       <div id="lb-caption"></div>
@@ -6421,6 +6447,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   const lightbox    = document.getElementById('gallery-lightbox');
   const lbImg       = document.getElementById('lb-img');
   const lbVideo     = document.getElementById('lb-video');
+  const lbVideoToggle = document.getElementById('lb-video-toggle');
   const lbYoutube   = document.getElementById('lb-youtube');
   const lbCaption   = document.getElementById('lb-caption');
   const lbDetails   = document.getElementById('lb-details');
@@ -6461,7 +6488,41 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   function stopActiveMedia() {
     if (!lbVideo.classList.contains('lb-hidden')) { lbVideo.pause(); lbVideo.removeAttribute('src'); lbVideo.load(); }
     if (!lbYoutube.classList.contains('lb-hidden')) { lbYoutube.src = ''; }
+    clearTimeout(lbVideoFadeTimer);
   }
+
+  // ── Custom video play/pause toggle (replaces native <video controls>) ──
+  let lbVideoFadeTimer = null;
+  function updateLbVideoToggleIcon() {
+    lbVideoToggle.innerHTML = lbVideo.paused
+      ? '<i class="fa-solid fa-play"></i>'
+      : '<i class="fa-solid fa-pause"></i>';
+  }
+  function popLbVideoToggle() {
+    lbVideoToggle.classList.remove('lb-video-pop');
+    void lbVideoToggle.offsetWidth; // force reflow so re-adding restarts the animation
+    lbVideoToggle.classList.add('lb-video-pop');
+  }
+  lbVideoToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (lbVideo.paused) lbVideo.play().catch(() => {});
+    else lbVideo.pause();
+  });
+  // play/pause fire on the video element itself regardless of what
+  // triggered them (this button, autoplay, keyboard, etc.), so the icon
+  // and fade state always stay in sync with the real playback state.
+  lbVideo.addEventListener('play', () => {
+    updateLbVideoToggleIcon();
+    popLbVideoToggle();
+    clearTimeout(lbVideoFadeTimer);
+    lbVideoFadeTimer = setTimeout(() => lbVideoToggle.classList.add('lb-video-faded'), 700);
+  });
+  lbVideo.addEventListener('pause', () => {
+    updateLbVideoToggleIcon();
+    popLbVideoToggle();
+    clearTimeout(lbVideoFadeTimer);
+    lbVideoToggle.classList.remove('lb-video-faded'); // stays visible while genuinely paused
+  });
   function closeLightbox(skipHash) {
     lightbox.classList.remove('open');
     stopActiveMedia();
