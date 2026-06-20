@@ -598,7 +598,12 @@ body.ui-ready #writings-section.ready {
   line-height: 1.5;
   color: rgba(234, 255, 240, 0.92);
   text-shadow: 0 1px 5px rgba(0,0,0,0.95), 0 0 10px rgba(0,0,0,0.85), 0 0 22px rgba(0,0,0,0.6);
+  opacity: 1;
+  transition: opacity 0.4s ease;
 }
+/* Hidden while paused — the hover text takes over that same screen
+   region and the two were competing for attention. */
+.memory-card.paused .memory-caption { opacity: 0; }
 /* Opacity/transform only — no filter here, so the caption (also inside
    .memory-card) never gets blurred along with the photo. Holds near-full
    visibility from ~28%-50% so there's an actual window to look at the
@@ -5323,7 +5328,7 @@ const NAV_LABELS = {};  // key → display label
   const container = document.getElementById('memory-fog');
   if (!hasFinePointer || prefersReduced || !container || window.innerWidth <= 768) return;
 
-  const HOVER_TEXT = 'if we could touch our memories, we would never return to the present moment.';
+  const HOVER_TEXT = "If we could touch our memories, we'd never return to the present.";
   const IDLE_MS = 60000; // 1 minute of no mouse movement hands the centre back to quotes
 
   // Same scramble-and-settle glitch used for the sphere-centre nav hints —
