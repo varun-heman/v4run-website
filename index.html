@@ -5558,14 +5558,20 @@ const NAV_LABELS = {};  // key → display label
       // a user gesture under standard autoplay policies.
       if (p.type === 'video') media.play().catch(() => {});
 
-      card.addEventListener('animationend', (e) => {
-        // animationend bubbles up from any descendant's animation too (the
-        // Ken Burns pan, the photo blur, etc.) — this used to cause a real
-        // bug when a short-lived caption fade-in animation (since removed)
-        // finished early and bubbled up, cutting the photo short well
-        // before its real 10s memory-drift lifecycle. Kept as a permanent
-        // safeguard: only react to the card's own animation ending.
+      // animationend bubbles up from any descendant's animation too (the
+      // Ken Burns pan on .memory-photo-media, the blur on .memory-photo —
+      // both also 10s, so they finish at essentially the same moment as
+      // the card's own memory-drift and bubble up as separate events).
+      // { once: true } would auto-remove the listener after whichever of
+      // those arrives FIRST, even if it's a bubbled child event filtered
+      // out below — leaving nothing left to catch the card's own event
+      // and silently killing the whole rotation (only a suspend/resume
+      // elsewhere, e.g. mousing over the carousel, would restart it via
+      // startMemoryLoop). So this removes itself manually, only once it's
+      // actually confirmed to be the card's own animation ending.
+      function onCardAnimEnd(e) {
         if (e.target !== card) return;
+        card.removeEventListener('animationend', onCardAnimEnd);
         if (card.parentNode) card.parentNode.removeChild(card);
         if (currentCard === card) {
           currentCard = null;
@@ -5574,7 +5580,8 @@ const NAV_LABELS = {};  // key → display label
           cardHovered = false;
         }
         if (active) setTimeout(showNextMemory, 500 + Math.random() * 400);
-      }, { once: true });
+      }
+      card.addEventListener('animationend', onCardAnimEnd);
     });
   }
 
