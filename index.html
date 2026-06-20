@@ -7904,10 +7904,10 @@ window.addEventListener('popstate', (e) => {
 
   function fireGlitch() {
     if (pending) return false;
-    // Skip while a modal/overlay or the access gate is open — avoid visual clash
-    const gate = document.getElementById('access-gate');
-    const gateOpen = gate && gate.classList.contains('visible');
-    if (window._modalOpen || gateOpen || document.visibilityState !== 'visible') {
+    // Skip while a modal/overlay is open, or the tab isn't visible — the
+    // access gate used to be excluded too ("avoid visual clash" with its
+    // own name-glitch cycle), but that's now allowed on purpose.
+    if (window._modalOpen || document.visibilityState !== 'visible') {
       return false; // caller decides how soon to retry
     }
     pending = true;
