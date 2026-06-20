@@ -3061,16 +3061,19 @@ body.crt-off .crt-off-line {
    near-zero RGB values they barely move at all, which is why the original
    version was invisible here. invert() flips the whole tonal range
    regardless of how dark the source is, so it reads as an unmistakable
-   flash on this palette specifically. */
+   flash on this palette specifically.
+   The wipe itself cuts on a diagonal rather than a flat vertical edge —
+   same 45° chamfer language as the HUD boot traces (see further down),
+   so this reads as the same visual vocabulary instead of a separate idea. */
 @keyframes v4-vt-out {
-  0%   { opacity: 1; filter: invert(0) hue-rotate(0deg) saturate(1); }
-  35%  { opacity: 1; filter: invert(0.85) hue-rotate(45deg) saturate(2.2); }
-  100% { opacity: 0; filter: invert(1) hue-rotate(90deg) blur(4px); }
+  0%   { clip-path: polygon(0% 0%, 100% 0%, 109% 100%, 0% 100%); filter: invert(0) hue-rotate(0deg) saturate(1); }
+  35%  { clip-path: polygon(0% 0%, 100% 0%, 109% 100%, 0% 100%); filter: invert(0.85) hue-rotate(45deg) saturate(2.2); }
+  100% { clip-path: polygon(100% 0%, 100% 0%, 109% 100%, 100% 100%); filter: invert(1) hue-rotate(90deg) blur(4px); }
 }
 @keyframes v4-vt-in {
-  0%   { opacity: 0; clip-path: inset(0 100% 0 0); filter: invert(1) hue-rotate(-70deg) saturate(2); }
-  50%  { opacity: 1; clip-path: inset(0 0 0 0);     filter: invert(0.4) hue-rotate(-25deg) saturate(1.8); }
-  100% { opacity: 1; clip-path: inset(0 0 0 0);     filter: invert(0) hue-rotate(0deg) saturate(1); }
+  0%   { clip-path: polygon(0% 0%, 0% 0%, -9% 100%, 0% 100%);       filter: invert(1) hue-rotate(-70deg) saturate(2); }
+  50%  { clip-path: polygon(0% 0%, 58% 0%, 49% 100%, 0% 100%);      filter: invert(0.4) hue-rotate(-25deg) saturate(1.8); }
+  100% { clip-path: polygon(0% 0%, 109% 0%, 100% 100%, 0% 100%);    filter: invert(0) hue-rotate(0deg) saturate(1); }
 }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
@@ -4231,11 +4234,9 @@ window.addEventListener('pageshow', (e) => {
   }
 
   // Plays one full HUD boot flourish: builds this run's traces, starts the
-  // sfx, and clears both at the same moment ~1.66s later. Used both for the
-  // one-time first-visit sequence (tied to the big bang, below) and for the
-  // recurring "re-sync" that fires occasionally during normal browsing for
-  // every visitor (see the standalone scheduler IIFE further down the
-  // page). Single-flight guarded so the two can never stack.
+  // sfx, and clears both at the same moment ~1.66s later. Fires once per
+  // page load (see below, tied to the big bang) — single-flight guarded
+  // just in case something ever calls it twice in quick succession.
   let hudBootPending = false;
   function fireHudBoot() {
     if (hudBootPending) return false;
@@ -4274,12 +4275,9 @@ window.addEventListener('pageshow', (e) => {
       setTimeout(() => {
         document.body.classList.add('ui-ready');
 
-        if (window._isFirstVisit) {
-          // First-visit HUD boot flourish, tied to the big bang. It also
-          // recurs occasionally afterwards for every visitor — see the
-          // scheduler IIFE near the end of the page.
-          fireHudBoot();
-        }
+        // HUD boot flourish — plays once per page load, right as the UI
+        // settles in, for both first-time and return visitors.
+        fireHudBoot();
       }, window._isFirstVisit ? 6700 : 2700);
     }, 1000);
   };
@@ -6933,40 +6931,6 @@ window.addEventListener('popstate', (e) => {
   scheduleNext();
 })();
 
-// ── RECURRING HUD BOOT FLOURISH ───────────────────────────────────────────
-// Beyond the one-time first-visit boot sequence (tied to the big bang), the
-// same HUD trace + sound flourish recurs occasionally during normal
-// browsing — like the interface briefly re-syncing — for every visitor,
-// not only first-time ones. Reuses window._fireHudBoot (defined alongside
-// the dot sphere), which already builds fresh, randomized traces and times
-// itself to hud_in.mp3, so this is just deciding when to call it.
-(function () {
-  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (prefersReduced) return;
-
-  const MIN_GAP_MS = 90000;   // shortest wait between re-syncs (1.5 min)
-  const MAX_GAP_MS = 210000;  // longest wait (3.5 min)
-
-  function canFire() {
-    const gate = document.getElementById('access-gate');
-    const gateOpen = gate && gate.classList.contains('visible');
-    return document.body.classList.contains('ui-ready')
-      && !window._modalOpen
-      && !gateOpen
-      && document.visibilityState === 'visible'
-      && typeof window._fireHudBoot === 'function';
-  }
-
-  function scheduleNext(forceDelay) {
-    const delay = forceDelay || (MIN_GAP_MS + Math.random() * (MAX_GAP_MS - MIN_GAP_MS));
-    setTimeout(() => {
-      const fired = canFire() && window._fireHudBoot();
-      scheduleNext(fired ? undefined : 5000); // exactly one timer ever pending
-    }, delay);
-  }
-
-  scheduleNext();
-})();
 </script>
 </body>
 </html>

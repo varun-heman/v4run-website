@@ -18,7 +18,7 @@ Key visual details:
 - **Article carousel** — a bottom strip of writing cards that auto-scrolls left, supports drag with momentum fling, and loops infinitely via DOM recycling (no offset jump). Cards expand on hover to reveal a description, with tags pinned to the bottom; non-hovered cards dim. Hidden on mobile.
 - **Static noise overlay** — a very faint, fine-grain film noise canvas overlaid on the full page.
 - **Pulsating heart** — a red Font Awesome heart icon in the footer pulses continuously with a heartbeat animation.
-- **HUD boot flourish** — a handful of clean, right-angle SVG traces "laser in" toward upcoming UI (nav, corners, and the carousel on desktop), each led by a bright travelling dot, alongside `audio/hud_in.mp3`. Plays once right after the first-visit big bang (see "First-visit experience"), then recurs every ~1.5–3.5 minutes for any visitor — like the interface briefly re-syncing. Which targets light up, their exact shape, and timing vary a little each run. Skipped while a modal or the access gate is open, the tab is hidden, or `prefers-reduced-motion` is set.
+- **HUD boot flourish** — a handful of clean, right-angle SVG traces "laser in" toward upcoming UI (nav, corners, and the carousel on desktop), each led by a bright travelling dot, alongside `audio/hud_in.mp3`. Plays once per page load, right as the UI settles in after the bang (see "First-visit experience"), for both first-time and return visitors. Which targets light up, their exact shape, and timing vary a little each run. Respects `prefers-reduced-motion`.
 - **Random screen glitch** — an unrelated, more frequent (every ~7–19s) full-viewport RGB-split/corrupted-block burst, also gated the same way.
 
 ## First-visit experience
@@ -28,7 +28,7 @@ On the very first visit to the root domain, a terminal-style **access gate** is 
 - Displays "You are entering the private space of VARUN" — the name cycles through `VARUN → v4run → v4.run` with a fast RGB glitch + VHS skew distortion animation.
 - **Exit** button opens a YouTube link in a new tab and closes the current one.
 - **Proceed** button dismisses the gate. The background music (`audio/bg_score.mp3`) starts immediately at low volume. A blinking green cursor appears for ~2 seconds, then the typewriter intro sequence begins (each keystroke is a synthesized square-wave click via Web Audio API).
-- After the intro finishes, the big bang triggers, the main UI fades in, and the HUD boot flourish plays (see "What it is" above) — it also recurs occasionally afterwards, for every visitor, not just this first time.
+- After the intro finishes, the big bang triggers, the main UI fades in, and the HUD boot flourish plays (see "What it is" above).
 - Pressing **Escape** at any point during the typewriter intro skips straight to the big bang — useful for return visitors who clear their cookie, or anyone who just doesn't want to wait.
 - The gate and intro are skipped for return visitors (cookie `v4run_v=1`). Visitors arriving via a **deep link** (any URL with a hash) also skip the gate and are marked as visited immediately — the linked panel opens directly.
 
@@ -165,7 +165,7 @@ content/
 
 Quotes are embedded in `index.html` in a `<script id="quotes-data" type="application/json">` block.
 
-**Audio files** — `audio/bg_score.mp3` (background music, loops), `audio/big_bang.mp3` (one-shot on first-visit bang), `audio/hud_in.mp3` (one-shot on first-visit HUD boot flourish, see "First-visit experience").
+**Audio files** — `audio/bg_score.mp3` (background music, loops), `audio/big_bang.mp3` (one-shot on first-visit bang), `audio/hud_in.mp3` (one-shot HUD boot flourish, plays once per page load — see "First-visit experience").
 
 **Images** — `images/varun.jpg` is the photo used in the popup box. `images/gallery/` holds photo albums.
 
