@@ -10,7 +10,7 @@
         "date": "2021-07-05",
         "location": ""
       },
-      "count": 4,
+      "count": 5,
       "photos": [
         {
           "type": "image",
@@ -23,6 +23,13 @@
           "type": "image",
           "src": "images/gallery/heart/golden-retriever-gaze.jpg",
           "caption": "Loyalty doesn't blink first.",
+          "date": "2021-07-05",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/heart/judy-girl.jpg",
+          "caption": "You took a little of all of us with you. RIP.",
           "date": "2021-07-05",
           "location": ""
         },
@@ -194,20 +201,13 @@
       "title": "Work",
       "cover": {
         "type": "image",
-        "src": "images/gallery/work/fieldwork-huddle.jpg",
-        "caption": "Trying to fix something bigger than all of us, one folding table at a time.",
-        "date": "2021-07-05",
+        "src": "images/gallery/work/radio-studio-day.jpg",
+        "caption": "Borrowed a voice for an hour, gave it back changed.",
+        "date": "2018-11-30",
         "location": ""
       },
-      "count": 2,
+      "count": 1,
       "photos": [
-        {
-          "type": "image",
-          "src": "images/gallery/work/fieldwork-huddle.jpg",
-          "caption": "Trying to fix something bigger than all of us, one folding table at a time.",
-          "date": "2021-07-05",
-          "location": ""
-        },
         {
           "type": "image",
           "src": "images/gallery/work/radio-studio-day.jpg",
@@ -224,13 +224,6 @@
       "src": "images/gallery/work/radio-studio-day.jpg",
       "caption": "Borrowed a voice for an hour, gave it back changed.",
       "date": "2018-11-30",
-      "location": ""
-    },
-    {
-      "type": "image",
-      "src": "images/gallery/work/fieldwork-huddle.jpg",
-      "caption": "Trying to fix something bigger than all of us, one folding table at a time.",
-      "date": "2021-07-05",
       "location": ""
     },
     {
@@ -252,6 +245,13 @@
       "src": "images/gallery/places/hilltop-sunset-view.jpg",
       "caption": "We came up for the view, stayed for the quiet.",
       "date": "2019-04-10",
+      "location": ""
+    },
+    {
+      "type": "image",
+      "src": "images/gallery/places/festival-night-trio.jpg",
+      "caption": "Loud nights make quiet friendships louder.",
+      "date": "2018-12-07",
       "location": ""
     }
   ]
