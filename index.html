@@ -520,13 +520,13 @@ body.ui-ready #writings-section.ready {
 }
 /* Sits over the lower third of the photo (not below it — it was getting
    lost down there in the gap), pulled up from the very bottom edge so it
-   clears the carousel strip rather than landing right behind it, with a
-   soft dark pad behind the text for contrast against the photo. */
+   clears the carousel strip rather than landing right behind it. No
+   background pad behind the text (it read as a hard rectangular border
+   cutting across the photo) — legibility comes entirely from the layered
+   text-shadow instead. */
 .memory-caption {
   position: absolute;
   left: 10%; right: 10%; bottom: 24%;
-  padding: 22px 4% 10px;
-  background: linear-gradient(to top, rgba(3,8,5,0.65) 25%, transparent);
   max-width: none;
   font-family: var(--mono);
   font-size: 11px;
@@ -534,7 +534,7 @@ body.ui-ready #writings-section.ready {
   text-align: center;
   line-height: 1.5;
   color: rgba(234, 255, 240, 0.92);
-  text-shadow: 0 1px 4px rgba(0,0,0,0.85), 0 0 16px rgba(0,0,0,0.6);
+  text-shadow: 0 1px 5px rgba(0,0,0,0.95), 0 0 10px rgba(0,0,0,0.85), 0 0 22px rgba(0,0,0,0.6);
 }
 /* Opacity/transform only — no filter here, so the caption (also inside
    .memory-card) never gets blurred along with the photo. Holds near-full
