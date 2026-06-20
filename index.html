@@ -520,10 +520,8 @@ body.ui-ready #writings-section.ready {
      flat/0deg, same reasoning as the old combined animation. */
   animation: memory-tilt-drift 9s ease-in-out infinite;
 }
-/* The same soft oval feather is shared by the photo AND the dissolve
-   overlay below (as a CSS variable) so "touching" a photo never loses
-   that feathered edge — everything stays inside the same oval silhouette,
-   it just changes what's drawn inside it. */
+/* The feathered oval the photo has always used. Kept as a variable so if
+   anything else ever needs to match it exactly, it can. */
 .memory-tilt {
   --memory-feather: radial-gradient(ellipse 50% 50% at 50% 50%, #000 46%, transparent 86%);
 }
@@ -541,52 +539,27 @@ body.ui-ready #writings-section.ready {
      image and made it unreadable. */
   animation: memory-photo-blur 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
 }
-/* Touching a photo dims it way down (rather than swapping its mask) so
-   the hover text behind is actually legible, while the soft glowing
-   patches below do the "disappearing in parts" work — same feathered
-   oval silhouette throughout, nothing ever gets a hard edge. */
-.memory-card.paused .memory-photo { opacity: 0.16; }
-/* Soft glowing haze around/behind the photo, only really visible once
-   paused (the photo dims and the patches below light up). */
+/* Touching a photo just dims it down — kept deliberately simple after a
+   patchy "disappearing in parts" overlay (multiple blurred screen-blend
+   glows) washed the whole thing out to a flat bright white blob instead
+   of reading as fog. A plain opacity fade is enough to let the hover
+   text behind become legible, and the feather/tilt/caption all still
+   apply on top of it unchanged. */
+.memory-card.paused .memory-photo { opacity: 0.22; }
+/* Soft, subtle glow behind the photo while paused — kept low-key on
+   purpose so it never dominates or washes out the hover text. */
 .memory-smoke {
   position: absolute;
-  inset: -12%;
+  inset: -10%;
   z-index: 1;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(184,240,210,0.4), rgba(184,240,210,0.14) 50%, transparent 75%);
-  filter: blur(26px);
+  background: radial-gradient(circle, rgba(184,240,210,0.22), rgba(184,240,210,0.07) 50%, transparent 75%);
+  filter: blur(24px);
   opacity: 0;
   transition: opacity 1s ease;
   animation: memory-smoke-drift 10s ease-in-out infinite;
 }
-.memory-card.paused .memory-smoke { opacity: 1; }
-/* Several soft, blurred, irregularly-placed glows that sit ON TOP of the
-   photo and "screen" blend into it — patches of it visually dissolve into
-   glowing fog rather than the photo just dimming uniformly. Clipped to
-   the exact same feathered oval as the photo (--memory-feather) so the
-   dissolve never spills past that silhouette or loses the feather.
-   Opacity is a real CSS transition (not a mask swap), so this is a
-   genuine gradual reveal, not an instant snap — and it keeps drifting
-   slowly the whole time it's visible. */
-.memory-dissolve {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  -webkit-mask-image: var(--memory-feather);
-          mask-image: var(--memory-feather);
-  background:
-    radial-gradient(circle at 28% 30%, rgba(184,240,210,0.85) 0%, rgba(184,240,210,0.35) 30%, transparent 60%),
-    radial-gradient(circle at 74% 20%, rgba(184,240,210,0.8)  0%, rgba(184,240,210,0.3)  26%, transparent 54%),
-    radial-gradient(circle at 60% 64%, rgba(184,240,210,0.85) 0%, rgba(184,240,210,0.35) 32%, transparent 62%),
-    radial-gradient(circle at 18% 70%, rgba(184,240,210,0.75) 0%, rgba(184,240,210,0.3)  24%, transparent 50%),
-    radial-gradient(circle at 85% 75%, rgba(184,240,210,0.7)  0%, rgba(184,240,210,0.28) 22%, transparent 48%);
-  filter: blur(16px);
-  mix-blend-mode: screen;
-  opacity: 0;
-  transition: opacity 1.4s ease;
-  animation: memory-dissolve-drift 12s ease-in-out infinite;
-}
-.memory-card.paused .memory-dissolve { opacity: 0.95; }
+.memory-card.paused .memory-smoke { opacity: 0.55; }
 /* The fixed line of text revealed behind the photo while paused. */
 .memory-hover-text {
   position: absolute;
@@ -654,11 +627,6 @@ body.ui-ready #writings-section.ready {
 @keyframes memory-smoke-drift {
   0%   { transform: scale(1)     translate(0, 0); }
   50%  { transform: scale(1.14) translate(2%, -3%); }
-  100% { transform: scale(1)     translate(0, 0); }
-}
-@keyframes memory-dissolve-drift {
-  0%   { transform: scale(1)     translate(0, 0); }
-  50%  { transform: scale(1.1) translate(-2%, 2%); }
   100% { transform: scale(1)     translate(0, 0); }
 }
 /* Mirrors the drift timing above exactly so the photo's fog-in/fog-out
@@ -5340,12 +5308,14 @@ const NAV_LABELS = {};  // key → display label
 //  feathered and translucent via the .memory-photo CSS. Hovering the
 //  current photo "touches" it: the fade/recede freezes in place
 //  (animation-play-state, not removed) while a separate, never-paused
-//  tilt animation keeps it gently turning in 3D, the photo dims way down
-//  and dissolves into soft glowing patches (same feathered oval the whole
-//  time — nothing gets a hard edge), and a fixed line of text glitches in
-//  behind it, same style as the nav-hint/intro-name glitch. Desktop/fine-
-//  pointer only — touch devices have no hover concept, so quotes just
-//  keep behaving as they always have there.
+//  tilt animation keeps it gently turning in 3D, the photo just dims way
+//  down (kept deliberately simple — a patchy dissolve effect here turned
+//  out to wash everything to a flat white glow), and a fixed line of text
+//  glitches in behind it, same style as the nav-hint/intro-name glitch.
+//  Hovering a card always counts as engagement regardless of how long the
+//  idle-timeout (below) would otherwise wait — see cardHovered. Desktop/
+//  fine-pointer only — touch devices have no hover concept, so quotes
+//  just keep behaving as they always have there.
 // ═══════════════════════════════════════════════════
 (function () {
   const hasFinePointer = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -5446,14 +5416,6 @@ const NAV_LABELS = {};  // key → display label
     img.alt = '';
     tilt.appendChild(img);
 
-    // Soft glowing patches that screen-blend on top of the photo while
-    // paused — same feathered oval as the photo (--memory-feather), so the
-    // "disappearing in parts" effect never spills past that silhouette or
-    // loses the feather.
-    const dissolve = document.createElement('div');
-    dissolve.className = 'memory-dissolve';
-    tilt.appendChild(dissolve);
-
     if (p.caption) {
       const cap = document.createElement('div');
       cap.className = 'memory-caption';
@@ -5465,17 +5427,22 @@ const NAV_LABELS = {};  // key → display label
 
     // "Touching" the photo pauses the fade/recede in place (the tilt above
     // keeps running independently), dims the photo so the text behind
-    // reads clearly, reveals the smoke/dissolve glow, and starts the
-    // hover text glitching — all driven off the single .paused class via
-    // CSS except the glitch loop itself, which needs JS.
+    // reads clearly, reveals the smoke glow, and starts the hover text
+    // glitching — all driven off the single .paused class via CSS except
+    // the glitch loop itself, which needs JS. Also marks cardHovered so
+    // the idle-timeout (see below) never yanks the card away mid-read.
     let touching = false;
     card.addEventListener('mouseenter', () => {
+      if (touching) return; // guard against a stray double mouseenter starting a 2nd glitch loop
       touching = true;
+      cardHovered = true;
+      lastMove = Date.now();
       card.classList.add('paused');
       glitchLoop(hoverText, HOVER_TEXT, () => touching);
     });
     card.addEventListener('mouseleave', () => {
       touching = false;
+      cardHovered = false;
       card.classList.remove('paused');
     });
 
@@ -5508,6 +5475,13 @@ const NAV_LABELS = {};  // key → display label
   let suspended = false; // forced off by other UI (carousel/nav hover) regardless of quotesMode
   let lastMove = Date.now();
   let mouseOnPage = true;
+  // True while the cursor is actually resting on a memory-card (reading
+  // the hover text). Without this, sitting still to read it for 60s+
+  // would get treated as "idle" and the idle-timeout would yank the
+  // whole card away via stopMemoryLoop()'s container.innerHTML = '' —
+  // mid-read, which is what was happening. Hovering always counts as
+  // engagement, regardless of how long the mouse itself stays still.
+  let cardHovered = false;
 
   function applyMode() {
     if (suspended) { stopMemoryLoop(); return; }
@@ -5516,6 +5490,7 @@ const NAV_LABELS = {};  // key → display label
 
   function evaluate() {
     if (!document.body.classList.contains('ui-ready')) return; // never during the intro
+    if (cardHovered) return; // never switch modes out from under an active hover
     const idle = (Date.now() - lastMove) >= IDLE_MS;
     const shouldQuotes = idle || !mouseOnPage;
     if (shouldQuotes === quotesMode) return;
