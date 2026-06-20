@@ -5394,8 +5394,11 @@ const NAV_LABELS = {};  // key → display label
         if (!data) { photos = []; return photos; }
         const all = (data.albums || []).flatMap(a => a.photos || []);
         // Keep the full photo object (not just .src) — caption/date/location
-        // travel with it so the caption card below can use them.
-        const eligible = all.filter(p => (p.type || 'image') === 'image' && p.src);
+        // travel with it so the caption card below can use them. Local
+        // videos are eligible too (rendered as autoplaying/looping/muted
+        // <video>, see showNextMemory) — YouTube entries aren't real files
+        // on disk, so those stay excluded.
+        const eligible = all.filter(p => (p.type === 'image' || p.type === 'video') && p.src);
         // Fisher-Yates shuffle, then cap at MAX_PHOTOS. This runs once per
         // page load (photos is cached above), so a refresh re-shuffles and
         // picks a different random 20 from the full gallery each time,
@@ -5449,11 +5452,29 @@ const NAV_LABELS = {};  // key → display label
     smoke.className = 'memory-smoke';
     tilt.appendChild(smoke);
 
-    const img = document.createElement('img');
-    img.className = 'memory-photo';
-    img.src = p.src;
-    img.alt = '';
-    tilt.appendChild(img);
+    // Local videos are treated exactly like a photo here — same box,
+    // mask, blur/fade timeline, tilt — just autoplaying/looping/muted
+    // instead of a static frame. No controls; it's decor, not a player.
+    const media = p.type === 'video' ? document.createElement('video') : document.createElement('img');
+    media.className = 'memory-photo';
+    if (p.type === 'video') {
+      media.src = p.src;
+      media.muted = true;
+      media.autoplay = true;
+      media.loop = true;
+      media.playsInline = true;
+      media.controls = false;
+      media.preload = 'auto';
+      media.disablePictureInPicture = true;
+    } else {
+      media.src = p.src;
+      media.alt = '';
+    }
+    tilt.appendChild(media);
+    // The autoplay attribute alone is sometimes unreliable on elements
+    // built via JS before insertion — muted, so this is allowed without
+    // a user gesture under standard autoplay policies.
+    if (p.type === 'video') media.play().catch(() => {});
 
     if (p.caption) {
       const cap = document.createElement('div');
