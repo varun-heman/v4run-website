@@ -3056,15 +3056,21 @@ body.crt-off .crt-off-line {
 ::view-transition-new(root) {
   animation: v4-vt-in 0.48s cubic-bezier(0.16,1,0.3,1) both;
 }
+/* invert() rather than brightness()/saturate(): this site is almost
+   entirely near-black, and brightness/saturate are multiplicative — on
+   near-zero RGB values they barely move at all, which is why the original
+   version was invisible here. invert() flips the whole tonal range
+   regardless of how dark the source is, so it reads as an unmistakable
+   flash on this palette specifically. */
 @keyframes v4-vt-out {
-  0%   { opacity: 1; filter: brightness(1) saturate(1); }
-  30%  { opacity: 1; filter: brightness(1.5) saturate(1.6) hue-rotate(-6deg); }
-  100% { opacity: 0; filter: brightness(2.2) saturate(0.3) blur(3px); }
+  0%   { opacity: 1; filter: invert(0) hue-rotate(0deg) saturate(1); }
+  35%  { opacity: 1; filter: invert(0.85) hue-rotate(45deg) saturate(2.2); }
+  100% { opacity: 0; filter: invert(1) hue-rotate(90deg) blur(4px); }
 }
 @keyframes v4-vt-in {
-  0%   { opacity: 0; clip-path: inset(0 100% 0 0); filter: brightness(2.4) saturate(0.25); }
-  55%  { opacity: 1; clip-path: inset(0 0 0 0);     filter: brightness(1.5) saturate(1.5); }
-  100% { opacity: 1; clip-path: inset(0 0 0 0);     filter: brightness(1) saturate(1); }
+  0%   { opacity: 0; clip-path: inset(0 100% 0 0); filter: invert(1) hue-rotate(-70deg) saturate(2); }
+  50%  { opacity: 1; clip-path: inset(0 0 0 0);     filter: invert(0.4) hue-rotate(-25deg) saturate(1.8); }
+  100% { opacity: 1; clip-path: inset(0 0 0 0);     filter: invert(0) hue-rotate(0deg) saturate(1); }
 }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }

@@ -213,8 +213,8 @@ a{color:inherit;text-decoration:none;}
    no matter which side of the navigation this document is on. */
 ::view-transition-old(root){animation:v4-vt-out .4s cubic-bezier(.4,0,1,1) both;}
 ::view-transition-new(root){animation:v4-vt-in .48s cubic-bezier(.16,1,.3,1) both;}
-@keyframes v4-vt-out{0%{opacity:1;filter:brightness(1) saturate(1);}30%{opacity:1;filter:brightness(1.5) saturate(1.6) hue-rotate(-6deg);}100%{opacity:0;filter:brightness(2.2) saturate(.3) blur(3px);}}
-@keyframes v4-vt-in{0%{opacity:0;clip-path:inset(0 100% 0 0);filter:brightness(2.4) saturate(.25);}55%{opacity:1;clip-path:inset(0 0 0 0);filter:brightness(1.5) saturate(1.5);}100%{opacity:1;clip-path:inset(0 0 0 0);filter:brightness(1) saturate(1);}}
+@keyframes v4-vt-out{0%{opacity:1;filter:invert(0) hue-rotate(0deg) saturate(1);}35%{opacity:1;filter:invert(.85) hue-rotate(45deg) saturate(2.2);}100%{opacity:0;filter:invert(1) hue-rotate(90deg) blur(4px);}}
+@keyframes v4-vt-in{0%{opacity:0;clip-path:inset(0 100% 0 0);filter:invert(1) hue-rotate(-70deg) saturate(2);}50%{opacity:1;clip-path:inset(0 0 0 0);filter:invert(.4) hue-rotate(-25deg) saturate(1.8);}100%{opacity:1;clip-path:inset(0 0 0 0);filter:invert(0) hue-rotate(0deg) saturate(1);}}
 @media (prefers-reduced-motion: reduce){::view-transition-old(root),::view-transition-new(root){animation:none !important;}}
 </style>
 </head>
