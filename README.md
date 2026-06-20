@@ -27,6 +27,7 @@ On the very first visit to the root domain, a terminal-style **access gate** is 
 - **Exit** button opens a YouTube link in a new tab and closes the current one.
 - **Proceed** button dismisses the gate. The background music (`audio/bg_score.mp3`) starts immediately at low volume. A blinking green cursor appears for ~2 seconds, then the typewriter intro sequence begins (each keystroke is a synthesized square-wave click via Web Audio API).
 - After the intro finishes, the big bang triggers and the main UI fades in.
+- As the UI settles in, a one-off **HUD boot** flourish plays: a handful of clean, right-angle SVG traces "laser in" toward the specific bits of UI about to appear (nav, corners, and the carousel on desktop), each led by a bright travelling dot like a laser head, accompanied by `audio/hud_in.mp3`. Which targets light up, their exact shape, and their timing adapt to the viewport (desktop vs mobile) and vary slightly each run, so it's never the literal same animation twice. Respects `prefers-reduced-motion`.
 - Pressing **Escape** at any point during the typewriter intro skips straight to the big bang — useful for return visitors who clear their cookie, or anyone who just doesn't want to wait.
 - The gate and intro are skipped for return visitors (cookie `v4run_v=1`). Visitors arriving via a **deep link** (any URL with a hash) also skip the gate and are marked as visited immediately — the linked panel opens directly.
 
@@ -155,7 +156,7 @@ content/
 
 Quotes are embedded in `index.html` in a `<script id="quotes-data" type="application/json">` block.
 
-**Audio files** — `audio/bg_score.mp3` (background music, loops), `audio/big_bang.mp3` (one-shot on first-visit bang).
+**Audio files** — `audio/bg_score.mp3` (background music, loops), `audio/big_bang.mp3` (one-shot on first-visit bang), `audio/hud_in.mp3` (one-shot on first-visit HUD boot flourish, see "First-visit experience").
 
 **Images** — `images/varun.jpg` is the photo used in the popup box. `images/gallery/` holds photo albums.
 
@@ -228,3 +229,4 @@ On screens ≤ 768px:
 | Photo albums | `images/gallery/<album-name>/` + optional `meta.md` |
 | Background music | `audio/bg_score.mp3` |
 | Big bang sound | `audio/big_bang.mp3` |
+| HUD boot sound | `audio/hud_in.mp3` |
