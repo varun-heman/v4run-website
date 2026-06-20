@@ -3346,6 +3346,63 @@ body.crt-off .crt-off-line {
   body.crt-off .crt-off-line { opacity: 0 !important; }
 }
 
+/* ── CRT ON (page-load intro) ─────────────────────────────────────────────
+   Exact reverse of CRT OFF above: a tiny dot emerges, expands to a bar,
+   then to a full bright flash, while the black backdrop fades away to
+   reveal the real page underneath. Plays on every fresh root-page load
+   (see the ACCESS GATE IIFE) — including return visitors — but skipped
+   for deep links, which need to land on their target immediately.
+   Opaque by default (not gated behind a body class like CRT OFF is) —
+   this has to already be covering the screen at first paint, before any
+   JS has even run, otherwise there'd be a flash of the real page first.
+   The JS either plays the fade-out animation (body.crt-on) or, for the
+   skip cases, just hides it outright with no animation at all. */
+#crt-on-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  background: #000;
+  opacity: 1;
+  pointer-events: none;
+}
+body.crt-on #crt-on-overlay {
+  animation: crt-bg-out 0.9s steps(1, end) forwards;
+}
+.crt-on-line {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 1px; height: 1px;
+  transform: translate(-50%, -50%);
+  background: #eafff0;
+  opacity: 0;
+  box-shadow: 0 0 60px 14px rgba(234,255,240,0.85);
+}
+body.crt-on .crt-on-line {
+  animation: crt-line-expand 0.9s cubic-bezier(0.15,0.35,0.5,1) forwards;
+}
+@keyframes crt-bg-out {
+  0%   { opacity: 1; }
+  42%  { opacity: 0.92; }
+  68%  { opacity: 0.65; }
+  92%  { opacity: 0.1; }
+  100% { opacity: 0; }
+}
+@keyframes crt-line-expand {
+  0%   { opacity: 0;    width: 1px;  height: 1px; }
+  26%  { opacity: 0.8;  width: 3px;  height: 3px; }
+  48%  { opacity: 0.9;  width: 10px; height: 3px; }
+  72%  { opacity: 0.9;  width: 100%; height: 3px; }
+  94%  { opacity: 0.95; width: 100%; height: 100%; }
+  100% { opacity: 0;    width: 100%; height: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Unconditional (not just under body.crt-on) — JS already skips adding
+     that class for reduced-motion users, but this is the CSS-only
+     fallback that guarantees the overlay can never get stuck covering
+     the page if that JS path is ever bypassed. */
+  #crt-on-overlay, .crt-on-line { animation: none !important; opacity: 0 !important; }
+}
+
 /* ── PAGE TRANSITION — project navigation ───────────────────────────────
    Replaces the browser's default cross-fade (for both the in-app fetch+
    swap into the project detail view, and a real cross-document navigation
@@ -3528,6 +3585,7 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 </div>
 <div id="screen-glitch-overlay"></div>
 <div id="crt-off-overlay"><div class="crt-off-line"></div></div>
+<div id="crt-on-overlay"><div class="crt-on-line"></div></div>
 <!-- HUD boot sequence — first visit only, plays as the interface settles in after the
      big bang. Paths are generated in JS (see _buildHudBoot) rather than hardcoded here,
      so it only traces toward UI that's actually about to appear on this viewport
@@ -5032,10 +5090,43 @@ const NAV_LABELS = {};  // key → display label
     const btnProceed = document.getElementById('ag-proceed');
     if (!gate) return;
 
+    // ── CRT-ON INTRO ──────────────────────────────────────────────────────
+    // Plays on every fresh root-page load, return visitors included — but
+    // never for deep links (or reduced-motion), which need to land on
+    // their target immediately rather than sit through an intro. The
+    // overlay itself is opaque by default in CSS (see #crt-on-overlay) so
+    // it's already covering the page before this script even runs; here
+    // we either animate it away (crt-on class) or just remove it outright.
+    const crtOnOverlay = document.getElementById('crt-on-overlay');
+    const skipCrtOn = !!location.hash ||
+      (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (crtOnOverlay) {
+      if (skipCrtOn) {
+        crtOnOverlay.style.display = 'none';
+        runGateLogic();
+      } else {
+        document.body.classList.add('crt-on');
+        setTimeout(() => {
+          document.body.classList.remove('crt-on');
+          crtOnOverlay.style.display = 'none';
+          runGateLogic();
+        }, 900);
+      }
+    } else {
+      runGateLogic();
+    }
+
+    function runGateLogic() {
+
     // Return visitors skip the gate entirely
     if (hasVisited()) {
       gate.style.display = 'none';
       window._isFirstVisit = false;
+      // Music used to only auto-start via the gate's PROCEED button, so
+      // returning visitors (who never see that button) got no music by
+      // default — changed so a revisit also starts it.
+      const returnMusic = document.getElementById('bg-music');
+      if (returnMusic) { returnMusic.volume = 0.35; returnMusic.play().catch(() => {}); }
       if (window._triggerBigBang) window._triggerBigBang();
       setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9200);
       return;
@@ -5155,6 +5246,7 @@ const NAV_LABELS = {};  // key → display label
         }
       }, 520);
     });
+    } // end runGateLogic
   })();
 
   // ── MUSIC TOGGLE ────────────────────────────────────────────────────────
