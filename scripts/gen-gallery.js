@@ -29,11 +29,23 @@
  * Thumbnails come straight from YouTube's public thumbnail CDN — no API
  * key needed.
  *
+ * Every image/video file actually in images/gallery/ also gets passed
+ * through scripts/strip-metadata.js before the scan below — strips
+ * identifying EXIF/container metadata (camera model, GPS, original
+ * timestamps, etc.) and stamps in a copyright/source note instead. This
+ * happens automatically every run; there's no separate manual step. See
+ * that file for exactly what it touches and its image-format scope.
+ *
+ * images/inbox/ (the staging folder for new photos — see README) is
+ * swept clean at the end of this run too, via scripts/clean-inbox.js.
+ *
  * Run: node scripts/gen-gallery.js
  */
 
 const fs   = require('fs');
 const path = require('path');
+const { processFile } = require('./strip-metadata');
+const { cleanInbox }  = require('./clean-inbox');
 
 const root       = path.join(__dirname, '..');
 const galleryDir = path.join(root, 'images', 'gallery');
@@ -109,6 +121,7 @@ fs.readdirSync(galleryDir)
       .map(f => {
         const m   = meta[f] || {};
         const ext = path.extname(f).toLowerCase();
+        processFile(path.join(albumPath, f)); // strip EXIF/metadata, stamp copyright — see top of file
         return {
           type:     VIDEO_EXTS.has(ext) ? 'video' : 'image',
           src:      `images/gallery/${name}/${f}`,
@@ -145,3 +158,6 @@ fs.writeFileSync(outFile, JSON.stringify(out, null, 2));
 const videoCount   = allPhotos.filter(p => p.type === 'video').length;
 const youtubeCount = allPhotos.filter(p => p.type === 'youtube').length;
 console.log(`✓ gallery.json: ${albums.length} albums, ${allPhotos.length} items (${videoCount} local video${videoCount !== 1 ? 's' : ''}, ${youtubeCount} YouTube), ${recent.length} recent`);
+
+const purged = cleanInbox();
+if (purged) console.log(`✓ inbox cleared (${purged} item${purged !== 1 ? 's' : ''} removed)`);

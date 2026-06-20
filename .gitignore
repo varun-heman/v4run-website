@@ -12,3 +12,9 @@
 # If you ever add a build step
 node_modules/
 dist/
+
+# Staging folder for new photos before they're sorted into albums — see
+# README "Adding photos". Auto-purged by scripts/clean-inbox.js (also
+# runs automatically at the end of scripts/gen-gallery.js), but ignored
+# here too so anything left in it never gets committed by accident.
+images/inbox/

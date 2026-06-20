@@ -96,20 +96,39 @@ Each album lives in `images/gallery/<album-name>/`. An optional `meta.md` file i
 
 ```
 # filename | caption | date (YYYY-MM-DD) | location
-arch-01.jpg | Pillared corridor, Mysore Palace | 2026-01-28 | Mysore, India
-clip-01.mp4 | A short clip from the same trip   | 2026-01-28 |
-youtube:dQw4w9WgXcQ | A YouTube video             | 2026-01-29 | Mysore, India
+quiet-beach-path.jpg | Empty places hold the loudest memories. | 2021-01-08 | Goa, India
+trail-dogs-walk.mp4  | A short clip from the same morning       | 2021-01-08 |
+youtube:dQw4w9WgXcQ  | A YouTube video                          | 2021-01-09 | Mysore, India
 ```
 
 Dates and locations are optional — just leave the field blank.
 
-**Local videos** (`.mp4`, `.webm`, `.mov`, `.m4v`) just sit in the album folder alongside photos — no separate setup. There's no automatic poster-frame generation (no ffmpeg dependency); the browser shows the video's own first frame as its thumbnail.
+**Local videos** (`.mp4`, `.webm`, `.mov`, `.m4v`) just sit in the album folder alongside photos — no separate setup. There's no automatic poster-frame generation; the browser shows the video's own first frame as its thumbnail.
 
 **YouTube videos** aren't files on disk, so they're declared as a `meta.md` line instead, using `youtube:` in place of a filename — either a bare 11-character video ID or a full URL (`youtube:https://youtu.be/dQw4w9WgXcQ`, `.../watch?v=...`, or `.../shorts/...` all work). Thumbnails come from YouTube's public thumbnail CDN, no API key needed.
 
+### File naming convention
+
+Gallery filenames are **2-3 descriptive words about the photo's content, lowercase, hyphen-separated** — e.g. `quiet-beach-path.jpg`, `golden-retriever-gaze.jpg`. No sequential numbers (`photo-01.jpg`, `photo-02.jpg`, …): a gap left by a deleted file in a numbered sequence is obvious at a glance, a descriptive name doesn't have that problem and is easier to recognise later when skimming a folder. Keep them short and avoid literally restating the caption — the filename is just a handle, the caption carries the actual feeling.
+
+### Adding photos
+
+There's a staging folder for this: drop new images (and/or videos) into `images/inbox/`, then have whoever's organising (a person, or an assistant working from this repo) sort them into the right album under `images/gallery/`, renaming each per the convention above and adding its `meta.md` line. `images/inbox/` is gitignored and gets swept empty automatically every time `gen-gallery.js` runs (see below) — `scripts/clean-inbox.js` does this and can also be run standalone (`node scripts/clean-inbox.js`).
+
+### Privacy & copyright on gallery assets
+
+Every file actually inside `images/gallery/*/` — not the inbox, the published albums — gets run through `scripts/strip-metadata.js` automatically, every time `gen-gallery.js` runs. It:
+
+- Strips identifying EXIF/container metadata: camera model, GPS location, original capture software/timestamps, etc.
+- Stamps in a minimal copyright note instead — `ImageDescription: Downloaded from v4.run`, `Artist: Varun Hemachandran`, `Copyright: (c) Varun Hemachandran. All rights reserved.` for images (real EXIF tags, hand-built with zero npm dependencies — readable by Preview, Photos, exiftool, etc.), and equivalent `artist`/`copyright`/`comment` container tags for video via `ffmpeg -map_metadata -1 -c copy` (remux only, no re-encode, so quality is untouched).
+- Covers JPEG and PNG for images, and `.mp4`/`.webm`/`.mov`/`.m4v` for video (via ffmpeg, skipped with a console warning if ffmpeg isn't on `PATH` — there's no dependency-free way to rewrite container metadata atoms by hand the way there is for JPEG/PNG segments). WebP/GIF/AVIF/SVG aren't currently handled.
+- Is idempotent and runs unconditionally on every asset every time — safe to re-run, nothing to track.
+
+So: **this is automatic**, not a manual step — it's baked into the same `gen-gallery.js` run you already do before every deploy. Nothing extra to remember.
+
 ### Gallery build step
 
-The gallery JSON is generated pre-deploy by `scripts/gen-gallery.js`. It scans `images/gallery/*/` for image and video files, parses each album's `meta.md` for YouTube entries, and writes `content/gallery.json` with all albums and the 5 most recent items.
+The gallery JSON is generated pre-deploy by `scripts/gen-gallery.js`. It strips/stamps metadata on every album asset (above), scans `images/gallery/*/` for image and video files, parses each album's `meta.md` for YouTube entries, writes `content/gallery.json` with all albums and the 5 most recent items, then purges `images/inbox/`.
 
 `netlify.toml` wires this up automatically on Netlify. For local testing, run:
 
@@ -167,7 +186,9 @@ Quotes are embedded in `index.html` in a `<script id="quotes-data" type="applica
 
 **Audio files** — `audio/bg_score.mp3` (background music, loops), `audio/big_bang.mp3` (one-shot on first-visit bang), `audio/hud_in.mp3` (one-shot HUD boot flourish, plays once per page load — see "First-visit experience").
 
-**Images** — `images/varun.jpg` is the photo used in the popup box. `images/gallery/` holds photo albums.
+**Images** — `images/varun.jpg` is the photo used in the popup box. `images/gallery/` holds photo albums. `images/inbox/` is the gitignored staging folder for new photos before they're sorted — see "Adding photos".
+
+**Scripts** — `scripts/gen-gallery.js` (gallery JSON, see "Gallery build step"), `scripts/gen-projects.js` (project pages, see "Project pages"), `scripts/strip-metadata.js` (EXIF/metadata strip + copyright stamp, called automatically by gen-gallery.js — see "Privacy & copyright on gallery assets"), `scripts/clean-inbox.js` (empties `images/inbox/`, also called automatically by gen-gallery.js).
 
 ## Site metadata and sharing
 
@@ -235,7 +256,8 @@ On screens ≤ 768px:
 | Browser/social title and description | `index.html` → `<head>` metadata |
 | Favicon | `favicon.png` in the project root |
 | Social share banner | `social-banner.png` in the project root |
-| Photo albums | `images/gallery/<album-name>/` + optional `meta.md` |
+| Photo albums | `images/gallery/<album-name>/` + optional `meta.md` — see "Adding photos" and "File naming convention" |
+| Gallery copyright/attribution stamp | `scripts/strip-metadata.js` → `COPYRIGHT` constant |
 | Background music | `audio/bg_score.mp3` |
 | Big bang sound | `audio/big_bang.mp3` |
 | HUD boot sound | `audio/hud_in.mp3` |

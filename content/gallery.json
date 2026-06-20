@@ -1,170 +1,268 @@
 {
   "albums": [
     {
-      "id": "architecture",
-      "title": "Architecture",
+      "id": "heart",
+      "title": "Heart",
       "cover": {
         "type": "image",
-        "src": "images/gallery/architecture/arch-01.svg",
-        "caption": "Pillared corridor, Mysore Palace",
-        "date": "2026-01-28",
-        "location": "Mysore, India"
-      },
-      "count": 5,
-      "photos": [
-        {
-          "type": "image",
-          "src": "images/gallery/architecture/arch-01.svg",
-          "caption": "Pillared corridor, Mysore Palace",
-          "date": "2026-01-28",
-          "location": "Mysore, India"
-        },
-        {
-          "type": "image",
-          "src": "images/gallery/architecture/arch-02.svg",
-          "caption": "Colonial arcade",
-          "date": "2026-01-28",
-          "location": "Mysore, India"
-        },
-        {
-          "type": "image",
-          "src": "images/gallery/architecture/arch-03.svg",
-          "caption": "Brutalist stairwell",
-          "date": "2026-02-14",
-          "location": "Chandigarh, India"
-        },
-        {
-          "type": "image",
-          "src": "images/gallery/architecture/arch-04.svg",
-          "caption": "Carved doorway",
-          "date": "2026-02-15",
-          "location": "Chandigarh, India"
-        },
-        {
-          "type": "image",
-          "src": "images/gallery/architecture/arch-05.svg",
-          "caption": "Roof geometry",
-          "date": "2026-05-20",
-          "location": "Bengaluru, India"
-        }
-      ]
-    },
-    {
-      "id": "nature",
-      "title": "Nature",
-      "cover": {
-        "type": "image",
-        "src": "images/gallery/nature/nature-01.svg",
-        "caption": "Western Ghats treeline",
-        "date": "2025-12-18",
-        "location": "Coorg, India"
+        "src": "images/gallery/heart/beagle-nap-time.jpg",
+        "caption": "The only creature here with nothing left to prove.",
+        "date": "2021-07-05",
+        "location": ""
       },
       "count": 7,
       "photos": [
         {
           "type": "image",
-          "src": "images/gallery/nature/nature-01.svg",
-          "caption": "Western Ghats treeline",
-          "date": "2025-12-18",
-          "location": "Coorg, India"
+          "src": "images/gallery/heart/beagle-nap-time.jpg",
+          "caption": "The only creature here with nothing left to prove.",
+          "date": "2021-07-05",
+          "location": ""
         },
         {
           "type": "image",
-          "src": "images/gallery/nature/nature-02.svg",
-          "caption": "Morning mist",
-          "date": "2025-12-18",
-          "location": "Coorg, India"
+          "src": "images/gallery/heart/dog-cuddle-night.jpg",
+          "caption": "Some weights you don't want lifted off your chest.",
+          "date": "2018-12-15",
+          "location": ""
         },
         {
           "type": "image",
-          "src": "images/gallery/nature/nature-03.svg",
-          "caption": "Canopy light",
-          "date": "2025-12-19",
-          "location": "Coorg, India"
+          "src": "images/gallery/heart/dog-guarding-tv.jpg",
+          "caption": "Supervising the television, badly.",
+          "date": "2019-05-10",
+          "location": ""
         },
         {
           "type": "image",
-          "src": "images/gallery/nature/nature-04.svg",
-          "caption": "River bend, golden hour",
-          "date": "2026-01-10",
-          "location": "Kabini, India"
+          "src": "images/gallery/heart/golden-retriever-gaze.jpg",
+          "caption": "Loyalty doesn't blink first.",
+          "date": "2021-07-05",
+          "location": ""
         },
         {
           "type": "image",
-          "src": "images/gallery/nature/nature-05.svg",
-          "caption": "Bamboo grove",
-          "date": "2026-01-10",
-          "location": "Kabini, India"
+          "src": "images/gallery/heart/pug-tongue-out.jpg",
+          "caption": "Unimpressed, as a lifestyle.",
+          "date": "2021-07-05",
+          "location": ""
         },
         {
           "type": "image",
-          "src": "images/gallery/nature/nature-06.svg",
-          "caption": "After the rain",
-          "date": "2026-02-22",
-          "location": "Bengaluru, India"
+          "src": "images/gallery/heart/trail-dogs-pause.jpg",
+          "caption": "Still figuring out which way the fog goes.",
+          "date": "2021-01-08",
+          "location": ""
         },
         {
           "type": "image",
-          "src": "images/gallery/nature/nature-07.svg",
-          "caption": "Sunrise, hilltop",
-          "date": "2026-02-23",
-          "location": "Nandi Hills, India"
+          "src": "images/gallery/heart/trail-dogs-walk.jpg",
+          "caption": "Some mornings only make sense to the ones with four legs.",
+          "date": "2021-01-08",
+          "location": ""
         }
       ]
     },
     {
-      "id": "street",
-      "title": "Street",
+      "id": "people",
+      "title": "People",
       "cover": {
         "type": "image",
-        "src": "images/gallery/street/street-01.svg",
-        "caption": "Evening light on Brigade Road",
-        "date": "2026-03-12",
-        "location": "Bengaluru, India"
+        "src": "images/gallery/people/childhood-couch-four.jpg",
+        "caption": "Before any of us knew what we'd become.",
+        "date": "",
+        "location": ""
+      },
+      "count": 15,
+      "photos": [
+        {
+          "type": "image",
+          "src": "images/gallery/people/childhood-couch-four.jpg",
+          "caption": "Before any of us knew what we'd become.",
+          "date": "",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/people/couch-conversation.jpg",
+          "caption": "Conversations that don't need to go anywhere to matter.",
+          "date": "2021-01-11",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/people/evening-laughter.jpg",
+          "caption": "Laughing at something neither of us can explain later.",
+          "date": "2021-11-07",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/people/festival-night-trio.jpg",
+          "caption": "Loud nights make quiet friendships louder.",
+          "date": "2018-12-07",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/people/grandmothers-hands.jpg",
+          "caption": "Hands remember what stories forget.",
+          "date": "2021-09-05",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/people/haircut-night-chaos.jpg",
+          "caption": "Chaos, but the kind you choose.",
+          "date": "2018-12-09",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/people/haystack-group-photo.jpg",
+          "caption": "Nine people, one hay bale, zero regrets.",
+          "date": "",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/people/home-portrait-smile.jpg",
+          "caption": "Some smiles are just home, wearing a face.",
+          "date": "2020-12-25",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/people/living-room-crew.jpg",
+          "caption": "A room full of people who'd show up at 3am.",
+          "date": "2019-04-10",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/people/playful-portrait-two.jpg",
+          "caption": "Trying to look unbothered, failing happily.",
+          "date": "2021-11-07",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/people/quiet-grandmother.jpg",
+          "caption": "Some people you only ever see from behind, holding everything together.",
+          "date": "2021-09-05",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/people/rickshaw-ride-look.jpg",
+          "caption": "Going somewhere, looking like I already arrived.",
+          "date": "2019-01-24",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/people/siblings-childhood.jpg",
+          "caption": "We were inseparable before we had a choice in the matter.",
+          "date": "",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/people/steps-and-smiles.jpg",
+          "caption": "Some thresholds you sit on instead of crossing.",
+          "date": "2021-11-07",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/people/wooden-pillar-pose.jpg",
+          "caption": "Standing exactly where she was always going to stand.",
+          "date": "2021-10-06",
+          "location": ""
+        }
+      ]
+    },
+    {
+      "id": "places",
+      "title": "Places",
+      "cover": {
+        "type": "image",
+        "src": "images/gallery/places/cafe-evening-glow.jpg",
+        "caption": "Evenings that don't ask anything of you.",
+        "date": "2019-02-25",
+        "location": ""
       },
       "count": 6,
       "photos": [
         {
           "type": "image",
-          "src": "images/gallery/street/street-01.svg",
-          "caption": "Evening light on Brigade Road",
-          "date": "2026-03-12",
-          "location": "Bengaluru, India"
+          "src": "images/gallery/places/cafe-evening-glow.jpg",
+          "caption": "Evenings that don't ask anything of you.",
+          "date": "2019-02-25",
+          "location": ""
         },
         {
           "type": "image",
-          "src": "images/gallery/street/street-02.svg",
-          "caption": "Chai stall, early morning",
-          "date": "2026-03-12",
-          "location": "Bengaluru, India"
+          "src": "images/gallery/places/concert-night-lights.jpg",
+          "caption": "Lost in a crowd, found in the noise.",
+          "date": "2021-08-11",
+          "location": ""
         },
         {
           "type": "image",
-          "src": "images/gallery/street/street-03.svg",
-          "caption": "Autorickshaw queue",
-          "date": "2026-04-05",
-          "location": "Chennai, India"
+          "src": "images/gallery/places/hills-at-dusk.jpg",
+          "caption": "Some skies are just an argument for staying a little longer.",
+          "date": "2020-01-18",
+          "location": ""
         },
         {
           "type": "image",
-          "src": "images/gallery/street/street-04.svg",
-          "caption": "Footpath vendors at dusk",
-          "date": "2026-04-05",
-          "location": "Chennai, India"
+          "src": "images/gallery/places/hilltop-sunset-view.jpg",
+          "caption": "We came up for the view, stayed for the quiet.",
+          "date": "2019-04-10",
+          "location": ""
         },
         {
           "type": "image",
-          "src": "images/gallery/street/street-05.svg",
-          "caption": "Monsoon reflection",
-          "date": "2026-06-01",
-          "location": "Bengaluru, India"
+          "src": "images/gallery/places/misty-green-hills.jpg",
+          "caption": "Somewhere between a postcard and a memory.",
+          "date": "2021-09-29",
+          "location": ""
         },
         {
           "type": "image",
-          "src": "images/gallery/street/street-06.svg",
-          "caption": "Old city corner",
-          "date": "2026-06-02",
-          "location": "Bengaluru, India"
+          "src": "images/gallery/places/quiet-beach-path.jpg",
+          "caption": "Empty places hold the loudest memories.",
+          "date": "2021-01-08",
+          "location": ""
+        }
+      ]
+    },
+    {
+      "id": "work",
+      "title": "Work",
+      "cover": {
+        "type": "image",
+        "src": "images/gallery/work/fieldwork-huddle.jpg",
+        "caption": "Trying to fix something bigger than all of us, one folding table at a time.",
+        "date": "2021-07-05",
+        "location": ""
+      },
+      "count": 2,
+      "photos": [
+        {
+          "type": "image",
+          "src": "images/gallery/work/fieldwork-huddle.jpg",
+          "caption": "Trying to fix something bigger than all of us, one folding table at a time.",
+          "date": "2021-07-05",
+          "location": ""
+        },
+        {
+          "type": "image",
+          "src": "images/gallery/work/radio-studio-day.jpg",
+          "caption": "Borrowed a voice for an hour, gave it back changed.",
+          "date": "2018-11-30",
+          "location": ""
         }
       ]
     }
@@ -172,38 +270,38 @@
   "recent": [
     {
       "type": "image",
-      "src": "images/gallery/street/street-06.svg",
-      "caption": "Old city corner",
-      "date": "2026-06-02",
-      "location": "Bengaluru, India"
+      "src": "images/gallery/work/radio-studio-day.jpg",
+      "caption": "Borrowed a voice for an hour, gave it back changed.",
+      "date": "2018-11-30",
+      "location": ""
     },
     {
       "type": "image",
-      "src": "images/gallery/street/street-05.svg",
-      "caption": "Monsoon reflection",
-      "date": "2026-06-01",
-      "location": "Bengaluru, India"
+      "src": "images/gallery/work/fieldwork-huddle.jpg",
+      "caption": "Trying to fix something bigger than all of us, one folding table at a time.",
+      "date": "2021-07-05",
+      "location": ""
     },
     {
       "type": "image",
-      "src": "images/gallery/street/street-04.svg",
-      "caption": "Footpath vendors at dusk",
-      "date": "2026-04-05",
-      "location": "Chennai, India"
+      "src": "images/gallery/places/quiet-beach-path.jpg",
+      "caption": "Empty places hold the loudest memories.",
+      "date": "2021-01-08",
+      "location": ""
     },
     {
       "type": "image",
-      "src": "images/gallery/street/street-03.svg",
-      "caption": "Autorickshaw queue",
-      "date": "2026-04-05",
-      "location": "Chennai, India"
+      "src": "images/gallery/places/misty-green-hills.jpg",
+      "caption": "Somewhere between a postcard and a memory.",
+      "date": "2021-09-29",
+      "location": ""
     },
     {
       "type": "image",
-      "src": "images/gallery/street/street-02.svg",
-      "caption": "Chai stall, early morning",
-      "date": "2026-03-12",
-      "location": "Bengaluru, India"
+      "src": "images/gallery/places/hilltop-sunset-view.jpg",
+      "caption": "We came up for the view, stayed for the quiet.",
+      "date": "2019-04-10",
+      "location": ""
     }
   ]
 }
