@@ -4455,6 +4455,9 @@ const NAV_LABELS = {};  // key → display label
     lbl.dataset.text = text;
     lbl.classList.add('visible');
     doGlitchBurst(text);
+    // Memory-fog sits in the same screen-centre spot as this hint text and
+    // was covering it — force fog off for as long as a nav item is hovered.
+    if (window._setMemoryFogSuspended) window._setMemoryFogSuspended(true);
   }
 
   function hideLabel() {
@@ -4464,6 +4467,7 @@ const NAV_LABELS = {};  // key → display label
     cancelAnimationFrame(rafId);
     lbl.classList.remove('visible');
     lbl.innerHTML = '';
+    if (window._setMemoryFogSuspended) window._setMemoryFogSuspended(false);
     // Resume quote after brief pause
     setTimeout(() => { if (!isNavHover) showNextQuote(); }, 500);
   }
