@@ -5586,7 +5586,14 @@ const NAV_LABELS = {};  // key → display label
       // a user gesture under standard autoplay policies.
       if (p.type === 'video') media.play().catch(() => {});
 
-      card.addEventListener('animationend', () => {
+      card.addEventListener('animationend', (e) => {
+        // animationend bubbles up from any descendant's animation too (the
+        // caption's fade-in, the Ken Burns pan, etc.) — without this check
+        // the caption's much shorter animation (0.8s + 2.2s delay = done at
+        // ~3s) would fire this handler and cut the photo short well before
+        // its real 10s memory-drift lifecycle finishes. Only react to the
+        // card's own animation ending.
+        if (e.target !== card) return;
         if (card.parentNode) card.parentNode.removeChild(card);
         if (currentCard === card) {
           currentCard = null;
