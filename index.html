@@ -5544,12 +5544,13 @@ const NAV_LABELS = {};  // key → display label
       const tiltY = (Math.random() < 0.5 ? -1 : 1) * (7 + Math.random() * 8);
       card.style.setProperty('--tilt-x', tiltX.toFixed(1) + 'deg');
       card.style.setProperty('--tilt-y', tiltY.toFixed(1) + 'deg');
-      // Ken Burns: slow zoom + pan on the photo content itself (see
+      // Ken Burns: zoom + pan on the photo content itself (see
       // .memory-photo-media), independent of the feathered frame around
-      // it, which never moves. Randomised per instance.
-      card.style.setProperty('--kb-scale', (1.07 + Math.random() * 0.09).toFixed(3));
-      card.style.setProperty('--kb-x', ((Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 3)).toFixed(1) + '%');
-      card.style.setProperty('--kb-y', ((Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 3)).toFixed(1) + '%');
+      // it, which never moves. Randomised per instance. Bumped up from a
+      // subtle 1.07-1.16/2-5% drift to something much more noticeable.
+      card.style.setProperty('--kb-scale', (1.18 + Math.random() * 0.22).toFixed(3));
+      card.style.setProperty('--kb-x', ((Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 7)).toFixed(1) + '%');
+      card.style.setProperty('--kb-y', ((Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 7)).toFixed(1) + '%');
 
       const tilt = document.createElement('div');
       tilt.className = 'memory-tilt';
