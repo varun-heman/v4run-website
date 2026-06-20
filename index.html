@@ -5384,6 +5384,8 @@ const NAV_LABELS = {};  // key → display label
   let currentHoverText = null; // its .memory-hover-text element
   let touching = false;        // true while the mouse is inside the small centre touch zone
 
+  const MAX_PHOTOS = 20; // capped pool size — see the shuffle below
+
   function loadPhotos() {
     if (photos) return Promise.resolve(photos);
     return fetch('content/gallery.json')
@@ -5393,7 +5395,16 @@ const NAV_LABELS = {};  // key → display label
         const all = (data.albums || []).flatMap(a => a.photos || []);
         // Keep the full photo object (not just .src) — caption/date/location
         // travel with it so the caption card below can use them.
-        photos = all.filter(p => (p.type || 'image') === 'image' && p.src);
+        const eligible = all.filter(p => (p.type || 'image') === 'image' && p.src);
+        // Fisher-Yates shuffle, then cap at MAX_PHOTOS. This runs once per
+        // page load (photos is cached above), so a refresh re-shuffles and
+        // picks a different random 20 from the full gallery each time,
+        // while the rest of this session just cycles within that set.
+        for (let i = eligible.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [eligible[i], eligible[j]] = [eligible[j], eligible[i]];
+        }
+        photos = eligible.slice(0, MAX_PHOTOS);
         return photos;
       })
       .catch(() => { photos = []; return photos; });
