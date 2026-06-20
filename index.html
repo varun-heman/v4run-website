@@ -4059,8 +4059,10 @@ window.addEventListener('pageshow', (e) => {
       path.setAttribute('class', 'hud-trace');
       path.setAttribute('pathLength', '100');
       path.setAttribute('d', toD(pts));
+      // delay (0–0.16s) + dur (1.25–1.50s) tops out at 1.66s — matched to
+      // the full length of hud_in.mp3 so the sfx plays out completely.
       const delay = Math.random() * 0.16;
-      const dur   = 1.05 + Math.random() * 0.25;
+      const dur   = 1.25 + Math.random() * 0.25;
       path.style.animationDelay    = delay.toFixed(2) + 's';
       path.style.animationDuration = dur.toFixed(2) + 's';
       svg.appendChild(path);
@@ -4103,17 +4105,16 @@ window.addEventListener('pageshow', (e) => {
 
         if (window._isFirstVisit) {
           // HUD boot flourish — a few angular traces toward the nav/carousel/
-          // corners right as they fade in. Sound starts together with the
-          // traces and is cut at the same moment they clear, so it never
-          // plays on into silence after the visual is gone.
+          // corners right as they fade in, running the full 1.66s length of
+          // hud_in.mp3 so the sfx plays out completely alongside it.
           _buildHudBoot();
           const hudSfx = document.getElementById('hud-in-sound');
           if (hudSfx) { hudSfx.currentTime = 0; hudSfx.volume = 0.5; hudSfx.play().catch(() => {}); }
           document.body.classList.add('hud-boot');
           setTimeout(() => {
             document.body.classList.remove('hud-boot');
-            if (hudSfx) { hudSfx.pause(); hudSfx.currentTime = 0; }
-          }, 1500);
+            if (hudSfx) { hudSfx.pause(); hudSfx.currentTime = 0; } // safety net only
+          }, 1660);
         }
       }, window._isFirstVisit ? 6700 : 2700);
     }, 1000);
