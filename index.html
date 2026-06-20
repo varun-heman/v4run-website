@@ -490,8 +490,8 @@ body.ui-ready #writings-section.ready {
    out. The tilt itself lives on a separate, always-running inner wrapper
    (.memory-tilt) so it can be paused independently of the fade/recede —
    see the "hover to pause" behaviour below. Self-contained: this block +
-   the matching JS IIFE + the #memory-fog div and SVG mask defs (search
-   "MEMORY FOG") can be deleted to fully undo. */
+   the matching JS IIFE + the #memory-fog div (search "MEMORY FOG") can be
+   deleted to fully undo. */
 #memory-fog {
   position: fixed; top: 50%; left: 50%;
   width: min(64vw, 640px);
@@ -520,31 +520,34 @@ body.ui-ready #writings-section.ready {
      flat/0deg, same reasoning as the old combined animation. */
   animation: memory-tilt-drift 9s ease-in-out infinite;
 }
+/* The same soft oval feather is shared by the photo AND the dissolve
+   overlay below (as a CSS variable) so "touching" a photo never loses
+   that feathered edge — everything stays inside the same oval silhouette,
+   it just changes what's drawn inside it. */
+.memory-tilt {
+  --memory-feather: radial-gradient(ellipse 50% 50% at 50% 50%, #000 46%, transparent 86%);
+}
 .memory-photo {
   position: relative;
   z-index: 2;
   width: 100%; height: min(64vw, 640px);
   object-fit: cover; display: block;
-  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 46%, transparent 86%);
-          mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 46%, transparent 86%);
-  will-change: filter;
+  -webkit-mask-image: var(--memory-feather);
+          mask-image: var(--memory-feather);
+  will-change: filter, opacity;
+  transition: opacity 1.3s ease;
   /* Blur lives on the photo alone, on its own timeline — it used to be on
      the shared wrapper, which blurred the caption text along with the
      image and made it unreadable. */
   animation: memory-photo-blur 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
 }
-/* Swiss-cheese dissolve while paused — the photo's smooth oval mask
-   switches to the SVG mask (holes already mid-drift, see the cheese-hole
-   keyframes below), letting the smoke layer and hover text show through
-   the gaps. Browsers don't tween between two different mask-image values,
-   so this is an instant swap, not a gradual reveal — the holes' own
-   continuous drift is what reads as "slowly dissolving". */
-.memory-card.paused .memory-photo {
-  -webkit-mask-image: url(#memory-cheese-mask);
-          mask-image: url(#memory-cheese-mask);
-}
-/* Soft glowing haze behind the photo, only visible through the cheese
-   holes (or around the edges) once paused. */
+/* Touching a photo dims it way down (rather than swapping its mask) so
+   the hover text behind is actually legible, while the soft glowing
+   patches below do the "disappearing in parts" work — same feathered
+   oval silhouette throughout, nothing ever gets a hard edge. */
+.memory-card.paused .memory-photo { opacity: 0.16; }
+/* Soft glowing haze around/behind the photo, only really visible once
+   paused (the photo dims and the patches below light up). */
 .memory-smoke {
   position: absolute;
   inset: -12%;
@@ -553,13 +556,38 @@ body.ui-ready #writings-section.ready {
   background: radial-gradient(circle, rgba(184,240,210,0.4), rgba(184,240,210,0.14) 50%, transparent 75%);
   filter: blur(26px);
   opacity: 0;
-  transition: opacity 0.6s ease;
+  transition: opacity 1s ease;
   animation: memory-smoke-drift 10s ease-in-out infinite;
 }
 .memory-card.paused .memory-smoke { opacity: 1; }
-/* The fixed line of text revealed behind the photo while paused — sits
-   behind the photo (z-index) and the smoke (z-index), shown through the
-   cheese holes. */
+/* Several soft, blurred, irregularly-placed glows that sit ON TOP of the
+   photo and "screen" blend into it — patches of it visually dissolve into
+   glowing fog rather than the photo just dimming uniformly. Clipped to
+   the exact same feathered oval as the photo (--memory-feather) so the
+   dissolve never spills past that silhouette or loses the feather.
+   Opacity is a real CSS transition (not a mask swap), so this is a
+   genuine gradual reveal, not an instant snap — and it keeps drifting
+   slowly the whole time it's visible. */
+.memory-dissolve {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  -webkit-mask-image: var(--memory-feather);
+          mask-image: var(--memory-feather);
+  background:
+    radial-gradient(circle at 28% 30%, rgba(184,240,210,0.85) 0%, rgba(184,240,210,0.35) 30%, transparent 60%),
+    radial-gradient(circle at 74% 20%, rgba(184,240,210,0.8)  0%, rgba(184,240,210,0.3)  26%, transparent 54%),
+    radial-gradient(circle at 60% 64%, rgba(184,240,210,0.85) 0%, rgba(184,240,210,0.35) 32%, transparent 62%),
+    radial-gradient(circle at 18% 70%, rgba(184,240,210,0.75) 0%, rgba(184,240,210,0.3)  24%, transparent 50%),
+    radial-gradient(circle at 85% 75%, rgba(184,240,210,0.7)  0%, rgba(184,240,210,0.28) 22%, transparent 48%);
+  filter: blur(16px);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 1.4s ease;
+  animation: memory-dissolve-drift 12s ease-in-out infinite;
+}
+.memory-card.paused .memory-dissolve { opacity: 0.95; }
+/* The fixed line of text revealed behind the photo while paused. */
 .memory-hover-text {
   position: absolute;
   inset: 0;
@@ -572,11 +600,11 @@ body.ui-ready #writings-section.ready {
   font-family: var(--mono);
   font-size: 12px;
   letter-spacing: 0.06em;
-  line-height: 1.7;
+  line-height: 1.2;
   color: rgba(184, 240, 210, 0.75);
   text-shadow: 0 0 16px rgba(184,240,210,0.5), 0 1px 6px rgba(0,0,0,0.9);
   opacity: 0;
-  transition: opacity 0.8s ease;
+  transition: opacity 1.1s ease;
 }
 .memory-card.paused .memory-hover-text { opacity: 1; }
 /* Sits over the lower third of the photo (not below it — it was getting
@@ -588,7 +616,7 @@ body.ui-ready #writings-section.ready {
 .memory-caption {
   position: absolute;
   left: 10%; right: 10%; bottom: 24%;
-  z-index: 3;
+  z-index: 4;
   max-width: none;
   font-family: var(--mono);
   font-size: 11px;
@@ -628,6 +656,11 @@ body.ui-ready #writings-section.ready {
   50%  { transform: scale(1.14) translate(2%, -3%); }
   100% { transform: scale(1)     translate(0, 0); }
 }
+@keyframes memory-dissolve-drift {
+  0%   { transform: scale(1)     translate(0, 0); }
+  50%  { transform: scale(1.1) translate(-2%, 2%); }
+  100% { transform: scale(1)     translate(0, 0); }
+}
 /* Mirrors the drift timing above exactly so the photo's fog-in/fog-out
    tracks its own opacity/position, just isolated to this element. */
 @keyframes memory-photo-blur {
@@ -638,17 +671,6 @@ body.ui-ready #writings-section.ready {
   72%  { filter: blur(6px); }
   100% { filter: blur(20px); }
 }
-/* The cheese holes drift continuously and slowly regardless of whether
-   the mask is currently in use — cheap (four SVG circles), and means the
-   holes are already mid-motion the instant a hover swaps the mask in. */
-@keyframes cheese-drift-1 { 0%, 100% { cx: 0.3;  cy: 0.32; } 50% { cx: 0.34; cy: 0.27; } }
-@keyframes cheese-drift-2 { 0%, 100% { cx: 0.7;  cy: 0.24; } 50% { cx: 0.65; cy: 0.29; } }
-@keyframes cheese-drift-3 { 0%, 100% { cx: 0.56; cy: 0.58; } 50% { cx: 0.6;  cy: 0.52; } }
-@keyframes cheese-drift-4 { 0%, 100% { cx: 0.22; cy: 0.68; } 50% { cx: 0.27; cy: 0.63; } }
-.cheese-hole-1 { animation: cheese-drift-1 8s  ease-in-out infinite; }
-.cheese-hole-2 { animation: cheese-drift-2 11s ease-in-out infinite; }
-.cheese-hole-3 { animation: cheese-drift-3 9s  ease-in-out infinite; }
-.cheese-hole-4 { animation: cheese-drift-4 13s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
   #memory-fog { display: none; }
 }
@@ -3485,22 +3507,6 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 <!-- Experimental — see "MEMORY FOG" CSS/JS blocks. Remove this div +
      those blocks to fully undo. -->
 <div id="memory-fog"></div>
-<!-- Swiss-cheese hover mask for memory-fog photos — referenced by
-     .memory-card.paused .memory-photo. Holes drift continuously and
-     slowly (cheap: a handful of SVG attribute animations, no per-frame
-     JS), so they're already "alive" the instant the mask gets switched
-     on by hovering a photo. Remove together with the MEMORY FOG blocks. -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <mask id="memory-cheese-mask" maskContentUnits="objectBoundingBox" maskUnits="objectBoundingBox">
-      <rect x="0" y="0" width="1" height="1" fill="#fff"/>
-      <circle class="cheese-hole cheese-hole-1" cx="0.3" cy="0.32" r="0.1" fill="#000"/>
-      <circle class="cheese-hole cheese-hole-2" cx="0.7" cy="0.24" r="0.08" fill="#000"/>
-      <circle class="cheese-hole cheese-hole-3" cx="0.56" cy="0.58" r="0.12" fill="#000"/>
-      <circle class="cheese-hole cheese-hole-4" cx="0.22" cy="0.68" r="0.07" fill="#000"/>
-    </mask>
-  </defs>
-</svg>
 <div class="esc-hint" id="esc-hint"></div>
 <div id="writings-section">
   <div id="writings-header">
@@ -5334,11 +5340,12 @@ const NAV_LABELS = {};  // key → display label
 //  feathered and translucent via the .memory-photo CSS. Hovering the
 //  current photo "touches" it: the fade/recede freezes in place
 //  (animation-play-state, not removed) while a separate, never-paused
-//  tilt animation keeps it gently turning in 3D, the photo dissolves into
-//  a slowly-drifting swiss-cheese mask backed by a soft smoke glow, and a
-//  fixed line of text fades in behind it. Desktop/fine-pointer only —
-//  touch devices have no hover concept, so quotes just keep behaving as
-//  they always have there.
+//  tilt animation keeps it gently turning in 3D, the photo dims way down
+//  and dissolves into soft glowing patches (same feathered oval the whole
+//  time — nothing gets a hard edge), and a fixed line of text glitches in
+//  behind it, same style as the nav-hint/intro-name glitch. Desktop/fine-
+//  pointer only — touch devices have no hover concept, so quotes just
+//  keep behaving as they always have there.
 // ═══════════════════════════════════════════════════
 (function () {
   const hasFinePointer = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -5348,6 +5355,33 @@ const NAV_LABELS = {};  // key → display label
 
   const HOVER_TEXT = 'if we could touch our memories, we would never return to the present moment.';
   const IDLE_MS = 60000; // 1 minute of no mouse movement hands the centre back to quotes
+
+  // Same scramble-and-settle glitch used for the sphere-centre nav hints —
+  // reimplemented standalone here since that one lives inside a different
+  // IIFE and is wired to its own label element/state.
+  const GLITCH_CHARS = '!<>_\\/[]{}|=+*^?#@░▒▓│╡╢╖╣║╗╝╜╛┐└┴┬├─┼╔╩╦╠═╬╧╨╙╘╒╓╫╪┘┌01010110';
+  function glitchLoop(target, orig, isActive) {
+    const dur = 180 + Math.random() * 140;
+    const t0  = performance.now();
+    function tick(now) {
+      if (!isActive()) { target.textContent = orig; return; }
+      if (now - t0 > dur) {
+        target.textContent = orig;
+        setTimeout(() => { if (isActive()) glitchLoop(target, orig, isActive); }, 600 + Math.random() * 1200);
+        return;
+      }
+      let out = '';
+      for (let i = 0; i < orig.length; i++) {
+        if (orig[i] === ' ' || orig[i] === "'") { out += orig[i]; continue; }
+        out += Math.random() < 0.55
+          ? GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)]
+          : orig[i];
+      }
+      target.textContent = out;
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
 
   let photos = null, lastIdx = -1, active = false;
   let currentCard = null; // the .memory-card currently in the DOM, if any
@@ -5412,6 +5446,14 @@ const NAV_LABELS = {};  // key → display label
     img.alt = '';
     tilt.appendChild(img);
 
+    // Soft glowing patches that screen-blend on top of the photo while
+    // paused — same feathered oval as the photo (--memory-feather), so the
+    // "disappearing in parts" effect never spills past that silhouette or
+    // loses the feather.
+    const dissolve = document.createElement('div');
+    dissolve.className = 'memory-dissolve';
+    tilt.appendChild(dissolve);
+
     if (p.caption) {
       const cap = document.createElement('div');
       cap.className = 'memory-caption';
@@ -5422,10 +5464,20 @@ const NAV_LABELS = {};  // key → display label
     card.appendChild(tilt);
 
     // "Touching" the photo pauses the fade/recede in place (the tilt above
-    // keeps running independently) and reveals the cheese/smoke/hover-text
-    // — all driven off the single .paused class via CSS.
-    card.addEventListener('mouseenter', () => card.classList.add('paused'));
-    card.addEventListener('mouseleave', () => card.classList.remove('paused'));
+    // keeps running independently), dims the photo so the text behind
+    // reads clearly, reveals the smoke/dissolve glow, and starts the
+    // hover text glitching — all driven off the single .paused class via
+    // CSS except the glitch loop itself, which needs JS.
+    let touching = false;
+    card.addEventListener('mouseenter', () => {
+      touching = true;
+      card.classList.add('paused');
+      glitchLoop(hoverText, HOVER_TEXT, () => touching);
+    });
+    card.addEventListener('mouseleave', () => {
+      touching = false;
+      card.classList.remove('paused');
+    });
 
     container.innerHTML = '';
     container.appendChild(card);
