@@ -505,11 +505,14 @@ body.ui-ready #writings-section.ready {
   opacity: 0;
   will-change: opacity, transform;
   /* Opacity + depth/scale/drift only — no tilt here, see .memory-tilt.
-     Hovering the image pauses *this* animation (animation-play-state),
-     which freezes the fade and recede in place without touching the
-     independent tilt animation on the child below. */
+     "Touching" (see the JS IIFE — a small distance-from-screen-centre
+     check, not DOM hover, since the photo's own box is much bigger than
+     the intended touch zone) pauses *this* animation
+     (animation-play-state), which freezes the fade and recede in place
+     without touching the independent tilt animation on the child below.
+     pointer-events stays none throughout — nothing here ever needs to
+     capture mouse events directly any more. */
   animation: memory-drift 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
-  pointer-events: auto; /* only exists in the DOM while a photo is showing */
 }
 /* opacity is forced (!important) rather than just relying on the pause —
    if you happen to start hovering while memory-drift had already faded
@@ -5377,7 +5380,9 @@ const NAV_LABELS = {};  // key → display label
   }
 
   let photos = null, lastIdx = -1, active = false;
-  let currentCard = null; // the .memory-card currently in the DOM, if any
+  let currentCard = null;      // the .memory-card currently in the DOM, if any
+  let currentHoverText = null; // its .memory-hover-text element
+  let touching = false;        // true while the mouse is inside the small centre touch zone
 
   function loadPhotos() {
     if (photos) return Promise.resolve(photos);
@@ -5448,36 +5453,46 @@ const NAV_LABELS = {};  // key → display label
 
     card.appendChild(tilt);
 
-    // "Touching" the photo pauses the fade/recede in place (the tilt above
-    // keeps running independently), dims the photo so the text behind
-    // reads clearly, reveals the smoke glow, and starts the hover text
-    // glitching — all driven off the single .paused class via CSS except
-    // the glitch loop itself, which needs JS. Also marks cardHovered so
-    // the idle-timeout (see below) never yanks the card away mid-read.
-    let touching = false;
-    card.addEventListener('mouseenter', () => {
-      if (touching) return; // guard against a stray double mouseenter starting a 2nd glitch loop
-      touching = true;
-      cardHovered = true;
-      lastMove = Date.now();
-      card.classList.add('paused');
-      glitchLoop(hoverText, HOVER_TEXT, () => touching);
-    });
-    card.addEventListener('mouseleave', () => {
-      touching = false;
-      cardHovered = false;
-      card.classList.remove('paused');
-    });
-
     container.innerHTML = '';
     container.appendChild(card);
     currentCard = card;
+    currentHoverText = hoverText;
 
     card.addEventListener('animationend', () => {
       if (card.parentNode) card.parentNode.removeChild(card);
-      if (currentCard === card) currentCard = null;
+      if (currentCard === card) {
+        currentCard = null;
+        currentHoverText = null;
+        touching = false;
+        cardHovered = false;
+      }
       if (active) setTimeout(showNextMemory, 500 + Math.random() * 400);
     }, { once: true });
+  }
+
+  // "Touching" pauses the fade/recede in place (the tilt keeps running
+  // independently), dims the photo so the text behind reads clearly,
+  // reveals the smoke glow, and starts the hover text glitching — all
+  // driven off the single .paused class via CSS except the glitch loop
+  // itself, which needs JS. Also marks cardHovered so the idle-timeout
+  // (see below) never yanks the card away mid-read. Triggered by actual
+  // distance from screen-centre (see the mousemove listener below), not
+  // DOM hover — the photo's own box is much bigger than the small touch
+  // zone this is meant to be.
+  function enterTouch() {
+    if (touching || !currentCard) return;
+    touching = true;
+    cardHovered = true;
+    lastMove = Date.now();
+    const card = currentCard, text = currentHoverText;
+    card.classList.add('paused');
+    glitchLoop(text, HOVER_TEXT, () => touching && currentCard === card);
+  }
+  function leaveTouch() {
+    if (!touching) return;
+    touching = false;
+    cardHovered = false;
+    if (currentCard) currentCard.classList.remove('paused');
   }
 
   function startMemoryLoop() {
@@ -5488,6 +5503,9 @@ const NAV_LABELS = {};  // key → display label
   function stopMemoryLoop() {
     active = false;
     currentCard = null;
+    currentHoverText = null;
+    touching = false;
+    cardHovered = false;
     container.innerHTML = '';
   }
 
@@ -5542,10 +5560,24 @@ const NAV_LABELS = {};  // key → display label
   });
   document.addEventListener('mouseleave', () => {
     mouseOnPage = false;
+    leaveTouch();
     evaluate();
   });
   // Catches the idle-timeout transition even when no mouse event fires.
   setInterval(evaluate, 1000);
+
+  // The actual "touch" zone — deliberately small and centred on the exact
+  // screen centre, independent of the photo's own (much bigger) box.
+  // 96 CSS px = 1in by spec; entering/leaving use slightly different
+  // radii (a small hysteresis band) so the pause doesn't flicker on/off
+  // right at the edge.
+  const TOUCH_ENTER_PX = 80;
+  const TOUCH_EXIT_PX  = 104;
+  document.addEventListener('mousemove', e => {
+    const dist = Math.hypot(e.clientX - window.innerWidth / 2, e.clientY - window.innerHeight / 2);
+    if (!touching && dist <= TOUCH_ENTER_PX) enterTouch();
+    else if (touching && dist > TOUCH_EXIT_PX) leaveTouch();
+  });
 })();
 
 // ═══════════════════════════════════════════════════
