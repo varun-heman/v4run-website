@@ -479,6 +479,47 @@ body.ui-ready #writings-section.ready {
   font-weight: 400;
   text-shadow: 0 0 20px rgba(100, 255, 160, 0.18);
 }
+
+/* ── MEMORY FOG — EXPERIMENTAL ───────────────────────────────────────────
+   Quotes only show in the sphere centre while the mouse is near it (see
+   the centerPaused logic + the standalone IIFE further down). Away from
+   centre, random gallery photos drift in and out instead — feathered to a
+   soft oval via mask-image, blurred in from "fog" and fading toward a
+   blurred, scaled-up, upward drift ("into the horizon") before the next
+   one. Self-contained: this block + the matching JS IIFE + the
+   #memory-fog div (search "MEMORY FOG") can be deleted to fully undo. */
+#memory-fog {
+  position: fixed; top: 50%; left: 50%;
+  width: min(46vw, 420px); height: min(46vw, 420px);
+  transform: translate(-50%, -50%);
+  z-index: 4; /* just under .sphere-label (5), above the canvas */
+  pointer-events: none;
+}
+.memory-photo {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 32%, transparent 72%);
+          mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 32%, transparent 72%);
+  opacity: 0;
+  will-change: opacity, transform, filter;
+  animation: memory-drift 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
+}
+@keyframes memory-drift {
+  0%   { opacity: 0;    transform: scale(0.8)  translateY(16px); filter: blur(20px); }
+  16%  { opacity: 0.6;  transform: scale(0.96) translateY(5px);  filter: blur(7px); }
+  34%  { opacity: 0.68; transform: scale(1)    translateY(0);    filter: blur(2px); }
+  68%  { opacity: 0.6;  transform: scale(1.05) translateY(-6px); filter: blur(3px); }
+  100% { opacity: 0;    transform: scale(1.26) translateY(-30px); filter: blur(22px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #memory-fog { display: none; }
+}
+@media (max-width: 768px) {
+  #memory-fog { display: none; } /* no hover/mouse concept on touch — quotes stay as-is */
+}
+
 /* ─── ACCESS GATE ────────────────────────────────────── */
 #access-gate {
   position: fixed; inset: 0; z-index: 200;
@@ -3295,6 +3336,9 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 </div>
 
 <div class="sphere-label" id="sphere-label"></div>
+<!-- Experimental — see "MEMORY FOG" CSS/JS blocks. Remove this div +
+     those blocks to fully undo. -->
+<div id="memory-fog"></div>
 <div class="esc-hint" id="esc-hint"></div>
 <div id="writings-section">
   <div id="writings-header">
@@ -4582,9 +4626,14 @@ const NAV_LABELS = {};  // key → display label
 
   // ── QUOTES ──────────────────────────────────────────────────────────────
   let quotes = [], lastQuoteIdx = -1;
+  // Experimental — set by the MEMORY FOG IIFE further down based on mouse
+  // distance from screen centre. Kept separate from isNavHover so the two
+  // pause sources (modal/nav-hover vs. mouse-position) never fight over
+  // who gets to resume the loop.
+  let centerPaused = false;
 
   function showNextQuote() {
-    if (isNavHover || quotes.length === 0) return;
+    if (isNavHover || centerPaused || quotes.length === 0) return;
     cancelTypewriter();
 
     let idx;
@@ -5090,6 +5139,113 @@ const NAV_LABELS = {};  // key → display label
       setTimeout(() => { if (!isNavHover) showNextQuote(); }, 600);
     }
   };
+  // Experimental — used by the MEMORY FOG IIFE further down instead of
+  // _setQuotesPaused above, so mouse-position pausing and modal/nav-hover
+  // pausing stay independent (each is an early-return guard in
+  // showNextQuote; quotes only resume once both are false).
+  window._setQuoteCenterPaused = (paused) => {
+    centerPaused = paused;
+    if (paused) {
+      cancelTypewriter();
+      lbl.classList.remove('quote-mode', 'visible');
+    } else if (!isNavHover) {
+      setTimeout(() => { if (!isNavHover && !centerPaused) showNextQuote(); }, 300);
+    }
+  };
+})();
+
+// ═══════════════════════════════════════════════════
+//  MEMORY FOG — EXPERIMENTAL (may be reverted — see CSS block of the same
+//  name and the #memory-fog div in the markup for the rest of this
+//  feature; deleting all three undoes it cleanly)
+//
+//  Tracks mouse distance from the screen centre. Near centre: quotes play
+//  as before. Away from centre: random photos pulled from
+//  content/gallery.json drift in and out of the same spot one at a time,
+//  feathered and translucent via the .memory-photo CSS. Desktop/fine-
+//  pointer only — touch devices have no hover concept, so quotes just
+//  keep behaving as they always have there.
+// ═══════════════════════════════════════════════════
+(function () {
+  const hasFinePointer = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const prefersReduced  = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const container = document.getElementById('memory-fog');
+  if (!hasFinePointer || prefersReduced || !container || window.innerWidth <= 768) return;
+
+  // Hysteresis band: exit the centre zone past 32% of the half-viewport
+  // radius, but don't re-enter it until back inside 22% — avoids flicker
+  // for anyone hovering right at the boundary.
+  const CENTER_EXIT  = 0.32;
+  const CENTER_ENTER = 0.22;
+
+  let photos = null, lastIdx = -1, nearCenter = true, active = false;
+
+  function loadPhotos() {
+    if (photos) return Promise.resolve(photos);
+    return fetch('content/gallery.json')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) { photos = []; return photos; }
+        const all = (data.albums || []).flatMap(a => a.photos || []);
+        photos = all.filter(p => (p.type || 'image') === 'image').map(p => p.src).filter(Boolean);
+        return photos;
+      })
+      .catch(() => { photos = []; return photos; });
+  }
+
+  function showNextMemory() {
+    if (!active) return;
+    if (window._modalOpen) { setTimeout(showNextMemory, 800); return; } // retry, don't die
+    if (!photos.length) { active = false; return; }
+
+    let idx;
+    do { idx = Math.floor(Math.random() * photos.length); }
+    while (idx === lastIdx && photos.length > 1);
+    lastIdx = idx;
+
+    const img = document.createElement('img');
+    img.className = 'memory-photo';
+    img.src = photos[idx];
+    img.alt = '';
+    container.innerHTML = '';
+    container.appendChild(img);
+
+    img.addEventListener('animationend', () => {
+      if (img.parentNode) img.parentNode.removeChild(img);
+      if (active) setTimeout(showNextMemory, 500 + Math.random() * 400);
+    }, { once: true });
+  }
+
+  function startMemoryLoop() {
+    if (active) return;
+    active = true;
+    loadPhotos().then(() => { if (active) showNextMemory(); });
+  }
+  function stopMemoryLoop() {
+    active = false;
+    container.innerHTML = '';
+  }
+
+  function setNearCenter(v) {
+    if (v === nearCenter) return;
+    nearCenter = v;
+    if (window._setQuoteCenterPaused) window._setQuoteCenterPaused(!v);
+    if (v) stopMemoryLoop(); else startMemoryLoop();
+  }
+
+  let ticking = false;
+  document.addEventListener('mousemove', e => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      ticking = false;
+      const r = Math.min(window.innerWidth, window.innerHeight) / 2;
+      const dist = Math.hypot(e.clientX - window.innerWidth / 2, e.clientY - window.innerHeight / 2) / r;
+      if (nearCenter && dist > CENTER_EXIT) setNearCenter(false);
+      else if (!nearCenter && dist < CENTER_ENTER) setNearCenter(true);
+    });
+  });
+  document.addEventListener('mouseleave', () => setNearCenter(true));
 })();
 
 // ═══════════════════════════════════════════════════
