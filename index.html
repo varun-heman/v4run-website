@@ -535,19 +535,35 @@ body.ui-ready #writings-section.ready {
 .memory-tilt {
   --memory-feather: radial-gradient(ellipse 50% 50% at 50% 50%, #000 46%, transparent 86%);
 }
+/* .memory-photo is now just the fixed, feathered, masked frame — a
+   static viewport. The actual <img>/<video> (.memory-photo-media) lives
+   inside it and is what zooms/pans for the Ken Burns effect, so the
+   feather/box itself never moves regardless of how the content inside
+   does. */
 .memory-photo {
   position: relative;
   z-index: 2;
   width: 100%; height: min(64vw, 640px);
-  object-fit: cover; display: block;
+  overflow: hidden; display: block;
   -webkit-mask-image: var(--memory-feather);
           mask-image: var(--memory-feather);
   will-change: filter, opacity;
   transition: opacity 1.3s ease;
-  /* Blur lives on the photo alone, on its own timeline — it used to be on
-     the shared wrapper, which blurred the caption text along with the
-     image and made it unreadable. */
+  /* Blur lives on the frame, on its own timeline — it used to be on the
+     shared wrapper, which blurred the caption text along with the image
+     and made it unreadable. */
   animation: memory-photo-blur 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
+}
+.memory-photo-media {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+  will-change: transform;
+  /* Random per-instance scale/pan amount, set in JS via --kb-scale/--kb-x/
+     --kb-y (inherited down from .memory-card) — slow zoom-and-drift over
+     the photo's visible lifetime, clipped to the static frame above so
+     only the content moves, never the feathered edge itself. */
+  animation: memory-kenburns 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
 }
 /* Touching a photo just dims it down — kept deliberately simple after a
    patchy "disappearing in parts" overlay (multiple blurred screen-blend
@@ -561,12 +577,15 @@ body.ui-ready #writings-section.ready {
    its blurred end state after a few seconds of touching, which read as
    the image vanishing and never coming back until the card was replaced.
    Pausing it here too, and forcing a guaranteed-sharp filter for the same
-   reason opacity is forced above, fixes both. */
+   reason opacity is forced above, fixes both. The Ken Burns pan on the
+   inner media pauses too, for the same reason — otherwise it'd keep
+   marching to its end position while you're looking closely at it. */
 .memory-card.paused .memory-photo {
   animation-play-state: paused;
   opacity: 0.22;
   filter: blur(0) !important;
 }
+.memory-card.paused .memory-photo-media { animation-play-state: paused; }
 /* Soft, subtle glow behind the photo while paused — kept low-key on
    purpose so it never dominates or washes out the hover text. */
 .memory-smoke {
@@ -619,12 +638,21 @@ body.ui-ready #writings-section.ready {
   line-height: 1.5;
   color: rgba(234, 255, 240, 0.92);
   text-shadow: 0 1px 5px rgba(0,0,0,0.95), 0 0 10px rgba(0,0,0,0.85), 0 0 22px rgba(0,0,0,0.6);
-  opacity: 1;
+  opacity: 0;
   transition: opacity 0.4s ease;
+  /* Starts hidden and fades in on its own slight delay — text doesn't
+     need to "resolve focus" the way the photo does, so at identical
+     timing it was reading as legible before the photo behind it had come
+     into focus. ~1.5s roughly matches when memory-photo-blur clears to
+     its sharpest point (28% of 5.6s ≈ 1.57s). */
+  animation: memory-caption-in 0.8s ease forwards;
+  animation-delay: 1.5s;
 }
 /* Hidden while paused — the hover text takes over that same screen
-   region and the two were competing for attention. */
-.memory-card.paused .memory-caption { opacity: 0; }
+   region and the two were competing for attention. !important since the
+   animation above is still "in effect" (forwards fill) by the time
+   anyone could be touching a photo, and would otherwise outrank this. */
+.memory-card.paused .memory-caption { opacity: 0 !important; }
 /* Opacity/transform only — no filter here, so the caption (also inside
    .memory-card) never gets blurred along with the photo. Holds near-full
    visibility from ~28%-50% so there's an actual window to look at the
@@ -654,6 +682,18 @@ body.ui-ready #writings-section.ready {
   0%   { transform: scale(1)     translate(0, 0); }
   50%  { transform: scale(1.14) translate(2%, -3%); }
   100% { transform: scale(1)     translate(0, 0); }
+}
+/* --kb-scale/--kb-x/--kb-y are set per-instance in JS (random within a
+   modest range) and inherited down from .memory-card. Slow, one-way
+   zoom-and-drift — deliberately not a back-and-forth loop, since the
+   photo itself only lives once through this same 5.6s span. */
+@keyframes memory-kenburns {
+  0%   { transform: scale(1) translate(0%, 0%); }
+  100% { transform: scale(var(--kb-scale, 1.1)) translate(var(--kb-x, -3%), var(--kb-y, 2%)); }
+}
+@keyframes memory-caption-in {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
 }
 /* Mirrors the drift timing above exactly so the photo's fog-in/fog-out
    tracks its own opacity/position, just isolated to this element. */
@@ -5413,6 +5453,44 @@ const NAV_LABELS = {};  // key → display label
       .catch(() => { photos = []; return photos; });
   }
 
+  // Loads a photo/video fully off-DOM before showNextMemory ever shows
+  // it — otherwise the entrance animation was starting immediately on an
+  // element whose src had only just been set, so it visibly popped in
+  // mid-animation instead of already being there. Resolves with the
+  // ready-to-use element (so we're not fetching it twice), or null if it
+  // errored/timed out, so the caller can just move on to a different one.
+  function preloadMedia(p) {
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = (el) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve(el);
+      };
+      const timer = setTimeout(() => finish(null), 4000); // don't stall forever on a slow/broken file
+
+      if (p.type === 'video') {
+        const v = document.createElement('video');
+        v.muted = true;
+        v.loop = true;
+        v.playsInline = true;
+        v.controls = false;
+        v.preload = 'auto';
+        v.disablePictureInPicture = true;
+        v.addEventListener('loadeddata', () => finish(v), { once: true });
+        v.addEventListener('error', () => finish(null), { once: true });
+        v.src = p.src;
+      } else {
+        const img = new Image();
+        img.alt = '';
+        img.addEventListener('load', () => finish(img), { once: true });
+        img.addEventListener('error', () => finish(null), { once: true });
+        img.src = p.src;
+      }
+    });
+  }
+
   function showNextMemory() {
     if (!active) return;
     if (window._modalOpen) { setTimeout(showNextMemory, 800); return; } // retry, don't die
@@ -5424,82 +5502,83 @@ const NAV_LABELS = {};  // key → display label
     lastIdx = idx;
     const p = photos[idx];
 
-    // .memory-card carries the fade/recede animation only (pausable on
-    // hover). .memory-tilt is the inner wrapper that carries the
-    // continuous, never-paused 3D tilt, so the two motions are fully
-    // decoupled — pausing one never touches the other.
-    const card = document.createElement('div');
-    card.className = 'memory-card';
-    // Random per-image tilt, read by the memory-tilt-drift keyframes via
-    // var(--tilt-x)/var(--tilt-y) (inherited down to .memory-tilt).
-    // Magnitude (7-15deg) is kept modest so the image stays readable;
-    // sign is independently randomised per axis so different images lean
-    // different directions.
-    const tiltX = (Math.random() < 0.5 ? -1 : 1) * (7 + Math.random() * 8);
-    const tiltY = (Math.random() < 0.5 ? -1 : 1) * (7 + Math.random() * 8);
-    card.style.setProperty('--tilt-x', tiltX.toFixed(1) + 'deg');
-    card.style.setProperty('--tilt-y', tiltY.toFixed(1) + 'deg');
+    preloadMedia(p).then((media) => {
+      if (!active) return; // stopped/suspended while that was loading
+      if (!media) { setTimeout(showNextMemory, 400); return; } // failed/timed out — try a different one
 
-    const tilt = document.createElement('div');
-    tilt.className = 'memory-tilt';
+      // .memory-card carries the fade/recede animation only (pausable on
+      // hover). .memory-tilt is the inner wrapper that carries the
+      // continuous, never-paused 3D tilt, so the two motions are fully
+      // decoupled — pausing one never touches the other.
+      const card = document.createElement('div');
+      card.className = 'memory-card';
+      // Random per-image tilt, read by the memory-tilt-drift keyframes via
+      // var(--tilt-x)/var(--tilt-y) (inherited down to .memory-tilt).
+      // Magnitude (7-15deg) is kept modest so the image stays readable;
+      // sign is independently randomised per axis so different images lean
+      // different directions.
+      const tiltX = (Math.random() < 0.5 ? -1 : 1) * (7 + Math.random() * 8);
+      const tiltY = (Math.random() < 0.5 ? -1 : 1) * (7 + Math.random() * 8);
+      card.style.setProperty('--tilt-x', tiltX.toFixed(1) + 'deg');
+      card.style.setProperty('--tilt-y', tiltY.toFixed(1) + 'deg');
+      // Ken Burns: slow zoom + pan on the photo content itself (see
+      // .memory-photo-media), independent of the feathered frame around
+      // it, which never moves. Randomised per instance.
+      card.style.setProperty('--kb-scale', (1.07 + Math.random() * 0.09).toFixed(3));
+      card.style.setProperty('--kb-x', ((Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 3)).toFixed(1) + '%');
+      card.style.setProperty('--kb-y', ((Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 3)).toFixed(1) + '%');
 
-    const hoverText = document.createElement('div');
-    hoverText.className = 'memory-hover-text';
-    hoverText.textContent = HOVER_TEXT;
-    tilt.appendChild(hoverText);
+      const tilt = document.createElement('div');
+      tilt.className = 'memory-tilt';
 
-    const smoke = document.createElement('div');
-    smoke.className = 'memory-smoke';
-    tilt.appendChild(smoke);
+      const hoverText = document.createElement('div');
+      hoverText.className = 'memory-hover-text';
+      hoverText.textContent = HOVER_TEXT;
+      tilt.appendChild(hoverText);
 
-    // Local videos are treated exactly like a photo here — same box,
-    // mask, blur/fade timeline, tilt — just autoplaying/looping/muted
-    // instead of a static frame. No controls; it's decor, not a player.
-    const media = p.type === 'video' ? document.createElement('video') : document.createElement('img');
-    media.className = 'memory-photo';
-    if (p.type === 'video') {
-      media.src = p.src;
-      media.muted = true;
-      media.autoplay = true;
-      media.loop = true;
-      media.playsInline = true;
-      media.controls = false;
-      media.preload = 'auto';
-      media.disablePictureInPicture = true;
-    } else {
-      media.src = p.src;
-      media.alt = '';
-    }
-    tilt.appendChild(media);
-    // The autoplay attribute alone is sometimes unreliable on elements
-    // built via JS before insertion — muted, so this is allowed without
-    // a user gesture under standard autoplay policies.
-    if (p.type === 'video') media.play().catch(() => {});
+      const smoke = document.createElement('div');
+      smoke.className = 'memory-smoke';
+      tilt.appendChild(smoke);
 
-    if (p.caption) {
-      const cap = document.createElement('div');
-      cap.className = 'memory-caption';
-      cap.textContent = p.caption;
-      tilt.appendChild(cap);
-    }
+      // .memory-photo is the fixed, feathered, masked frame; the already-
+      // loaded media goes inside it as .memory-photo-media (see CSS for
+      // why it's a separate element — Ken Burns content vs. static frame).
+      const frame = document.createElement('div');
+      frame.className = 'memory-photo';
+      media.className = 'memory-photo-media';
+      frame.appendChild(media);
+      tilt.appendChild(frame);
 
-    card.appendChild(tilt);
-
-    container.innerHTML = '';
-    container.appendChild(card);
-    currentCard = card;
-    currentHoverText = hoverText;
-
-    card.addEventListener('animationend', () => {
-      if (card.parentNode) card.parentNode.removeChild(card);
-      if (currentCard === card) {
-        currentCard = null;
-        currentHoverText = null;
-        touching = false;
-        cardHovered = false;
+      if (p.caption) {
+        const cap = document.createElement('div');
+        cap.className = 'memory-caption';
+        cap.textContent = p.caption;
+        tilt.appendChild(cap);
       }
-      if (active) setTimeout(showNextMemory, 500 + Math.random() * 400);
-    }, { once: true });
+
+      card.appendChild(tilt);
+
+      container.innerHTML = '';
+      container.appendChild(card);
+      currentCard = card;
+      currentHoverText = hoverText;
+
+      // The autoplay attribute alone is sometimes unreliable on elements
+      // built via JS before insertion — muted, so this is allowed without
+      // a user gesture under standard autoplay policies.
+      if (p.type === 'video') media.play().catch(() => {});
+
+      card.addEventListener('animationend', () => {
+        if (card.parentNode) card.parentNode.removeChild(card);
+        if (currentCard === card) {
+          currentCard = null;
+          currentHoverText = null;
+          touching = false;
+          cardHovered = false;
+        }
+        if (active) setTimeout(showNextMemory, 500 + Math.random() * 400);
+      }, { once: true });
+    });
   }
 
   // "Touching" pauses the fade/recede in place (the tilt keeps running
