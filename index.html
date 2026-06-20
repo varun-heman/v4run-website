@@ -496,7 +496,7 @@ body.ui-ready #writings-section.ready {
   position: fixed; top: 50%; left: 50%;
   width: min(64vw, 640px);
   transform: translate(-50%, -50%);
-  z-index: 11; /* above the carousel (10) so the caption never gets covered by it */
+  z-index: 11; /* above the carousel (10) */
   pointer-events: none;
 }
 .memory-card {
@@ -547,11 +547,20 @@ body.ui-ready #writings-section.ready {
   overflow: hidden; display: block;
   -webkit-mask-image: var(--memory-feather);
           mask-image: var(--memory-feather);
-  will-change: filter, opacity;
+  /* No will-change here on purpose — combining will-change (which
+     pre-promotes a GPU layer) with mask-image and a freshly-inserted,
+     separately-animated child is a known Chromium compositing bug: the
+     masked layer sometimes just never paints its content on first
+     insertion, and stays blank until *something* forces a style
+     recalc on this exact element (which is exactly what hovering did,
+     via the .paused rule below — that's why hovering "fixed" it).
+     translateZ(0) promotes this to its own layer in a way that doesn't
+     trigger that bug, so the mask paints reliably from the first frame. */
+  transform: translateZ(0);
   transition: opacity 1.3s ease;
   /* Blur lives on the frame, on its own timeline — it used to be on the
-     shared wrapper, which blurred the caption text along with the image
-     and made it unreadable. */
+     shared wrapper, which blurred other overlaid elements along with the
+     image and made them unreadable. */
   animation: memory-photo-blur 10s cubic-bezier(0.22,0.61,0.36,1) forwards;
 }
 .memory-photo-media {
@@ -569,8 +578,8 @@ body.ui-ready #writings-section.ready {
    patchy "disappearing in parts" overlay (multiple blurred screen-blend
    glows) washed the whole thing out to a flat bright white blob instead
    of reading as fog. A plain opacity fade is enough to let the hover
-   text behind become legible, and the feather/tilt/caption all still
-   apply on top of it unchanged. */
+   text behind become legible, and the feather/tilt all still apply on
+   top of it unchanged. */
 /* memory-photo-blur lives on .memory-photo itself, not .memory-card, so
    pausing the card's own animation doesn't touch it — it kept ticking
    through its full 10s timeline regardless of hover and would lock at
@@ -620,46 +629,10 @@ body.ui-ready #writings-section.ready {
   transition: opacity 1.1s ease;
 }
 .memory-card.paused .memory-hover-text { opacity: 1; }
-/* Sits over the lower third of the photo (not below it — it was getting
-   lost down there in the gap), pulled up from the very bottom edge so it
-   clears the carousel strip rather than landing right behind it. No
-   background pad behind the text (it read as a hard rectangular border
-   cutting across the photo) — legibility comes entirely from the layered
-   text-shadow instead. */
-.memory-caption {
-  position: absolute;
-  left: 10%; right: 10%; bottom: 24%;
-  z-index: 4;
-  max-width: none;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.09em;
-  text-align: center;
-  line-height: 1.5;
-  color: rgba(234, 255, 240, 0.92);
-  text-shadow: 0 1px 5px rgba(0,0,0,0.95), 0 0 10px rgba(0,0,0,0.85), 0 0 22px rgba(0,0,0,0.6);
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  /* Starts hidden and fades in on its own slight delay — text doesn't
-     need to "resolve focus" the way the photo does, so at identical
-     timing it was reading as legible before the photo behind it had come
-     into focus. ~2.2s roughly matches when memory-photo-blur clears to
-     its sharpest point (22% of 10s = 2.2s). */
-  animation: memory-caption-in 0.8s ease forwards;
-  animation-delay: 2.2s;
-}
-/* Hidden while paused — the hover text takes over that same screen
-   region and the two were competing for attention. !important since the
-   animation above is still "in effect" (forwards fill) by the time
-   anyone could be touching a photo, and would otherwise outrank this. */
-.memory-card.paused .memory-caption { opacity: 0 !important; }
-/* Opacity/transform only — no filter here, so the caption (also inside
-   .memory-card) never gets blurred along with the photo. Total lifecycle
-   is 10s (see the matching "animation: memory-drift 10s ..." up top) —
-   holds near-full visibility/clarity from 22%-65% (≈2.2s-6.5s, a good
-   4.3s window) so there's actually enough time to look at the photo and
-   read the caption, not just a blink. No tilt here any more — see
-   .memory-tilt for that. */
+/* Total lifecycle is 10s — holds near-full visibility/clarity from
+   22%-65% (≈2.2s-6.5s, a good 4.3s window) so there's actually enough
+   time to look at the photo, not just a blink. No tilt here any more —
+   see .memory-tilt for that. */
 @keyframes memory-drift {
   0%   { opacity: 0;    transform: perspective(900px) translateZ(-200px) scale(0.86) translateY(20px); }
   12%  { opacity: 0.78; transform: perspective(900px) translateZ(-60px)  scale(0.96) translateY(6px); }
@@ -692,10 +665,6 @@ body.ui-ready #writings-section.ready {
 @keyframes memory-kenburns {
   0%   { transform: scale(1) translate(0%, 0%); }
   100% { transform: scale(var(--kb-scale, 1.1)) translate(var(--kb-x, -3%), var(--kb-y, 2%)); }
-}
-@keyframes memory-caption-in {
-  0%   { opacity: 0; }
-  100% { opacity: 1; }
 }
 /* Mirrors the drift timing above exactly so the photo's fog-in/fog-out
    tracks its own opacity/position, just isolated to this element. */
@@ -5443,8 +5412,8 @@ const NAV_LABELS = {};  // key → display label
       .then(data => {
         if (!data) { photos = []; return photos; }
         const all = (data.albums || []).flatMap(a => a.photos || []);
-        // Keep the full photo object (not just .src) — caption/date/location
-        // travel with it so the caption card below can use them. Local
+        // Keep the full photo object (not just .src) — date/location travel
+        // with it even though the caption itself isn't shown here. Local
         // videos are eligible too (rendered as autoplaying/looping/muted
         // <video>, see showNextMemory) — YouTube entries aren't real files
         // on disk, so those stay excluded.
@@ -5567,13 +5536,6 @@ const NAV_LABELS = {};  // key → display label
       frame.appendChild(media);
       tilt.appendChild(frame);
 
-      if (p.caption) {
-        const cap = document.createElement('div');
-        cap.className = 'memory-caption';
-        cap.textContent = p.caption;
-        tilt.appendChild(cap);
-      }
-
       card.appendChild(tilt);
 
       container.innerHTML = '';
@@ -5588,11 +5550,11 @@ const NAV_LABELS = {};  // key → display label
 
       card.addEventListener('animationend', (e) => {
         // animationend bubbles up from any descendant's animation too (the
-        // caption's fade-in, the Ken Burns pan, etc.) — without this check
-        // the caption's much shorter animation (0.8s + 2.2s delay = done at
-        // ~3s) would fire this handler and cut the photo short well before
-        // its real 10s memory-drift lifecycle finishes. Only react to the
-        // card's own animation ending.
+        // Ken Burns pan, the photo blur, etc.) — this used to cause a real
+        // bug when a short-lived caption fade-in animation (since removed)
+        // finished early and bubbled up, cutting the photo short well
+        // before its real 10s memory-drift lifecycle. Kept as a permanent
+        // safeguard: only react to the card's own animation ending.
         if (e.target !== card) return;
         if (card.parentNode) card.parentNode.removeChild(card);
         if (currentCard === card) {
