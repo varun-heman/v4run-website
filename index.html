@@ -495,7 +495,7 @@ body.ui-ready #writings-section.ready {
    (search "MEMORY FOG") can be deleted to fully undo. */
 #memory-fog {
   position: fixed; top: 50%; left: 50%;
-  width: min(46vw, 420px);
+  width: min(64vw, 640px);
   transform: translate(-50%, -50%);
   z-index: 4; /* just under .sphere-label (5), above the canvas */
   pointer-events: none;
@@ -503,17 +503,22 @@ body.ui-ready #writings-section.ready {
 .memory-card {
   display: flex; flex-direction: column; align-items: center;
   opacity: 0;
-  will-change: opacity, transform, filter;
+  will-change: opacity, transform;
   animation: memory-drift 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
 }
 .memory-photo {
-  width: 100%; height: min(46vw, 420px);
+  width: 100%; height: min(64vw, 640px);
   object-fit: cover; display: block;
-  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 32%, transparent 72%);
-          mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 32%, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 46%, transparent 86%);
+          mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 46%, transparent 86%);
+  will-change: filter;
+  /* Blur lives on the photo alone, on its own timeline — it used to be on
+     the shared wrapper, which blurred the caption text along with the
+     image and made it unreadable. */
+  animation: memory-photo-blur 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
 }
 .memory-caption {
-  margin-top: 16px;
+  margin-top: 4px;
   max-width: 86%;
   font-family: var(--mono);
   font-size: 11px;
@@ -523,12 +528,27 @@ body.ui-ready #writings-section.ready {
   color: rgba(184, 240, 210, 0.75);
   text-shadow: 0 0 16px rgba(100, 255, 160, 0.22);
 }
+/* Opacity/transform only — no filter here, so the caption (also inside
+   .memory-card) never gets blurred along with the photo. Holds near-full
+   visibility from ~28%-50% so there's an actual window to look at the
+   photo and read the caption, not just an instantaneous peak. */
 @keyframes memory-drift {
-  0%   { opacity: 0;    filter: blur(20px); transform: perspective(900px) translateZ(-160px) rotateX(6deg)  translateY(16px); }
-  16%  { opacity: 0.6;  filter: blur(7px);  transform: perspective(900px) translateZ(-40px)  rotateX(2deg)  translateY(4px); }
-  34%  { opacity: 0.68; filter: blur(2px);  transform: perspective(900px) translateZ(0)       rotateX(0deg) translateY(0); }
-  68%  { opacity: 0.55; filter: blur(4px);  transform: perspective(900px) translateZ(-90px)  rotateX(7deg)  translateY(-10px); }
-  100% { opacity: 0;    filter: blur(20px); transform: perspective(900px) translateZ(-340px) rotateX(22deg) translateY(-46px); }
+  0%   { opacity: 0;    transform: perspective(900px) translateZ(-160px) rotateX(6deg)  translateY(16px); }
+  14%  { opacity: 0.78; transform: perspective(900px) translateZ(-40px)  rotateX(2deg)  translateY(4px); }
+  28%  { opacity: 0.92; transform: perspective(900px) translateZ(0)       rotateX(0deg) translateY(0); }
+  50%  { opacity: 0.88; transform: perspective(900px) translateZ(-8px)   rotateX(1deg)  translateY(-2px); }
+  72%  { opacity: 0.6;  transform: perspective(900px) translateZ(-110px) rotateX(8deg)  translateY(-16px); }
+  100% { opacity: 0;    transform: perspective(900px) translateZ(-360px) rotateX(24deg) translateY(-48px); }
+}
+/* Mirrors the timing above exactly so the photo's fog-in/fog-out tracks
+   its own opacity/position, just isolated to this element. */
+@keyframes memory-photo-blur {
+  0%   { filter: blur(20px); }
+  14%  { filter: blur(7px); }
+  28%  { filter: blur(1.5px); }
+  50%  { filter: blur(1.5px); }
+  72%  { filter: blur(6px); }
+  100% { filter: blur(20px); }
 }
 @media (prefers-reduced-motion: reduce) {
   #memory-fog { display: none; }
