@@ -6570,18 +6570,52 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
   // ── Build thumb elements ───────────────────────────
   function youtubeThumbUrl(id) { return `https://img.youtube.com/vi/${id}/hqdefault.jpg`; }
 
+  // Video thumbnails (grid + album cover) autoplay a short, muted,
+  // controls-less loop centred on the clip's midpoint instead of sitting
+  // as a static first-frame poster — gives the grid some life. Playback
+  // is gated by a single shared IntersectionObserver so a big grid full
+  // of these doesn't burn CPU/bandwidth on thumbnails that are off-screen;
+  // each wrapper just needs a `_previewVideo` reference before observing.
+  const PREVIEW_WINDOW = 3; // seconds of the clip to loop, centred on its midpoint
+  const _thumbVideoObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      const v = entry.target._previewVideo;
+      if (!v) return;
+      if (entry.isIntersecting) v.play().catch(() => {});
+      else v.pause();
+    });
+  }, { threshold: 0.25 });
+  function setupVideoPreview(wrapperEl, video) {
+    let segStart = 0, segEnd = 0;
+    video.addEventListener('loadedmetadata', () => {
+      const d = video.duration || 0;
+      if (d > PREVIEW_WINDOW) {
+        segStart = Math.max(0, d / 2 - PREVIEW_WINDOW / 2);
+        segEnd = segStart + PREVIEW_WINDOW;
+        video.currentTime = segStart;
+      }
+      // Clips shorter than the window are left alone — native loop below
+      // just replays the whole (already-short) clip.
+    });
+    video.addEventListener('timeupdate', () => {
+      if (segEnd && video.currentTime >= segEnd) video.currentTime = segStart;
+    });
+    video.loop = true;
+    wrapperEl._previewVideo = video;
+    _thumbVideoObserver.observe(wrapperEl);
+  }
+
   function makeThumb(photo, photos, index, cls) {
     const div = document.createElement('div');
     div.className = cls;
     const type = photo.type || 'image';
     if (type === 'video') {
-      // No poster image (no ffmpeg dependency) — the browser shows the
-      // video's own first frame once metadata loads, which is enough for
-      // a thumbnail.
       const video = document.createElement('video');
       video.src = photo.src; video.muted = true; video.playsInline = true;
+      video.controls = false; video.disablePictureInPicture = true;
       video.preload = 'metadata';
       div.appendChild(video);
+      setupVideoPreview(div, video);
     } else {
       const img = document.createElement('img');
       img.src = type === 'youtube' ? youtubeThumbUrl(photo.youtubeId) : photo.src;
@@ -6660,7 +6694,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       const cover = album.cover || {};
       const coverType = cover.type || 'image';
       const coverMedia = coverType === 'video'
-        ? `<video src="${cover.src}" muted playsinline preload="metadata"></video>`
+        ? `<video src="${cover.src}" muted playsinline preload="metadata" disablepictureinpicture></video>`
         : `<img src="${coverType === 'youtube' ? youtubeThumbUrl(cover.youtubeId) : cover.src}" alt="${album.title}" loading="lazy">`;
       const coverPlay = (coverType === 'video' || coverType === 'youtube')
         ? '<span class="thumb-play"><i class="fa-solid fa-play"></i></span>' : '';
@@ -6678,6 +6712,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
         </div>`;
       card.addEventListener('click', () => openAlbum(album));
       albumsGrid.appendChild(card);
+      if (coverType === 'video') {
+        const coverEl = card.querySelector('.gallery-album-cover');
+        const coverVideo = card.querySelector('.gallery-album-cover video');
+        if (coverEl && coverVideo) setupVideoPreview(coverEl, coverVideo);
+      }
     });
   }
 
