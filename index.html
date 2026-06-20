@@ -111,7 +111,10 @@ body.ui-ready .corner {
 }
 .corner-tr { top: 28px; right: 32px; text-align: right; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.12em; }
 .corner-bl { bottom: 28px; left: 32px; z-index: 20; display: flex; align-items: center; gap: 14px; } /* above carousel */
-.corner-br { bottom: 28px; right: 32px; text-align: right; text-transform: uppercase; letter-spacing: 0.12em; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+/* Music control + Replay Intro, side by side (was a column with the
+   copyright line below music — copyright's gone, Replay Intro moved
+   here from corner-bl to take its place instead). */
+.corner-br { bottom: 28px; right: 32px; text-align: right; text-transform: uppercase; letter-spacing: 0.12em; display: flex; align-items: center; gap: 16px; }
 
 /* ─── AUDIO VISUALISER / CONTROL ────────────────────── */
 #music-control {
@@ -1532,7 +1535,7 @@ body.ui-ready #writings-section.ready {
 /* ── WRITINGS SECTION ─────────────────────────────────── */
 #writings-section {
   position: fixed;
-  bottom: 67px; /* 5px above #music-control's top edge — measured, not a guess */
+  bottom: 52px; /* corner-br lost its copyright line and dropped down, so this comes down too */
   left: 0;
   right: 0;
   z-index: 10;
@@ -2786,19 +2789,6 @@ body.strip-hovered .corner-br {
   border-color: rgba(100,255,160,0.35);
   background: rgba(100,255,160,0.06);
 }
-/* Hidden while the Contact Me dock is expanded, so the icon row has room
-   and the two controls don't visually compete */
-.corner-bl.dock-hovering .replay-intro {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s;
-}
-.replay-intro__hint {
-  font-family: var(--mono); font-size: 8px; letter-spacing: 0.03em;
-  text-transform: none;
-  color: rgba(184,240,210,0.45);
-  white-space: nowrap;
-}
 
 /* ── CONTACT TRIGGER ─────────────────────────────── */
 /* ── SOCIAL DOCK ──────────────────────────────────── */
@@ -3604,8 +3594,7 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 </div>
 
 <div class="corner corner-tr">
-  <div>Shaping Justice Systems in India</div>
-  <div style="margin-top:3px; color:rgba(232,232,226,0.45);"><i id="heart" class="fa-solid fa-heart"></i>Bengaluru</div>
+  <div style="color:rgba(232,232,226,0.45);"><i id="heart" class="fa-solid fa-heart"></i>Bengaluru</div>
 </div>
 
 <!-- ── MOBILE LOGO EXPAND PANEL ──────────────────────── -->
@@ -3626,10 +3615,6 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
       <!-- email + social icons injected by JS -->
     </div>
   </div>
-  <button class="replay-intro" id="replay-intro-btn" aria-label="Replay intro">
-    <span class="replay-intro__label">Replay Intro</span>
-    <span class="replay-intro__hint" id="replay-intro-hint"></span>
-  </button>
 </div>
 
 <div id="access-gate">
@@ -3672,7 +3657,9 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
     <i id="music-icon" class="fa-solid fa-play"></i>
     <span id="music-label">Music Off</span>
   </button>
-  <span>©2026 Varun Hemachandran</span>
+  <button class="replay-intro" id="replay-intro-btn" aria-label="Replay intro">
+    <span class="replay-intro__label">Replay Intro</span>
+  </button>
 </div>
 
 <!-- ── LOGO PHOTO POPUP ────────────────────────── -->
@@ -7874,31 +7861,7 @@ window.addEventListener('popstate', (e) => {
 // ── REPLAY INTRO ─────────────────────────────────────────────────────────
 (function () {
   const btn  = document.getElementById('replay-intro-btn');
-  const hint = document.getElementById('replay-intro-hint');
-  if (!btn || !hint) return;
-
-  const HINT_TEXT = 'this will reload the page with the intro';
-  let typeTimer = null;
-
-  function typeHint() {
-    clearTimeout(typeTimer);
-    let i = 0;
-    (function step() {
-      hint.textContent = HINT_TEXT.slice(0, i);
-      i++;
-      if (i <= HINT_TEXT.length) typeTimer = setTimeout(step, 18);
-    })();
-  }
-
-  function clearHint() {
-    clearTimeout(typeTimer);
-    hint.textContent = '';
-  }
-
-  btn.addEventListener('mouseenter', typeHint);
-  btn.addEventListener('mouseleave', clearHint);
-  btn.addEventListener('focus', typeHint);
-  btn.addEventListener('blur', clearHint);
+  if (!btn) return;
 
   function resetAndReload() {
     document.cookie = 'v4run_v=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
@@ -7906,7 +7869,6 @@ window.addEventListener('popstate', (e) => {
   }
 
   btn.addEventListener('click', () => {
-    clearHint();
     const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReduced) { resetAndReload(); return; }
     document.body.classList.add('crt-off');
