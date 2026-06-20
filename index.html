@@ -487,12 +487,12 @@ body.ui-ready #writings-section.ready {
    soft oval via mask-image, blurred in from "fog", coming briefly into
    focus, then receding away into the distance under real 3D perspective
    (translateZ + rotateX, not a flat scale) while blurring/fading back out.
-   The caption sits below the photo inside the same animated wrapper
-   (.memory-card), so it appears immediately with the image — no separate
-   delay — and rides the exact same transform, tracking the photo's
-   movement rigidly since it's the same transformed element. Self-
-   contained: this block + the matching JS IIFE + the #memory-fog div
-   (search "MEMORY FOG") can be deleted to fully undo. */
+   The caption overlays the bottom third of the photo (inside the same
+   animated wrapper, .memory-card), so it appears immediately with the
+   image — no separate delay — and rides the exact same transform,
+   tracking the photo's movement rigidly since it's the same transformed
+   element. Self-contained: this block + the matching JS IIFE + the
+   #memory-fog div (search "MEMORY FOG") can be deleted to fully undo. */
 #memory-fog {
   position: fixed; top: 50%; left: 50%;
   width: min(64vw, 640px);
@@ -501,6 +501,7 @@ body.ui-ready #writings-section.ready {
   pointer-events: none;
 }
 .memory-card {
+  position: relative;
   display: flex; flex-direction: column; align-items: center;
   opacity: 0;
   will-change: opacity, transform;
@@ -517,16 +518,22 @@ body.ui-ready #writings-section.ready {
      image and made it unreadable. */
   animation: memory-photo-blur 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
 }
+/* Sits over the bottom third of the photo (not below it — it was getting
+   lost down there in the gap) with a soft dark pad behind the text for
+   contrast against whatever the photo looks like underneath. */
 .memory-caption {
-  margin-top: 4px;
-  max-width: 86%;
+  position: absolute;
+  left: 10%; right: 10%; bottom: 6%;
+  padding: 22px 4% 10px;
+  background: linear-gradient(to top, rgba(3,8,5,0.65) 25%, transparent);
+  max-width: none;
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.09em;
   text-align: center;
   line-height: 1.5;
-  color: rgba(184, 240, 210, 0.75);
-  text-shadow: 0 0 16px rgba(100, 255, 160, 0.22);
+  color: rgba(234, 255, 240, 0.92);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.85), 0 0 16px rgba(0,0,0,0.6);
 }
 /* Opacity/transform only — no filter here, so the caption (also inside
    .memory-card) never gets blurred along with the photo. Holds near-full
@@ -5209,11 +5216,13 @@ const NAV_LABELS = {};  // key → display label
   const container = document.getElementById('memory-fog');
   if (!hasFinePointer || prefersReduced || !container || window.innerWidth <= 768) return;
 
-  // Hysteresis band: exit the centre zone past 32% of the half-viewport
-  // radius, but don't re-enter it until back inside 22% — avoids flicker
-  // for anyone hovering right at the boundary.
-  const CENTER_EXIT  = 0.32;
-  const CENTER_ENTER = 0.22;
+  // Hysteresis band: exit the centre zone past 55% of the half-viewport
+  // radius, but don't re-enter it until back inside 42% — avoids flicker
+  // for anyone hovering right at the boundary. Sized generously so quotes
+  // get most of the screen and memory-fog only kicks in once the mouse is
+  // genuinely out near the edges/corners.
+  const CENTER_EXIT  = 0.55;
+  const CENTER_ENTER = 0.42;
 
   let photos = null, lastIdx = -1, nearCenter = true, active = false;
 
