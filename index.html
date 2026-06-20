@@ -2930,7 +2930,39 @@ body.strip-hovered .corner-br {
   display: flex; align-items: flex-start; gap: 10px;
   margin-bottom: 20px; cursor: pointer;
 }
-.cf-check input[type="checkbox"] { margin-top: 2px; accent-color: rgba(100,255,160,0.9); flex-shrink: 0; }
+.cf-check input[type="checkbox"] {
+  -webkit-appearance: none; appearance: none;
+  margin: 1px 0 0; flex-shrink: 0;
+  width: 15px; height: 15px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(184,240,210,0.18);
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cf-check input[type="checkbox"]:hover {
+  border-color: rgba(100,255,160,0.35);
+}
+.cf-check input[type="checkbox"]:checked {
+  background: rgba(100,255,160,0.08);
+  border-color: rgba(100,255,160,0.5);
+}
+.cf-check input[type="checkbox"]:checked::after {
+  content: '\2713';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -55%);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1;
+  color: rgba(100,255,160,0.95);
+}
+.cf-check input[type="checkbox"]:focus-visible {
+  outline: none;
+  border-color: rgba(100,255,160,0.5);
+  box-shadow: 0 0 0 2px rgba(100,255,160,0.12);
+}
 .cf-check span {
   font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em;
   color: rgba(184,240,210,0.45); line-height: 1.5;
