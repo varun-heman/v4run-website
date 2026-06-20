@@ -6623,7 +6623,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       img.loading = 'lazy';
       div.appendChild(img);
     }
-    if (type === 'video' || type === 'youtube') {
+    // YouTube thumbnails are a static image with no motion of their own, so
+    // the play icon is the only signal that they're a video. Local videos
+    // already autoplay a looping preview (see setupVideoPreview above) —
+    // that motion makes the icon redundant, so it's skipped there.
+    if (type === 'youtube') {
       const play = document.createElement('span');
       play.className = 'thumb-play';
       play.innerHTML = '<i class="fa-solid fa-play"></i>';
@@ -6696,7 +6700,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
       const coverMedia = coverType === 'video'
         ? `<video src="${cover.src}" muted playsinline preload="metadata" disablepictureinpicture></video>`
         : `<img src="${coverType === 'youtube' ? youtubeThumbUrl(cover.youtubeId) : cover.src}" alt="${album.title}" loading="lazy">`;
-      const coverPlay = (coverType === 'video' || coverType === 'youtube')
+      // Same reasoning as makeThumb above — only YouTube covers (static
+      // image, no motion) need the play icon; local video covers already
+      // autoplay a looping preview.
+      const coverPlay = coverType === 'youtube'
         ? '<span class="thumb-play"><i class="fa-solid fa-play"></i></span>' : '';
       const card = document.createElement('div');
       card.className = 'gallery-album-card';
