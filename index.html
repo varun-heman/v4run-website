@@ -5453,19 +5453,15 @@ const NAV_LABELS = {};  // key → display label
 
         // This runs once per page load (photos is cached above), so a
         // refresh redraws the pool each time, while the rest of that
-        // session just cycles within it. Videos always make up at least
-        // half the pool whenever any exist at all — not just "some" of
-        // it — so the pool only ever has as many photos as it has videos
-        // (capped by MAX_PHOTOS either way). With few videos that means a
-        // small pool; that's the deliberate trade-off of guaranteeing the
-        // ratio rather than diluting it with a big photo majority.
-        if (!videos.length) {
-          photos = images.slice(0, MAX_PHOTOS);
-        } else {
-          const videoCount = Math.min(videos.length, MAX_PHOTOS);
-          const imageCount = Math.min(images.length, videoCount, MAX_PHOTOS - videoCount);
-          photos = shuffle(videos.slice(0, videoCount).concat(images.slice(0, imageCount)));
-        }
+        // session just cycles within it. Take every video there is (up to
+        // the overall cap) and let photos fill whatever slots are left —
+        // so the pool stays a full, varied MAX_PHOTOS as long as there are
+        // enough photos to fill it, and video's share of that pool simply
+        // grows on its own as more videos get added, with no artificial
+        // floor or ceiling on either side.
+        const videoCount = Math.min(videos.length, MAX_PHOTOS);
+        const imageCount = Math.min(images.length, MAX_PHOTOS - videoCount);
+        photos = shuffle(videos.slice(0, videoCount).concat(images.slice(0, imageCount)));
         return photos;
       })
       .catch(() => { photos = []; return photos; });
@@ -5486,7 +5482,11 @@ const NAV_LABELS = {};  // key → display label
         clearTimeout(timer);
         resolve(el);
       };
-      const timer = setTimeout(() => finish(null), 4000); // don't stall forever on a slow/broken file
+      // Video gets more headroom than an image — even with a fast-start
+      // moov atom (see strip-metadata.js), it's still a bigger fetch than
+      // a single photo, and we'd rather wait a bit longer than have a
+      // video repeatedly time out and leave the fog blank between retries.
+      const timer = setTimeout(() => finish(null), p.type === 'video' ? 8000 : 4000);
 
       if (p.type === 'video') {
         const v = document.createElement('video');

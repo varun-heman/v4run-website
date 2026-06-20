@@ -201,6 +201,13 @@ function stripVideo(filePath, info = COPYRIGHT) {
         '-metadata', `copyright=${info.copyright}`,
         '-metadata', `comment=${info.description}`,
         '-c', 'copy',
+        // Without this, ffmpeg can leave (or even default to) the moov atom
+        // at the END of the file. Browsers need that atom before they can
+        // decode anything, so on a progressive HTTP download the whole file
+        // has to arrive first — on a slow connection that alone can blow
+        // past a multi-second preload timeout. +faststart moves it to the
+        // front so playback/metadata is available almost immediately.
+        '-movflags', '+faststart',
         tmp,
       ],
       { stdio: 'ignore' }
