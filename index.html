@@ -5453,19 +5453,18 @@ const NAV_LABELS = {};  // key → display label
 
         // This runs once per page load (photos is cached above), so a
         // refresh redraws the pool each time, while the rest of that
-        // session just cycles within it. If there are videos at all,
-        // reserve a proportional (but guaranteed non-zero) share of the
-        // cap for them rather than leaving the mix up to pure chance —
-        // with a small video count relative to a big photo library, a
-        // flat shuffle-then-slice could easily draw 20 photos and no
-        // video in a given session.
+        // session just cycles within it. Videos always make up at least
+        // half the pool whenever any exist at all — not just "some" of
+        // it — so the pool only ever has as many photos as it has videos
+        // (capped by MAX_PHOTOS either way). With few videos that means a
+        // small pool; that's the deliberate trade-off of guaranteeing the
+        // ratio rather than diluting it with a big photo majority.
         if (!videos.length) {
           photos = images.slice(0, MAX_PHOTOS);
         } else {
-          const videoShare = Math.max(1, Math.round(MAX_PHOTOS * videos.length / (images.length + videos.length)));
-          const videoCount = Math.min(videos.length, videoShare, MAX_PHOTOS - 1); // always leave room for >=1 photo too
-          const imageCount = MAX_PHOTOS - videoCount;
-          photos = shuffle(images.slice(0, imageCount).concat(videos.slice(0, videoCount)));
+          const videoCount = Math.min(videos.length, MAX_PHOTOS);
+          const imageCount = Math.min(images.length, videoCount, MAX_PHOTOS - videoCount);
+          photos = shuffle(videos.slice(0, videoCount).concat(images.slice(0, imageCount)));
         }
         return photos;
       })
@@ -5952,7 +5951,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     div.dataset.modal = key;
     div.innerHTML   = `<span class="nav-link">${label}</span>`;
     div.addEventListener('click', () => {
-      if (key === 'pics'     && window._openGallery)   { window._openGallery();    return; }
+      if (key === 'memories' && window._openGallery)   { window._openGallery();    return; }
       if (key === 'writing'  && window._openViewAll)   { window._openViewAll();    return; }
       if (key === 'reads'    && window._openReads)     { window._openReads();      return; }
       if (key === 'projects' && window._openProjects)  { window._openProjects();   return; }
@@ -5987,32 +5986,33 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
   // Pre-warm MD cache in background so modals open instantly
   navItems.forEach(({ key }) => {
-    if (key === 'pics' || _mdCache[key]) return;
+    if (key === 'memories' || _mdCache[key]) return;
     fetch(`content/${key}.md`).then(r => r.ok ? r.text() : null).then(md => {
       if (md && !_mdCache[key] && window.marked) _mdCache[key] = marked.parse(md);
     }).catch(() => {});
   });
 
-  // Pre-fetch gallery.json so the Pics dot appears on page load
-  if (navItems.some(n => n.key === 'pics')) {
+  // Pre-fetch gallery.json so the Memories dot appears on page load
+  if (navItems.some(n => n.key === 'memories')) {
     fetch('content/gallery.json').then(r => r.ok ? r.json() : null).then(data => {
       if (!data) return;
       const _NOW = Date.now(), _SIXTY = 60*24*60*60*1000;
       function _markNew(p) { return p.date ? ((_NOW - new Date(p.date).getTime()) < _SIXTY) : false; }
       const hasNew = (data.recent || []).some(_markNew) ||
                      (data.albums || []).some(a => (a.photos || []).some(_markNew));
-      if (window._setNavBadge) window._setNavBadge('pics', hasNew);
+      if (window._setNavBadge) window._setNavBadge('memories', hasNew);
     }).catch(() => {});
   }
 
   // Stamp corner links for glitch hover
   document.querySelectorAll('.corner a').forEach(a => a.dataset.text = a.textContent);
 
-  // NOTE: mobile used to get extra hand-rolled "Writings"/"Pics" nav items
-  // appended here, duplicating the real nav.md-driven "Writing"/"Pics" items
-  // built above (which already work at every width and call the same
-  // _openViewAll()/_openGallery() handlers). Removed — that's what was
-  // causing Pics (and Writing) to show up twice in the mobile nav.
+  // NOTE: mobile used to get extra hand-rolled "Writings"/"Memories" nav
+  // items appended here, duplicating the real nav.md-driven "Writing"/
+  // "Memories" items built above (which already work at every width and
+  // call the same _openViewAll()/_openGallery() handlers). Removed —
+  // that's what was causing Memories (and Writing) to show up twice in
+  // the mobile nav.
 
   // ── Mobile nav scroll-hint fades ─────────────────────────────────────
   if (window.innerWidth <= 768) {
@@ -6438,7 +6438,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
   // ── Lightbox ──────────────────────────────────────
   function lbHashPath(idx) {
-    return '#pics/' + (currentAlbumSlug || 'recent') + '/' + idx;
+    return '#memories/' + (currentAlbumSlug || 'recent') + '/' + idx;
   }
   function openLightbox(photos, index, skipHash) {
     lbPhotos = photos;
@@ -6446,7 +6446,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     showLbPhoto();
     lightbox.classList.add('open');
     window._modalOpen = true;
-    if (!skipHash) history.pushState({ panel: 'pics', album: currentAlbumSlug, photo: index }, '', lbHashPath(index));
+    if (!skipHash) history.pushState({ panel: 'memories', album: currentAlbumSlug, photo: index }, '', lbHashPath(index));
   }
   // Pauses/clears whichever media element is currently playing — called
   // before swapping to a new item and on close, so a video or YouTube
@@ -6461,8 +6461,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     if (overlay.classList.contains('open')) {
       window._modalOpen = true;
       if (!skipHash) {
-        const back = currentAlbumSlug ? '#pics/' + currentAlbumSlug : '#pics';
-        history.pushState({ panel: 'pics', album: currentAlbumSlug }, '', back);
+        const back = currentAlbumSlug ? '#memories/' + currentAlbumSlug : '#memories';
+        history.pushState({ panel: 'memories', album: currentAlbumSlug }, '', back);
       }
     } else {
       window._modalOpen = false;
@@ -6500,7 +6500,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     }
     lbPrev.style.visibility = lbIndex > 0 ? 'visible' : 'hidden';
     lbNext.style.visibility = lbIndex < lbPhotos.length - 1 ? 'visible' : 'hidden';
-    if (replaceHash) history.replaceState({ panel: 'pics', album: currentAlbumSlug, photo: lbIndex }, '', lbHashPath(lbIndex));
+    if (replaceHash) history.replaceState({ panel: 'memories', album: currentAlbumSlug, photo: lbIndex }, '', lbHashPath(lbIndex));
   }
   lbPrev.addEventListener('click', () => { if (lbIndex > 0) { lbIndex--; showLbPhoto(true); } });
   lbNext.addEventListener('click', () => { if (lbIndex < lbPhotos.length - 1) { lbIndex++; showLbPhoto(true); } });
@@ -6685,12 +6685,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     });
     mainView.style.display = 'none';
     albumView.style.display = 'block';
-    if (!skipHash) history.pushState({ panel: 'pics', album: album.title }, '', '#pics/' + currentAlbumSlug);
+    if (!skipHash) history.pushState({ panel: 'memories', album: album.title }, '', '#memories/' + currentAlbumSlug);
   }
   backBtn.addEventListener('click', () => {
     albumView.style.display = 'none';
     mainView.style.display = 'block';
-    history.pushState({ panel: 'pics' }, '', '#pics');
+    history.pushState({ panel: 'memories' }, '', '#memories');
   });
 
   // ── Open/close overlay ─────────────────────────────
@@ -6718,7 +6718,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
         galleryData.albums.forEach(a => a.photos.forEach(markPhotoNew));
         const hasNewPic = galleryData.recent.some(p => p._isNew) ||
                           galleryData.albums.some(a => a.photos.some(p => p._isNew));
-        if (window._setNavBadge) window._setNavBadge('pics', hasNewPic);
+        if (window._setNavBadge) window._setNavBadge('memories', hasNewPic);
       } catch(e) {
         galleryData = { albums: [], recent: [] };
       }
@@ -6741,7 +6741,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
   window._openGallery = async function(skipHash, albumSlug, photoIndex) {
     await openGallery();
-    if (!skipHash) history.pushState({ panel: 'pics' }, '', albumSlug ? '#pics/' + albumSlug + (photoIndex != null ? '/' + photoIndex : '') : '#pics');
+    if (!skipHash) history.pushState({ panel: 'memories' }, '', albumSlug ? '#memories/' + albumSlug + (photoIndex != null ? '/' + photoIndex : '') : '#memories');
     if (albumSlug === 'recent' && galleryData && photoIndex != null) {
       currentAlbumSlug = 'recent';
       openLightbox(galleryData.recent, photoIndex, true);
@@ -7348,9 +7348,9 @@ function _openFromHash(hash) {
   const key = (hash || '').replace('#', '').toLowerCase();
   if (!key) return;
   if (key === 'writing'  && window._openViewAll)  { window._openViewAll(true);  return; }
-  if (key === 'pics' && window._openGallery) { window._openGallery(true); return; }
-  if (key.startsWith('pics/') && window._openGallery) {
-    const parts = key.slice(5).split('/');
+  if (key === 'memories' && window._openGallery) { window._openGallery(true); return; }
+  if (key.startsWith('memories/') && window._openGallery) {
+    const parts = key.slice(9).split('/');
     const albumSlug  = parts[0] || null;
     const photoIndex = parts[1] != null ? parseInt(parts[1]) : null;
     window._openGallery(true, albumSlug, isNaN(photoIndex) ? null : photoIndex);
@@ -7386,8 +7386,8 @@ window.addEventListener('popstate', (e) => {
     return;
   }
 
-  // If lightbox is open and we're navigating back to an album or pics level,
-  // just close the lightbox rather than tearing down the whole gallery.
+  // If lightbox is open and we're navigating back to an album or memories
+  // level, just close the lightbox rather than tearing down the whole gallery.
   const lb = document.getElementById('gallery-lightbox');
   if (lb && lb.classList.contains('open')) {
     if (window._closeLightboxOnly) window._closeLightboxOnly();

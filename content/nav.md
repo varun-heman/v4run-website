@@ -7,4 +7,4 @@ work     | Work     | WHAT I'M UP TO
 projects | Projects | WHAT I'VE BUILT
 writing  | Writing  | WHAT I THINK
 reads    | Reads    | RECOMMENDED READS
-pics     | Memories | MOMENTS I'VE KEPT
+memories | Memories | MOMENTS I'VE KEPT
