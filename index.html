@@ -511,7 +511,14 @@ body.ui-ready #writings-section.ready {
   animation: memory-drift 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
   pointer-events: auto; /* only exists in the DOM while a photo is showing */
 }
-.memory-card.paused { animation-play-state: paused; }
+/* opacity is forced (!important) rather than just relying on the pause —
+   if you happen to start hovering while memory-drift had already faded
+   most of the way out (early entrance or late exit), freezing it there
+   would leave the card looking gone for the entire hover, only resolving
+   once you mouse out. Forcing it to 1 guarantees the card itself is
+   always fully present the instant you touch it, regardless of where in
+   its lifecycle that happened. */
+.memory-card.paused { animation-play-state: paused; opacity: 1 !important; }
 .memory-tilt {
   position: relative;
   width: 100%;
@@ -545,7 +552,18 @@ body.ui-ready #writings-section.ready {
    of reading as fog. A plain opacity fade is enough to let the hover
    text behind become legible, and the feather/tilt/caption all still
    apply on top of it unchanged. */
-.memory-card.paused .memory-photo { opacity: 0.22; }
+/* memory-photo-blur lives on .memory-photo itself, not .memory-card, so
+   pausing the card's own animation doesn't touch it — it kept ticking
+   through its full 5.6s timeline regardless of hover and would lock at
+   its blurred end state after a few seconds of touching, which read as
+   the image vanishing and never coming back until the card was replaced.
+   Pausing it here too, and forcing a guaranteed-sharp filter for the same
+   reason opacity is forced above, fixes both. */
+.memory-card.paused .memory-photo {
+  animation-play-state: paused;
+  opacity: 0.22;
+  filter: blur(0) !important;
+}
 /* Soft, subtle glow behind the photo while paused — kept low-key on
    purpose so it never dominates or washes out the hover text. */
 .memory-smoke {
