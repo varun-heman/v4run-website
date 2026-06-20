@@ -3535,6 +3535,7 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 <audio id="bg-music" src="audio/bg_score.mp3" loop preload="auto"></audio>
 <audio id="bang-sound" src="audio/big_bang.mp3" preload="auto"></audio>
 <audio id="hud-in-sound" src="audio/hud_in.mp3" preload="auto"></audio>
+<audio id="nav-hover-sound" src="audio/button_hover.mp3" preload="auto"></audio>
 
 <div class="corner corner-br">
   <button id="music-control" class="muted" aria-label="Toggle music">
@@ -4684,9 +4685,13 @@ const NAV_LABELS = {};  // key → display label
   }
 
   // Called by bootNav() after nav DOM is built
+  const navHoverSfx = document.getElementById('nav-hover-sound');
   window._wireNavHoverListeners = () => {
     document.querySelectorAll('.nav-item[data-modal]').forEach(el => {
-      el.addEventListener('mouseenter', () => showLabel(el.dataset.modal));
+      el.addEventListener('mouseenter', () => {
+        showLabel(el.dataset.modal);
+        if (navHoverSfx) { navHoverSfx.currentTime = 0; navHoverSfx.volume = 0.4; navHoverSfx.play().catch(() => {}); }
+      });
       el.addEventListener('mouseleave', hideLabel);
     });
   };
