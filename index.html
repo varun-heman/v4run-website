@@ -747,9 +747,12 @@ body.ui-ready #writings-section.ready {
   background: rgba(0,0,0,0.92);
   backdrop-filter: blur(6px);
   opacity: 0;
-  transition: opacity 0.5s ease;
+  transition: opacity 0.62s ease;
 }
 #access-gate.visible { opacity: 1; pointer-events: auto; }
+/* Backdrop fade is timed to land roughly together with the dialog's own
+   shrink-and-glitch (gate-panel-out) and the corners imploding back to
+   centre (ag-corner-*-out) — see #access-dialog/.ag-corner below. */
 #access-gate.dismissing { opacity: 0; pointer-events: none; }
 #access-dialog {
   position: relative;
@@ -768,6 +771,25 @@ body.ui-ready #writings-section.ready {
 @keyframes gate-panel-in {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+/* Exit: the reverse idea of the entrance, but as one continuous move
+   rather than a separate "snap into frame" + "glitch in" beat — the
+   panel itself shrinks toward its own centre while glitching (skew +
+   brightness + clip-path slices, same vocabulary as gate-content-glitch
+   above), collapsing to nothing right as the corner brackets (below)
+   finish imploding back to the centre point they started from. */
+#access-gate.dismissing #access-dialog {
+  animation: gate-panel-out 0.6s cubic-bezier(0.6,0,0.85,0.2) forwards;
+}
+@keyframes gate-panel-out {
+  0%   { opacity: 1; transform: scale(1)     translateX(0)   skewX(0deg);  filter: brightness(1);   clip-path: inset(0 0 0 0); }
+  10%  { opacity: 1; transform: scale(0.99)  translateX(-5px) skewX(-2deg); filter: brightness(1.7); clip-path: inset(0 0 32% 0); }
+  22%  { opacity: 1; transform: scale(0.92)  translateX(6px)  skewX(2deg);  filter: brightness(0.6); clip-path: inset(42% 0 0 8%); }
+  34%  { opacity: 1; transform: scale(0.8)   translateX(-4px) skewX(-3deg); filter: brightness(1.9); clip-path: inset(0 18% 48% 0); }
+  46%  { opacity: 0.9; transform: scale(0.62) translateX(2px); filter: brightness(0.8); clip-path: none; }
+  62%  { opacity: 0.7; transform: scale(0.4); filter: brightness(2); }
+  80%  { opacity: 0.35; transform: scale(0.16); }
+  100% { opacity: 0;   transform: scale(0); }
 }
 #access-dialog::before {
   content: '';
@@ -829,6 +851,52 @@ body.ui-ready #writings-section.ready {
   0%   { bottom: 50%; right: 50%; transform: translate(50%, 50%); opacity: 0; }
   35%  { opacity: 1; }
   100% { bottom: 0; right: 0; transform: translate(0, 0); opacity: 1; }
+}
+
+/* Exit: corners implode back to the centre point they started from —
+   the reverse of the snap-out above, timed to land right as the panel
+   itself (gate-panel-out) finishes collapsing to nothing. */
+#access-gate.dismissing .ag-corner--tl {
+  animation: ag-corner-tl-out 0.5s cubic-bezier(0.7,0,0.84,0) forwards;
+}
+#access-gate.dismissing .ag-corner--tr {
+  animation: ag-corner-tr-out 0.5s cubic-bezier(0.7,0,0.84,0) forwards;
+}
+#access-gate.dismissing .ag-corner--bl {
+  animation: ag-corner-bl-out 0.5s cubic-bezier(0.7,0,0.84,0) forwards;
+}
+#access-gate.dismissing .ag-corner--br {
+  animation: ag-corner-br-out 0.5s cubic-bezier(0.7,0,0.84,0) forwards;
+}
+@keyframes ag-corner-tl-out {
+  0%   { top: 0; left: 0; transform: translate(0, 0); opacity: 1; }
+  55%  { opacity: 1; }
+  100% { top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; }
+}
+@keyframes ag-corner-tr-out {
+  0%   { top: 0; right: 0; transform: translate(0, 0); opacity: 1; }
+  55%  { opacity: 1; }
+  100% { top: 50%; right: 50%; transform: translate(50%, -50%); opacity: 0; }
+}
+@keyframes ag-corner-bl-out {
+  0%   { bottom: 0; left: 0; transform: translate(0, 0); opacity: 1; }
+  55%  { opacity: 1; }
+  100% { bottom: 50%; left: 50%; transform: translate(-50%, 50%); opacity: 0; }
+}
+@keyframes ag-corner-br-out {
+  0%   { bottom: 0; right: 0; transform: translate(0, 0); opacity: 1; }
+  55%  { opacity: 1; }
+  100% { bottom: 50%; right: 50%; transform: translate(50%, 50%); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #access-gate.dismissing #access-dialog,
+  #access-gate.dismissing .ag-corner--tl,
+  #access-gate.dismissing .ag-corner--tr,
+  #access-gate.dismissing .ag-corner--bl,
+  #access-gate.dismissing .ag-corner--br {
+    animation: none !important;
+    opacity: 0 !important;
+  }
 }
 
 /* Content glitches in once the corner frame has finished snapping out */
@@ -5204,7 +5272,7 @@ const NAV_LABELS = {};  // key → display label
       gate.classList.remove('visible');
       setTimeout(() => {
         location.href = 'https://www.youtube.com/watch?v=8ldnoodqvgE';
-      }, 520);
+      }, 620); // matches the new shrink-and-glitch dismiss animation
     });
 
     // ── PROCEED ──
@@ -5225,7 +5293,8 @@ const NAV_LABELS = {};  // key → display label
         if (music) { music.volume = 0.35; music.play().catch(() => {}); }
       }
 
-      // Dismiss gate with fade
+      // Dismiss gate — panel shrinks toward centre while glitching, corners
+      // implode back to the centre point they started from (see CSS)
       gate.classList.add('dismissing');
       gate.classList.remove('visible');
 
@@ -5253,7 +5322,7 @@ const NAV_LABELS = {};  // key → display label
             });
           }, 2000);
         }
-      }, 520);
+      }, 620); // matches the new shrink-and-glitch dismiss animation
     });
     } // end runGateLogic
   })();
