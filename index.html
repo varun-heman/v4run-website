@@ -1297,7 +1297,7 @@ body.ui-ready #writings-section.ready {
 /* ── WRITINGS SECTION ─────────────────────────────────── */
 #writings-section {
   position: fixed;
-  bottom: 92px;
+  bottom: 67px; /* 5px above #music-control's top edge — measured, not a guess */
   left: 0;
   right: 0;
   z-index: 10;
@@ -2044,6 +2044,16 @@ body.strip-hovered #viewall-btn {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
+}
+/* Footer corners (contact/replay-intro, music control/copyright) tucked
+   away too while hovering the carousel — same treatment as the nav above.
+   Override their normal 1.6s page-load fade with something snappier for
+   this specific hover toggle. */
+body.ui-ready .corner-bl, body.ui-ready .corner-br { transition: opacity 0.25s ease; }
+body.strip-hovered .corner-bl,
+body.strip-hovered .corner-br {
+  opacity: 0;
+  pointer-events: none;
 }
 #viewall-btn {
   transition: opacity 0.4s ease 0.15s;
@@ -5095,8 +5105,9 @@ const NAV_LABELS = {};  // key → display label
     }, true);
     strip.addEventListener('mouseenter', () => {
       isHovered = true;
-      document.body.classList.add('strip-hovered');
+      document.body.classList.add('strip-hovered'); // also hides nav/View-All/footer corners — see CSS
       if (window._setQuotesPaused) window._setQuotesPaused(true);
+      if (window._setMemoryFogSuspended) window._setMemoryFogSuspended(true);
     });
     strip.addEventListener('mouseleave', () => {
       isHovered = false;
@@ -5104,6 +5115,7 @@ const NAV_LABELS = {};  // key → display label
       track.querySelectorAll('.is-hovered').forEach(c => c.classList.remove('is-hovered'));
       track.classList.remove('has-hover');
       if (window._setQuotesPaused) window._setQuotesPaused(false);
+      if (window._setMemoryFogSuspended) window._setMemoryFogSuspended(false);
     });
 
     // ── JS-managed card hover — dwell timer prevents sweep-triggering ─────
@@ -5312,6 +5324,14 @@ const NAV_LABELS = {};  // key → display label
     if (window._setQuoteCenterPaused) window._setQuoteCenterPaused(!v);
     if (v) stopMemoryLoop(); else startMemoryLoop();
   }
+
+  // Lets other UI (currently: hovering the carousel) force memory-fog off
+  // regardless of mouse-distance-from-centre, then hand control back to
+  // the normal nearCenter-driven logic once that's done.
+  window._setMemoryFogSuspended = (suspended) => {
+    if (suspended) stopMemoryLoop();
+    else if (!nearCenter) startMemoryLoop();
+  };
 
   let ticking = false;
   document.addEventListener('mousemove', e => {
