@@ -3014,12 +3014,15 @@ body.crt-off .crt-off-line {
 }
 
 /* ── HUD BOOT SEQUENCE — first-visit only, plays once as the interface
-   settles in after the big bang. An SVG overlay of angular, staggered
-   traces "draws itself" — staircase paths converging on the nav/carousel
-   regions, bracket-trace circuits at each corner, and one longer diagonal
-   sweep cutting across — like a game HUD initializing, before clearing out
-   of the way for the real UI. Drawing uses the pathLength=100 trick so each
-   path animates via stroke-dashoffset without needing real length math. */
+   settles in after the big bang. A handful of angular, staircase-style SVG
+   paths "draw themselves" toward the specific bits of UI about to fade in
+   (nav, carousel, corners) — never decorative ones with nothing behind
+   them. Which targets get a trace, their exact shape, and their timing are
+   all decided in JS (_buildHudBoot) per viewport + a little randomness, so
+   this is never the literal same animation twice. Drawing uses the
+   pathLength=100 trick so each path animates via stroke-dashoffset without
+   needing real length math. animation-delay/-duration are set inline per
+   path by JS, not here. */
 #hud-boot-overlay {
   position: fixed; inset: 0; z-index: 30;
   pointer-events: none; opacity: 0;
@@ -3037,7 +3040,7 @@ body.hud-boot #hud-boot-overlay { opacity: 1; }
   opacity: 0;
   filter: drop-shadow(0 0 2px rgba(100,255,160,0.55));
 }
-body.hud-boot .hud-trace { animation: hud-trace-draw 1.3s cubic-bezier(0.16,1,0.3,1) forwards; }
+body.hud-boot .hud-trace { animation-name: hud-trace-draw; animation-timing-function: cubic-bezier(0.16,1,0.3,1); animation-fill-mode: forwards; }
 @keyframes hud-trace-draw {
   0%   { stroke-dashoffset: 100; opacity: 0; }
   4%   { opacity: 1; }
@@ -3045,22 +3048,13 @@ body.hud-boot .hud-trace { animation: hud-trace-draw 1.3s cubic-bezier(0.16,1,0.
   78%  { stroke-dashoffset: 0; opacity: 0.5; }
   100% { stroke-dashoffset: 0; opacity: 0; }
 }
-body.hud-boot .hud-trace--c2        { animation-delay: 0.05s; }
-body.hud-boot .hud-trace--c3        { animation-delay: 0.1s; }
-body.hud-boot .hud-trace--c4        { animation-delay: 0.15s; }
-body.hud-boot .hud-trace--nav       { animation-delay: 0.08s; }
-body.hud-boot .hud-trace--carousel  { animation-delay: 0.18s; }
-body.hud-boot .hud-trace--sweep     { animation-delay: 0.02s; animation-duration: 1.4s; }
 
 .hud-node {
   fill: rgba(140,255,190,0.95);
   opacity: 0;
   filter: drop-shadow(0 0 3px rgba(100,255,160,0.8));
 }
-body.hud-boot .hud-node { animation: hud-node-pulse 1.3s ease-out forwards; }
-body.hud-boot .hud-node--1 { animation-delay: 0.08s; }
-body.hud-boot .hud-node--2 { animation-delay: 0.18s; }
-body.hud-boot .hud-node--3 { animation-delay: 0.02s; }
+body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-function: ease-out; animation-fill-mode: forwards; }
 @keyframes hud-node-pulse {
   0%, 40% { opacity: 0;   r: 0.3; }
   50%     { opacity: 1;   r: 1.1; }
@@ -3069,10 +3063,6 @@ body.hud-boot .hud-node--3 { animation-delay: 0.02s; }
 }
 @media (prefers-reduced-motion: reduce) {
   #hud-boot-overlay { display: none; }
-}
-@media (max-width: 768px) {
-  /* nav lives at the bottom on mobile, and corner-bl/br are hidden there too */
-  .hud-trace--nav, .hud-trace--c3, .hud-trace--c4 { display: none; }
 }
 </style>
 </head>
@@ -3137,20 +3127,13 @@ body.hud-boot .hud-node--3 { animation-delay: 0.02s; }
 </div>
 <div id="screen-glitch-overlay"></div>
 <div id="crt-off-overlay"><div class="crt-off-line"></div></div>
-<!-- HUD boot sequence — first visit only, plays as the interface settles in after the big bang -->
+<!-- HUD boot sequence — first visit only, plays as the interface settles in after the
+     big bang. Paths are generated in JS (see _buildHudBoot) rather than hardcoded here,
+     so it only traces toward UI that's actually about to appear on this viewport
+     (mobile vs desktop), and varies a little each time instead of being identical
+     every run. -->
 <div id="hud-boot-overlay">
-  <svg viewBox="0 0 100 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-    <path class="hud-trace hud-trace--c1" pathLength="100" d="M2,24 L2,8 L9,8 L9,2 L26,2"/>
-    <path class="hud-trace hud-trace--c2" pathLength="100" d="M98,24 L98,8 L91,8 L91,2 L74,2"/>
-    <path class="hud-trace hud-trace--c3" pathLength="100" d="M2,76 L2,92 L9,92 L9,98 L26,98"/>
-    <path class="hud-trace hud-trace--c4" pathLength="100" d="M98,76 L98,92 L91,92 L91,98 L74,98"/>
-    <path class="hud-trace hud-trace--nav" pathLength="100" d="M4,16 L14,16 L14,32 L6,32 L6,50 L17,50"/>
-    <path class="hud-trace hud-trace--carousel" pathLength="100" d="M47,57 L47,69 L35,69 L35,81 L51,81 L51,91"/>
-    <path class="hud-trace hud-trace--sweep" pathLength="100" d="M0,64 L21,64 L21,40 L45,40 L45,15 L73,15 L73,30"/>
-    <circle class="hud-node hud-node--1" cx="14" cy="32" r="0.6"/>
-    <circle class="hud-node hud-node--2" cx="35" cy="69" r="0.6"/>
-    <circle class="hud-node hud-node--3" cx="45" cy="40" r="0.6"/>
-  </svg>
+  <svg id="hud-boot-svg" viewBox="0 0 100 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"></svg>
 </div>
 <audio id="bg-music" src="audio/bg_score.mp3" loop preload="auto"></audio>
 <audio id="bang-sound" src="audio/big_bang.mp3" preload="auto"></audio>
@@ -4032,6 +4015,71 @@ window.addEventListener('pageshow', (e) => {
     if (closeBtn) closeBtn.addEventListener('click', closePanel);
   })();
 
+  // Builds this run's HUD boot traces — only toward UI actually present on
+  // this viewport (mobile vs desktop), with the exact geometry and timing
+  // jittered a little each time so it's never the literal same animation.
+  function _buildHudBoot() {
+    const svg = document.getElementById('hud-boot-svg');
+    if (!svg) return;
+    svg.innerHTML = '';
+
+    const isMobile = window.innerWidth <= 768;
+
+    // Each is a staircase of [x,y] points (0–100 viewBox space) converging
+    // on a real piece of UI. Nothing decorative — every trace points at
+    // something that's about to fade in.
+    const TARGETS = {
+      c1:       [[2,24],[2,8],[9,8],[9,2],[26,2]],          // corner-tl
+      c2:       [[98,24],[98,8],[91,8],[91,2],[74,2]],      // corner-tr
+      c3:       [[2,76],[2,92],[9,92],[9,98],[26,98]],      // corner-bl (desktop only)
+      c4:       [[98,76],[98,92],[91,92],[91,98],[74,98]],  // corner-br (desktop only)
+      navLeft:  [[4,16],[14,16],[14,32],[6,32],[6,50],[17,50]],      // left-center nav (desktop)
+      navBottom:[[30,62],[30,80],[45,80],[45,97],[65,97]],           // bottom nav strip (mobile)
+      carousel: [[47,57],[47,69],[35,69],[35,81],[51,81],[51,91]],   // bottom carousel (desktop only)
+    };
+
+    const active = isMobile
+      ? ['c1', 'c2', 'navBottom']
+      : ['c1', 'c2', 'c3', 'c4', 'navLeft', 'carousel'];
+
+    function jitter(pts) {
+      return pts.map(([x, y], i) => {
+        const amt = i === pts.length - 1 ? 0.7 : 1.8; // hold the arrival point steadier than the bends
+        return [x + (Math.random() * 2 - 1) * amt, y + (Math.random() * 2 - 1) * amt];
+      });
+    }
+    function toD(pts) {
+      return pts.map(([x, y], i) => (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1)).join(' ');
+    }
+
+    const nodeCandidates = [];
+    active.forEach(key => {
+      const pts = jitter(TARGETS[key]);
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('class', 'hud-trace');
+      path.setAttribute('pathLength', '100');
+      path.setAttribute('d', toD(pts));
+      const delay = Math.random() * 0.16;
+      const dur   = 1.05 + Math.random() * 0.25;
+      path.style.animationDelay    = delay.toFixed(2) + 's';
+      path.style.animationDuration = dur.toFixed(2) + 's';
+      svg.appendChild(path);
+      if (pts.length > 2) nodeCandidates.push({ pt: pts[Math.floor(pts.length / 2)], delay });
+    });
+
+    // A couple of small glowing pulses at random bend points, for flavor.
+    nodeCandidates.sort(() => Math.random() - 0.5).slice(0, 2).forEach(({ pt, delay }) => {
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('class', 'hud-node');
+      c.setAttribute('cx', pt[0].toFixed(1));
+      c.setAttribute('cy', pt[1].toFixed(1));
+      c.setAttribute('r', '0.6');
+      c.style.animationDelay    = (delay + 0.04).toFixed(2) + 's';
+      c.style.animationDuration = '1.1s';
+      svg.appendChild(c);
+    });
+  }
+
   // Called by intro sequence (or immediately for return visitors)
   window._triggerBigBang = function () {
     if (bangStartT !== null) return; // already fired
@@ -4054,12 +4102,18 @@ window.addEventListener('pageshow', (e) => {
         document.body.classList.add('ui-ready');
 
         if (window._isFirstVisit) {
-          // HUD boot flourish — scan-lines + corner brackets hinting at the
-          // nav/carousel/corners right as they fade in, gone within ~1.1s.
+          // HUD boot flourish — a few angular traces toward the nav/carousel/
+          // corners right as they fade in. Sound starts together with the
+          // traces and is cut at the same moment they clear, so it never
+          // plays on into silence after the visual is gone.
+          _buildHudBoot();
           const hudSfx = document.getElementById('hud-in-sound');
-          if (hudSfx) { hudSfx.volume = 0.5; hudSfx.play().catch(() => {}); }
+          if (hudSfx) { hudSfx.currentTime = 0; hudSfx.volume = 0.5; hudSfx.play().catch(() => {}); }
           document.body.classList.add('hud-boot');
-          setTimeout(() => document.body.classList.remove('hud-boot'), 1450);
+          setTimeout(() => {
+            document.body.classList.remove('hud-boot');
+            if (hudSfx) { hudSfx.pause(); hudSfx.currentTime = 0; }
+          }, 1500);
         }
       }, window._isFirstVisit ? 6700 : 2700);
     }, 1000);
