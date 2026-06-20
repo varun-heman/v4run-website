@@ -4561,7 +4561,7 @@ window.addEventListener('pageshow', (e) => {
     hudBootPending = true;
     _buildHudBoot();
     const hudSfx = document.getElementById('hud-in-sound');
-    if (hudSfx) { hudSfx.currentTime = 0; hudSfx.volume = 0.5; hudSfx.play().catch(() => {}); }
+    if (hudSfx && !window._audioMuted) { hudSfx.currentTime = 0; hudSfx.volume = 0.5; hudSfx.play().catch(() => {}); }
     document.body.classList.add('hud-boot');
     setTimeout(() => {
       document.body.classList.remove('hud-boot');
@@ -4587,7 +4587,7 @@ window.addEventListener('pageshow', (e) => {
       if (window._isFirstVisit) {
         // Play big bang sound effect
         const bangSfx = document.getElementById('bang-sound');
-        if (bangSfx) { bangSfx.volume = 0.7; bangSfx.play().catch(() => {}); }
+        if (bangSfx && !window._audioMuted) { bangSfx.volume = 0.7; bangSfx.play().catch(() => {}); }
       }
 
       setTimeout(() => {
@@ -4690,7 +4690,7 @@ const NAV_LABELS = {};  // key → display label
     document.querySelectorAll('.nav-item[data-modal]').forEach(el => {
       el.addEventListener('mouseenter', () => {
         showLabel(el.dataset.modal);
-        if (navHoverSfx) { navHoverSfx.currentTime = 0; navHoverSfx.volume = 0.4; navHoverSfx.play().catch(() => {}); }
+        if (navHoverSfx && !window._audioMuted) { navHoverSfx.currentTime = 0; navHoverSfx.volume = 0.4; navHoverSfx.play().catch(() => {}); }
       });
       el.addEventListener('mouseleave', hideLabel);
     });
@@ -5143,9 +5143,14 @@ const NAV_LABELS = {};  // key → display label
     const music = document.getElementById('bg-music');
     if (!ctrl || !music) return;
     let muted = false;
+    // Exposed globally so every other sound effect (nav hover, HUD boot,
+    // big bang, etc.) can check this before playing — "Music Off" should
+    // silence the whole site, not just the background track.
+    window._audioMuted = false;
 
     function setPlaying(playing) {
       muted = !playing;
+      window._audioMuted = muted;
       ctrl.classList.toggle('muted', muted);
       if (label) label.textContent = muted ? 'Music Off' : 'Music On';
       if (icon) {
