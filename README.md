@@ -14,7 +14,8 @@ Key visual details:
 - **Bio** — a short bio paragraph sits below the logo in the top-left corner (hidden on mobile).
 - **Photo popup** — hovering near the logo reveals a photo box that follows the cursor, connected to the logo by an elbowed SVG line with a travelling light pulse. The image has a matrix-green CRT filter and TV flicker effect. Disabled on mobile and when a modal is open.
 - **Shoal of fish** — when a modal is open, the sphere dots flow tangentially around the modal zone in two counter-rotating streams, like a shoal of fish parting around an obstacle. On desktop, the sphere is visible behind the modal (raised above the dark scrim via z-index).
-- **Typewriter quotes** — when no nav item is hovered, the sphere centre types out quotes one character at a time (with human-like timing jitter and occasional mistypes), holds, then deletes them. During the hold, the same letter-scramble and RGB chromatic aberration glitch effects run as on nav hints. Starts after the bang animation clears.
+- **Typewriter quotes** — the sphere centre types out quotes one character at a time (with human-like timing jitter and occasional mistypes), holds, then deletes them. During the hold, the same letter-scramble and RGB chromatic aberration glitch effects run as on nav hints. Starts after the bang animation clears. Quotes own the centre while the page is idle (60s+ with no mouse movement, or the mouse off the page); a brief glitching "loading words I live by..." preloader plays on every hand-back to quotes, and at least one full quote is guaranteed to play before control can switch away again.
+- **Memory fog** (desktop, fine-pointer only) — while the mouse is actively moving, the sphere centre instead shows a slow-drifting collage of photos and short video clips pulled from gallery items tagged `memfog` (see "Gallery metadata" below). Each card gets a green colour tint, an aggressive Ken Burns zoom/pan, and no caption. A one-time, ~8s glitching preloader plays the first time it activates in a session. Automatically suspended whenever any modal/overlay is open. Disabled on touch devices, narrow viewports, and under `prefers-reduced-motion`.
 - **Article carousel** — a bottom strip of writing cards that auto-scrolls left, supports drag with momentum fling, and loops infinitely via DOM recycling (no offset jump). Cards expand on hover to reveal a description, with tags pinned to the bottom; non-hovered cards dim. Hidden on mobile.
 - **Static noise overlay** — a very faint, fine-grain film noise canvas overlaid on the full page.
 - **Pulsating heart** — a red Font Awesome heart icon in the footer pulses continuously with a heartbeat animation.
@@ -23,14 +24,17 @@ Key visual details:
 
 ## First-visit experience
 
-On the very first visit to the root domain, a terminal-style **access gate** is shown before the page is usable:
+A CRT-style power-on animation (a single point expanding to fill the screen) plays on every fresh load of the root page — first-time and returning visitors alike — before anything else runs. It's skipped for deep links (which need to land on their target immediately) and under `prefers-reduced-motion`.
+
+On the very first visit to the root domain, a terminal-style **access gate** is shown before the page is usable (after the CRT-on animation clears):
 
 - Displays "You are entering the private space of VARUN" — the name cycles through `VARUN → v4run → v4.run` with a fast RGB glitch + VHS skew distortion animation.
 - **Exit** button opens a YouTube link in a new tab and closes the current one.
 - **Proceed** button dismisses the gate. The background music (`audio/bg_score.mp3`) starts immediately at low volume. A blinking green cursor appears for ~2 seconds, then the typewriter intro sequence begins (each keystroke is a synthesized square-wave click via Web Audio API).
 - After the intro finishes, the big bang triggers, the main UI fades in, and the HUD boot flourish plays (see "What it is" above).
 - Pressing **Escape** at any point during the typewriter intro skips straight to the big bang — useful for return visitors who clear their cookie, or anyone who just doesn't want to wait.
-- The gate and intro are skipped for return visitors (cookie `v4run_v=1`). Visitors arriving via a **deep link** (any URL with a hash) also skip the gate and are marked as visited immediately — the linked panel opens directly.
+- The gate and intro are skipped for return visitors (cookie `v4run_v=1`) — they still get the CRT-on animation above, and background music now starts automatically for them too (see "Music"). Visitors arriving via a **deep link** (any URL with a hash) also skip the gate and are marked as visited immediately — the linked panel opens directly.
+- A **Replay Intro** button (bottom-right corner, next to the Music toggle) clears the visited cookie and reloads the page, so the gate + typewriter intro can be watched again without clearing cookies by hand.
 
 ## Nav behaviour
 
@@ -44,7 +48,7 @@ On the very first visit to the root domain, a terminal-style **access gate** is 
 
 ## Social dock
 
-The `Contact Me` label in the bottom-left corner reveals social icons on hover. Icons slide out to the right with a staggered spring animation. Platform is auto-detected from the URL in `content/social.md`. The email icon is always visible; all others are pulled from the social links file.
+The `Contact Me` label in the bottom-left corner reveals social icons on hover. Icons slide out to the right with a staggered spring animation. Platform is auto-detected from the URL in `content/social.md`. The email icon is always visible; all others are pulled from the social links file. Hovering an icon shows its handle in a small tooltip above it.
 
 ## Contact
 
@@ -59,7 +63,9 @@ Anti-spam measures:
 
 ## Music
 
-Background music (`audio/bg_score.mp3`) plays only for first-time visitors, starting when Proceed is clicked on the access gate. Return visitors land silently. A music toggle in the bottom-right corner shows a Font Awesome play/stop icon (green when playing, red when stopped) next to a "Music On/Off" label. The animated equaliser bars hide when muted.
+Background music (`audio/bg_score.mp3`) starts automatically for everyone — first-time visitors when Proceed is clicked on the access gate, returning visitors as soon as the page loads. A music toggle in the bottom-right corner (in the same pill-style row as the Replay Intro button) shows a Font Awesome play/stop icon (green when playing, red when stopped) next to a "Music On/Off" label; the animated equaliser bars hide when muted.
+
+Turning music off also mutes every other sound effect on the site, not just the score — the HUD boot flourish, the big bang, and the button-hover click (`audio/button_hover.mp3`, played on hovering nav items and the access gate's Exit/Proceed buttons).
 
 ## Recommended Reads
 
@@ -88,7 +94,7 @@ Albums can mix photos, local video clips, and YouTube videos freely — they all
 
 Clicking any thumbnail opens an immersive **lightbox** (full-screen, black background). Photos and local videos use `object-fit: contain`; YouTube opens in a boxed 16:9 embed. Caption, date, and location are overlaid at the bottom with a gradient. Arrow keys and click to navigate — moving to the next/previous item or closing the lightbox always stops whatever video was playing.
 
-Hovering a thumbnail reveals a slide-up overlay with the caption and metadata chips. Video and YouTube thumbnails also get a small play-icon badge so they're distinguishable from photos at a glance.
+Hovering a thumbnail reveals a slide-up overlay with the caption and metadata chips. Local video thumbnails autoplay a short (~3s), muted, controls-free loop centred on the clip's midpoint once scrolled into view, so they read as moving previews rather than static frames; YouTube thumbnails keep a static play-icon badge instead. Inside the lightbox, videos get their own centred play/pause button that pops in on click and fades out shortly after playback starts.
 
 ### Gallery metadata
 
@@ -186,7 +192,7 @@ content/
 
 Quotes are embedded in `index.html` in a `<script id="quotes-data" type="application/json">` block.
 
-**Audio files** — `audio/bg_score.mp3` (background music, loops), `audio/big_bang.mp3` (one-shot on first-visit bang), `audio/hud_in.mp3` (one-shot HUD boot flourish, plays once per page load — see "First-visit experience").
+**Audio files** — `audio/bg_score.mp3` (background music, loops), `audio/big_bang.mp3` (one-shot on first-visit bang), `audio/hud_in.mp3` (one-shot HUD boot flourish, plays once per page load — see "First-visit experience"), `audio/button_hover.mp3` (short click on nav/gate-button hover — see "Music").
 
 **Images** — `images/varun.jpg` is the photo used in the popup box. `images/gallery/` holds photo albums. `images/inbox/` is the gitignored staging folder for new photos before they're sorted — see "Adding photos".
 
@@ -263,3 +269,5 @@ On screens ≤ 768px:
 | Background music | `audio/bg_score.mp3` |
 | Big bang sound | `audio/big_bang.mp3` |
 | HUD boot sound | `audio/hud_in.mp3` |
+| Button hover sound | `audio/button_hover.mp3` |
+| Memory fog source items | tag any gallery item `memfog` in its album's `meta.md` — see "Gallery metadata" |
