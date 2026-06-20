@@ -4165,6 +4165,29 @@ window.addEventListener('pageshow', (e) => {
     });
   }
 
+  // Plays one full HUD boot flourish: builds this run's traces, starts the
+  // sfx, and clears both at the same moment ~1.66s later. Used both for the
+  // one-time first-visit sequence (tied to the big bang, below) and for the
+  // recurring "re-sync" that fires occasionally during normal browsing for
+  // every visitor (see the standalone scheduler IIFE further down the
+  // page). Single-flight guarded so the two can never stack.
+  let hudBootPending = false;
+  function fireHudBoot() {
+    if (hudBootPending) return false;
+    hudBootPending = true;
+    _buildHudBoot();
+    const hudSfx = document.getElementById('hud-in-sound');
+    if (hudSfx) { hudSfx.currentTime = 0; hudSfx.volume = 0.5; hudSfx.play().catch(() => {}); }
+    document.body.classList.add('hud-boot');
+    setTimeout(() => {
+      document.body.classList.remove('hud-boot');
+      if (hudSfx) { hudSfx.pause(); hudSfx.currentTime = 0; } // safety net only
+      hudBootPending = false;
+    }, 1660);
+    return true;
+  }
+  window._fireHudBoot = fireHudBoot;
+
   // Called by intro sequence (or immediately for return visitors)
   window._triggerBigBang = function () {
     if (bangStartT !== null) return; // already fired
@@ -4187,17 +4210,10 @@ window.addEventListener('pageshow', (e) => {
         document.body.classList.add('ui-ready');
 
         if (window._isFirstVisit) {
-          // HUD boot flourish — a few angular traces toward the nav/carousel/
-          // corners right as they fade in, running the full 1.66s length of
-          // hud_in.mp3 so the sfx plays out completely alongside it.
-          _buildHudBoot();
-          const hudSfx = document.getElementById('hud-in-sound');
-          if (hudSfx) { hudSfx.currentTime = 0; hudSfx.volume = 0.5; hudSfx.play().catch(() => {}); }
-          document.body.classList.add('hud-boot');
-          setTimeout(() => {
-            document.body.classList.remove('hud-boot');
-            if (hudSfx) { hudSfx.pause(); hudSfx.currentTime = 0; } // safety net only
-          }, 1660);
+          // First-visit HUD boot flourish, tied to the big bang. It also
+          // recurs occasionally afterwards for every visitor — see the
+          // scheduler IIFE near the end of the page.
+          fireHudBoot();
         }
       }, window._isFirstVisit ? 6700 : 2700);
     }, 1000);
@@ -6796,6 +6812,41 @@ window.addEventListener('popstate', (e) => {
     setTimeout(() => {
       const fired = fireGlitch();
       scheduleNext(fired ? undefined : 2000); // exactly one timer ever pending
+    }, delay);
+  }
+
+  scheduleNext();
+})();
+
+// ── RECURRING HUD BOOT FLOURISH ───────────────────────────────────────────
+// Beyond the one-time first-visit boot sequence (tied to the big bang), the
+// same HUD trace + sound flourish recurs occasionally during normal
+// browsing — like the interface briefly re-syncing — for every visitor,
+// not only first-time ones. Reuses window._fireHudBoot (defined alongside
+// the dot sphere), which already builds fresh, randomized traces and times
+// itself to hud_in.mp3, so this is just deciding when to call it.
+(function () {
+  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) return;
+
+  const MIN_GAP_MS = 90000;   // shortest wait between re-syncs (1.5 min)
+  const MAX_GAP_MS = 210000;  // longest wait (3.5 min)
+
+  function canFire() {
+    const gate = document.getElementById('access-gate');
+    const gateOpen = gate && gate.classList.contains('visible');
+    return document.body.classList.contains('ui-ready')
+      && !window._modalOpen
+      && !gateOpen
+      && document.visibilityState === 'visible'
+      && typeof window._fireHudBoot === 'function';
+  }
+
+  function scheduleNext(forceDelay) {
+    const delay = forceDelay || (MIN_GAP_MS + Math.random() * (MAX_GAP_MS - MIN_GAP_MS));
+    setTimeout(() => {
+      const fired = canFire() && window._fireHudBoot();
+      scheduleNext(fired ? undefined : 5000); // exactly one timer ever pending
     }, delay);
   }
 

@@ -18,6 +18,8 @@ Key visual details:
 - **Article carousel** — a bottom strip of writing cards that auto-scrolls left, supports drag with momentum fling, and loops infinitely via DOM recycling (no offset jump). Cards expand on hover to reveal a description, with tags pinned to the bottom; non-hovered cards dim. Hidden on mobile.
 - **Static noise overlay** — a very faint, fine-grain film noise canvas overlaid on the full page.
 - **Pulsating heart** — a red Font Awesome heart icon in the footer pulses continuously with a heartbeat animation.
+- **HUD boot flourish** — a handful of clean, right-angle SVG traces "laser in" toward upcoming UI (nav, corners, and the carousel on desktop), each led by a bright travelling dot, alongside `audio/hud_in.mp3`. Plays once right after the first-visit big bang (see "First-visit experience"), then recurs every ~1.5–3.5 minutes for any visitor — like the interface briefly re-syncing. Which targets light up, their exact shape, and timing vary a little each run. Skipped while a modal or the access gate is open, the tab is hidden, or `prefers-reduced-motion` is set.
+- **Random screen glitch** — an unrelated, more frequent (every ~7–19s) full-viewport RGB-split/corrupted-block burst, also gated the same way.
 
 ## First-visit experience
 
@@ -26,8 +28,7 @@ On the very first visit to the root domain, a terminal-style **access gate** is 
 - Displays "You are entering the private space of VARUN" — the name cycles through `VARUN → v4run → v4.run` with a fast RGB glitch + VHS skew distortion animation.
 - **Exit** button opens a YouTube link in a new tab and closes the current one.
 - **Proceed** button dismisses the gate. The background music (`audio/bg_score.mp3`) starts immediately at low volume. A blinking green cursor appears for ~2 seconds, then the typewriter intro sequence begins (each keystroke is a synthesized square-wave click via Web Audio API).
-- After the intro finishes, the big bang triggers and the main UI fades in.
-- As the UI settles in, a one-off **HUD boot** flourish plays: a handful of clean, right-angle SVG traces "laser in" toward the specific bits of UI about to appear (nav, corners, and the carousel on desktop), each led by a bright travelling dot like a laser head, accompanied by `audio/hud_in.mp3`. Which targets light up, their exact shape, and their timing adapt to the viewport (desktop vs mobile) and vary slightly each run, so it's never the literal same animation twice. Respects `prefers-reduced-motion`.
+- After the intro finishes, the big bang triggers, the main UI fades in, and the HUD boot flourish plays (see "What it is" above) — it also recurs occasionally afterwards, for every visitor, not just this first time.
 - Pressing **Escape** at any point during the typewriter intro skips straight to the big bang — useful for return visitors who clear their cookie, or anyone who just doesn't want to wait.
 - The gate and intro are skipped for return visitors (cookie `v4run_v=1`). Visitors arriving via a **deep link** (any URL with a hash) also skip the gate and are marked as visited immediately — the linked panel opens directly.
 
