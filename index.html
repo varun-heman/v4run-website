@@ -1041,6 +1041,7 @@ body.ui-ready #writings-section.ready {
   animation: gate-content-glitch 0.4s steps(1, end) 0.7s forwards;
 }
 .ag-btn {
+  display: inline-flex; align-items: center; gap: 8px;
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.18em;
@@ -3012,6 +3013,7 @@ body.strip-hovered .corner-br {
 }
 .sc-actions { display: flex; gap: 10px; }
 .sc-btn {
+  display: inline-flex; align-items: center; gap: 7px;
   font-family: var(--mono); font-size: 8px; letter-spacing: 0.14em;
   text-transform: uppercase; padding: 7px 14px; cursor: pointer; border: 1px solid;
   transition: background 0.15s, color 0.15s;
@@ -3664,7 +3666,7 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
     </div>
     <div class="ag-actions">
       <button class="ag-btn ag-btn--exit" id="ag-exit">Exit</button>
-      <button class="ag-btn ag-btn--proceed" id="ag-proceed">Proceed →</button>
+      <button class="ag-btn ag-btn--proceed" id="ag-proceed">Proceed <i class="fa-solid fa-arrow-right"></i></button>
     </div>
   </div>
 </div>
@@ -3866,7 +3868,7 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
       <div class="sc-label">seldoncrisis.blog</div>
       <p>I write occasionally at <a href="https://seldoncrisis.blog" target="_blank" rel="noopener" style="color:rgba(100,255,160,0.7);text-decoration:none;border-bottom:1px solid rgba(100,255,160,0.25);">seldoncrisis.blog</a>. Want an email when something new goes up? One message per piece, no spam, no data sharing, unsubscribe any time.</p>
       <div class="sc-actions">
-        <button class="sc-btn" id="sc-yes">Subscribe →</button>
+        <button class="sc-btn" id="sc-yes">Subscribe <i class="fa-solid fa-arrow-right"></i></button>
         <button class="sc-btn" id="sc-no">No thanks</button>
       </div>
     </div>
@@ -6229,9 +6231,9 @@ function openPdfInModal(url, title) {
     pdfWrap.innerHTML = `
       <div id="pdf-canvas-scroll"></div>
       <div id="pdf-controls">
-        <button id="pdf-prev" class="site-btn">← Prev</button>
+        <button id="pdf-prev" class="site-btn"><i class="fa-solid fa-arrow-left"></i> Prev</button>
         <span id="pdf-page-info">— / —</span>
-        <button id="pdf-next" class="site-btn">Next →</button>
+        <button id="pdf-next" class="site-btn">Next <i class="fa-solid fa-arrow-right"></i></button>
       </div>`;
     modalBody.parentNode.insertBefore(pdfWrap, modalBody.nextSibling);
 
