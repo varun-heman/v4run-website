@@ -484,34 +484,51 @@ body.ui-ready #writings-section.ready {
    Quotes only show in the sphere centre while the mouse is near it (see
    the centerPaused logic + the standalone IIFE further down). Away from
    centre, random gallery photos drift in and out instead — feathered to a
-   soft oval via mask-image, blurred in from "fog" and fading toward a
-   blurred, scaled-up, upward drift ("into the horizon") before the next
-   one. Self-contained: this block + the matching JS IIFE + the
-   #memory-fog div (search "MEMORY FOG") can be deleted to fully undo. */
+   soft oval via mask-image, blurred in from "fog", coming briefly into
+   focus, then receding away into the distance under real 3D perspective
+   (translateZ + rotateX, not a flat scale) while blurring/fading back out.
+   The caption sits below the photo inside the same animated wrapper
+   (.memory-card), so it appears immediately with the image — no separate
+   delay — and rides the exact same transform, tracking the photo's
+   movement rigidly since it's the same transformed element. Self-
+   contained: this block + the matching JS IIFE + the #memory-fog div
+   (search "MEMORY FOG") can be deleted to fully undo. */
 #memory-fog {
   position: fixed; top: 50%; left: 50%;
-  width: min(46vw, 420px); height: min(46vw, 420px);
+  width: min(46vw, 420px);
   transform: translate(-50%, -50%);
   z-index: 4; /* just under .sphere-label (5), above the canvas */
   pointer-events: none;
 }
-.memory-photo {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  pointer-events: none;
-  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 32%, transparent 72%);
-          mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 32%, transparent 72%);
+.memory-card {
+  display: flex; flex-direction: column; align-items: center;
   opacity: 0;
   will-change: opacity, transform, filter;
   animation: memory-drift 5.6s cubic-bezier(0.22,0.61,0.36,1) forwards;
 }
+.memory-photo {
+  width: 100%; height: min(46vw, 420px);
+  object-fit: cover; display: block;
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 32%, transparent 72%);
+          mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 32%, transparent 72%);
+}
+.memory-caption {
+  margin-top: 16px;
+  max-width: 86%;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-align: center;
+  line-height: 1.5;
+  color: rgba(184, 240, 210, 0.75);
+  text-shadow: 0 0 16px rgba(100, 255, 160, 0.22);
+}
 @keyframes memory-drift {
-  0%   { opacity: 0;    transform: scale(0.8)  translateY(16px); filter: blur(20px); }
-  16%  { opacity: 0.6;  transform: scale(0.96) translateY(5px);  filter: blur(7px); }
-  34%  { opacity: 0.68; transform: scale(1)    translateY(0);    filter: blur(2px); }
-  68%  { opacity: 0.6;  transform: scale(1.05) translateY(-6px); filter: blur(3px); }
-  100% { opacity: 0;    transform: scale(1.26) translateY(-30px); filter: blur(22px); }
+  0%   { opacity: 0;    filter: blur(20px); transform: perspective(900px) translateZ(-160px) rotateX(6deg)  translateY(16px); }
+  16%  { opacity: 0.6;  filter: blur(7px);  transform: perspective(900px) translateZ(-40px)  rotateX(2deg)  translateY(4px); }
+  34%  { opacity: 0.68; filter: blur(2px);  transform: perspective(900px) translateZ(0)       rotateX(0deg) translateY(0); }
+  68%  { opacity: 0.55; filter: blur(4px);  transform: perspective(900px) translateZ(-90px)  rotateX(7deg)  translateY(-10px); }
+  100% { opacity: 0;    filter: blur(20px); transform: perspective(900px) translateZ(-340px) rotateX(22deg) translateY(-46px); }
 }
 @media (prefers-reduced-motion: reduce) {
   #memory-fog { display: none; }
@@ -5187,7 +5204,9 @@ const NAV_LABELS = {};  // key → display label
       .then(data => {
         if (!data) { photos = []; return photos; }
         const all = (data.albums || []).flatMap(a => a.photos || []);
-        photos = all.filter(p => (p.type || 'image') === 'image').map(p => p.src).filter(Boolean);
+        // Keep the full photo object (not just .src) — caption/date/location
+        // travel with it so the caption card below can use them.
+        photos = all.filter(p => (p.type || 'image') === 'image' && p.src);
         return photos;
       })
       .catch(() => { photos = []; return photos; });
@@ -5202,16 +5221,32 @@ const NAV_LABELS = {};  // key → display label
     do { idx = Math.floor(Math.random() * photos.length); }
     while (idx === lastIdx && photos.length > 1);
     lastIdx = idx;
+    const p = photos[idx];
+
+    // .memory-card is the single element the memory-drift animation runs
+    // on — img + caption both sit inside it with no animation of their
+    // own, so they appear together and move/fade as one rigid unit.
+    const card = document.createElement('div');
+    card.className = 'memory-card';
 
     const img = document.createElement('img');
     img.className = 'memory-photo';
-    img.src = photos[idx];
+    img.src = p.src;
     img.alt = '';
-    container.innerHTML = '';
-    container.appendChild(img);
+    card.appendChild(img);
 
-    img.addEventListener('animationend', () => {
-      if (img.parentNode) img.parentNode.removeChild(img);
+    if (p.caption) {
+      const cap = document.createElement('div');
+      cap.className = 'memory-caption';
+      cap.textContent = p.caption;
+      card.appendChild(cap);
+    }
+
+    container.innerHTML = '';
+    container.appendChild(card);
+
+    card.addEventListener('animationend', () => {
+      if (card.parentNode) card.parentNode.removeChild(card);
       if (active) setTimeout(showNextMemory, 500 + Math.random() * 400);
     }, { once: true });
   }
