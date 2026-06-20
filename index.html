@@ -3366,7 +3366,7 @@ body.crt-off .crt-off-line {
   pointer-events: none;
 }
 body.crt-on #crt-on-overlay {
-  animation: crt-bg-out 0.9s steps(1, end) forwards;
+  animation: crt-bg-out 1.2s steps(1, end) forwards;
 }
 .crt-on-line {
   position: absolute;
@@ -3377,23 +3377,36 @@ body.crt-on #crt-on-overlay {
   opacity: 0;
   box-shadow: 0 0 60px 14px rgba(234,255,240,0.85);
 }
+/* More keyframes than CRT OFF's mirror image on purpose — the horizontal
+   expand (8px → 100% width, still a thin 3px-tall bar) now takes up a
+   much bigger, more gradual share of the timeline instead of one or two
+   jumps, so it reads as a smooth, slightly slower sweep rather than a
+   snap. Vertical expand (height 3px → 100%) stays a quick snap, but
+   lands at full opacity — a genuine white flash — which then holds
+   briefly before fading, instead of just fading immediately. */
 body.crt-on .crt-on-line {
-  animation: crt-line-expand 0.9s cubic-bezier(0.15,0.35,0.5,1) forwards;
+  animation: crt-line-expand 1.2s cubic-bezier(0.25,0.1,0.4,1) forwards;
 }
 @keyframes crt-bg-out {
   0%   { opacity: 1; }
-  42%  { opacity: 0.92; }
-  68%  { opacity: 0.65; }
-  92%  { opacity: 0.1; }
+  80%  { opacity: 1; }
+  86%  { opacity: 0.85; }
+  92%  { opacity: 0.45; }
   100% { opacity: 0; }
 }
 @keyframes crt-line-expand {
   0%   { opacity: 0;    width: 1px;  height: 1px; }
-  26%  { opacity: 0.8;  width: 3px;  height: 3px; }
-  48%  { opacity: 0.9;  width: 10px; height: 3px; }
-  72%  { opacity: 0.9;  width: 100%; height: 3px; }
-  94%  { opacity: 0.95; width: 100%; height: 100%; }
-  100% { opacity: 0;    width: 100%; height: 100%; }
+  14%  { opacity: 0.75; width: 3px;  height: 3px; }
+  26%  { opacity: 0.88; width: 8px;  height: 3px; }
+  /* horizontal expand — smooth, gradual, deliberately slower */
+  40%  { opacity: 0.9;  width: 22%;  height: 3px; }
+  54%  { opacity: 0.92; width: 46%;  height: 3px; }
+  68%  { opacity: 0.95; width: 74%;  height: 3px; }
+  80%  { opacity: 1;    width: 100%; height: 3px; }
+  /* vertical expand — quick snap to full height, full white flash */
+  86%  { opacity: 1;    width: 100%; height: 100%; }
+  90%  { opacity: 1;    width: 100%; height: 100%; } /* hold the flash briefly */
+  100% { opacity: 0;    width: 100%; height: 100%; } /* then fade */
 }
 @media (prefers-reduced-motion: reduce) {
   /* Unconditional (not just under body.crt-on) — JS already skips adding
@@ -5110,7 +5123,7 @@ const NAV_LABELS = {};  // key → display label
           document.body.classList.remove('crt-on');
           crtOnOverlay.style.display = 'none';
           runGateLogic();
-        }, 900);
+        }, 1200);
       }
     } else {
       runGateLogic();
