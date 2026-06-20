@@ -10,20 +10,13 @@
         "date": "2021-07-05",
         "location": ""
       },
-      "count": 7,
+      "count": 5,
       "photos": [
         {
           "type": "image",
           "src": "images/gallery/heart/beagle-nap-time.jpg",
           "caption": "The only creature here with nothing left to prove.",
           "date": "2021-07-05",
-          "location": ""
-        },
-        {
-          "type": "image",
-          "src": "images/gallery/heart/dog-cuddle-night.jpg",
-          "caption": "Some weights you don't want lifted off your chest.",
-          "date": "2018-12-15",
           "location": ""
         },
         {
@@ -51,13 +44,6 @@
           "type": "image",
           "src": "images/gallery/heart/trail-dogs-pause.jpg",
           "caption": "Still figuring out which way the fog goes.",
-          "date": "2021-01-08",
-          "location": ""
-        },
-        {
-          "type": "image",
-          "src": "images/gallery/heart/trail-dogs-walk.jpg",
-          "caption": "Some mornings only make sense to the ones with four legs.",
           "date": "2021-01-08",
           "location": ""
         }
