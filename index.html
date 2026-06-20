@@ -3014,15 +3014,16 @@ body.crt-off .crt-off-line {
 }
 
 /* ── HUD BOOT SEQUENCE — first-visit only, plays once as the interface
-   settles in after the big bang. A handful of angular, staircase-style SVG
-   paths "draw themselves" toward the specific bits of UI about to fade in
-   (nav, carousel, corners) — never decorative ones with nothing behind
-   them. Which targets get a trace, their exact shape, and their timing are
-   all decided in JS (_buildHudBoot) per viewport + a little randomness, so
-   this is never the literal same animation twice. Drawing uses the
-   pathLength=100 trick so each path animates via stroke-dashoffset without
-   needing real length math. animation-delay/-duration are set inline per
-   path by JS, not here. */
+   settles in after the big bang. A handful of clean, right-angle SVG
+   traces "laser in" toward the specific bits of UI about to fade in (nav,
+   carousel, corners) — never decorative ones with nothing behind them. A
+   bright travelling dot leads each trace like a laser head cutting the
+   line, riding the same path via CSS offset-path. Each target picks one of
+   two fixed, crisp path shapes at random and times it slightly differently
+   per run (see _buildHudBoot in JS) — so it varies run to run without ever
+   looking wobbly or imprecise. Drawing uses the pathLength=100 trick so
+   each path animates via stroke-dashoffset without needing real length
+   math. animation-delay/-duration are set inline per element by JS. */
 #hud-boot-overlay {
   position: fixed; inset: 0; z-index: 30;
   pointer-events: none; opacity: 0;
@@ -3032,21 +3033,36 @@ body.hud-boot #hud-boot-overlay { opacity: 1; }
 
 .hud-trace {
   fill: none;
-  stroke: rgba(100,255,160,0.85);
-  stroke-width: 0.18;
+  stroke: rgba(120,255,180,0.9);
+  stroke-width: 0.15;
   vector-effect: non-scaling-stroke;
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
   opacity: 0;
-  filter: drop-shadow(0 0 2px rgba(100,255,160,0.55));
+  filter: drop-shadow(0 0 2px rgba(100,255,160,0.6));
 }
-body.hud-boot .hud-trace { animation-name: hud-trace-draw; animation-timing-function: cubic-bezier(0.16,1,0.3,1); animation-fill-mode: forwards; }
+body.hud-boot .hud-trace { animation-name: hud-trace-draw; animation-timing-function: linear; animation-fill-mode: forwards; }
 @keyframes hud-trace-draw {
   0%   { stroke-dashoffset: 100; opacity: 0; }
-  4%   { opacity: 1; }
+  3%   { opacity: 1; }
   55%  { stroke-dashoffset: 0; opacity: 1; }
-  78%  { stroke-dashoffset: 0; opacity: 0.5; }
+  80%  { stroke-dashoffset: 0; opacity: 0.4; }
   100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+/* Bright dot riding the leading edge of each trace, like a laser head. */
+.hud-laser-tip {
+  fill: #eafff0;
+  opacity: 0;
+  filter: drop-shadow(0 0 2.5px rgba(170,255,210,0.95)) drop-shadow(0 0 6px rgba(100,255,160,0.6));
+}
+body.hud-boot .hud-laser-tip { animation-name: hud-laser-travel; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes hud-laser-travel {
+  0%   { offset-distance: 0%;   opacity: 0; }
+  3%   { opacity: 1; }
+  55%  { offset-distance: 100%; opacity: 1; }
+  80%  { opacity: 0.25; }
+  100% { offset-distance: 100%; opacity: 0; }
 }
 
 .hud-node {
@@ -4025,56 +4041,88 @@ window.addEventListener('pageshow', (e) => {
 
     const isMobile = window.innerWidth <= 768;
 
-    // Each is a staircase of [x,y] points (0–100 viewBox space) converging
-    // on a real piece of UI. Nothing decorative — every trace points at
-    // something that's about to fade in.
+    // Each target offers two fixed, clean right-angle path shapes (no
+    // jittered coordinates — that just looked wobbly/imprecise). One is
+    // picked at random per target per run, so it varies without ever
+    // looking sloppy. Nothing decorative — every trace points at a real
+    // piece of UI that's about to fade in.
     const TARGETS = {
-      c1:       [[2,24],[2,8],[9,8],[9,2],[26,2]],          // corner-tl
-      c2:       [[98,24],[98,8],[91,8],[91,2],[74,2]],      // corner-tr
-      c3:       [[2,76],[2,92],[9,92],[9,98],[26,98]],      // corner-bl (desktop only)
-      c4:       [[98,76],[98,92],[91,92],[91,98],[74,98]],  // corner-br (desktop only)
-      navLeft:  [[4,16],[14,16],[14,32],[6,32],[6,50],[17,50]],      // left-center nav (desktop)
-      navBottom:[[30,62],[30,80],[45,80],[45,97],[65,97]],           // bottom nav strip (mobile)
-      carousel: [[47,57],[47,69],[35,69],[35,81],[51,81],[51,91]],   // bottom carousel (desktop only)
+      c1: [ // corner-tl
+        [[2,24],[2,8],[9,8],[9,2],[26,2]],
+        [[2,30],[2,14],[6,14],[6,6],[14,6],[14,2],[30,2]],
+      ],
+      c2: [ // corner-tr
+        [[98,24],[98,8],[91,8],[91,2],[74,2]],
+        [[98,30],[98,14],[94,14],[94,6],[86,6],[86,2],[70,2]],
+      ],
+      c3: [ // corner-bl (desktop only)
+        [[2,76],[2,92],[9,92],[9,98],[26,98]],
+        [[2,70],[2,86],[6,86],[6,94],[14,94],[14,98],[30,98]],
+      ],
+      c4: [ // corner-br (desktop only)
+        [[98,76],[98,92],[91,92],[91,98],[74,98]],
+        [[98,70],[98,86],[94,86],[94,94],[86,94],[86,98],[70,98]],
+      ],
+      navLeft: [ // left-center nav (desktop)
+        [[4,16],[14,16],[14,32],[6,32],[6,50],[17,50]],
+        [[4,10],[18,10],[18,28],[8,28],[8,50],[20,50]],
+      ],
+      navBottom: [ // bottom nav strip (mobile)
+        [[30,62],[30,80],[45,80],[45,97],[65,97]],
+        [[22,55],[22,75],[40,75],[40,97],[60,97]],
+      ],
+      carousel: [ // bottom carousel (desktop only)
+        [[47,57],[47,69],[35,69],[35,81],[51,81],[51,91]],
+        [[53,55],[53,67],[65,67],[65,79],[49,79],[49,91]],
+      ],
     };
 
     const active = isMobile
       ? ['c1', 'c2', 'navBottom']
       : ['c1', 'c2', 'c3', 'c4', 'navLeft', 'carousel'];
 
-    function jitter(pts) {
-      return pts.map(([x, y], i) => {
-        const amt = i === pts.length - 1 ? 0.7 : 1.8; // hold the arrival point steadier than the bends
-        return [x + (Math.random() * 2 - 1) * amt, y + (Math.random() * 2 - 1) * amt];
-      });
-    }
     function toD(pts) {
-      return pts.map(([x, y], i) => (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1)).join(' ');
+      return pts.map(([x, y], i) => (i === 0 ? 'M' : 'L') + x + ',' + y).join(' ');
     }
 
     const nodeCandidates = [];
     active.forEach(key => {
-      const pts = jitter(TARGETS[key]);
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('class', 'hud-trace');
-      path.setAttribute('pathLength', '100');
-      path.setAttribute('d', toD(pts));
+      const variants = TARGETS[key];
+      const pts = variants[Math.random() < 0.5 ? 0 : 1];
+      const d = toD(pts);
       // delay (0–0.16s) + dur (1.25–1.50s) tops out at 1.66s — matched to
       // the full length of hud_in.mp3 so the sfx plays out completely.
       const delay = Math.random() * 0.16;
       const dur   = 1.25 + Math.random() * 0.25;
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('class', 'hud-trace');
+      path.setAttribute('pathLength', '100');
+      path.setAttribute('d', d);
       path.style.animationDelay    = delay.toFixed(2) + 's';
       path.style.animationDuration = dur.toFixed(2) + 's';
       svg.appendChild(path);
-      if (pts.length > 2) nodeCandidates.push({ pt: pts[Math.floor(pts.length / 2)], delay });
+
+      // Bright dot riding the same path, leading the line like a laser head.
+      const tip = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      tip.setAttribute('class', 'hud-laser-tip');
+      tip.setAttribute('r', '0.85');
+      tip.setAttribute('cx', '0');
+      tip.setAttribute('cy', '0');
+      tip.style.offsetPath = "path('" + d + "')";
+      tip.style.animationDelay    = delay.toFixed(2) + 's';
+      tip.style.animationDuration = dur.toFixed(2) + 's';
+      svg.appendChild(tip);
+
+      nodeCandidates.push({ pt: pts[Math.floor(pts.length / 2)], delay });
     });
 
     // A couple of small glowing pulses at random bend points, for flavor.
     nodeCandidates.sort(() => Math.random() - 0.5).slice(0, 2).forEach(({ pt, delay }) => {
       const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       c.setAttribute('class', 'hud-node');
-      c.setAttribute('cx', pt[0].toFixed(1));
-      c.setAttribute('cy', pt[1].toFixed(1));
+      c.setAttribute('cx', pt[0]);
+      c.setAttribute('cy', pt[1]);
       c.setAttribute('r', '0.6');
       c.style.animationDelay    = (delay + 0.04).toFixed(2) + 's';
       c.style.animationDuration = '1.1s';
