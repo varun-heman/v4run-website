@@ -3013,6 +3013,36 @@ body.crt-off .crt-off-line {
   body.crt-off .crt-off-line { opacity: 0 !important; }
 }
 
+/* ── PAGE TRANSITION — project navigation ───────────────────────────────
+   Replaces the browser's default cross-fade (for both the in-app fetch+
+   swap into the project detail view, and a real cross-document navigation
+   straight to/from a project's own static page — same View Transitions
+   API either way, just one CSS treatment for both) with something more in
+   keeping with the rest of the site: the outgoing page overexposes and
+   tears apart in a quick RGB-split glitch, the incoming page wipes in
+   left-to-right with a bright leading edge, like a terminal repainting.
+   ~480ms total, GPU-cheap (opacity/filter/clip-path only). Falls back to
+   an ordinary instant swap wherever the API or this CSS isn't supported. */
+::view-transition-old(root) {
+  animation: v4-vt-out 0.4s cubic-bezier(0.4,0,1,1) both;
+}
+::view-transition-new(root) {
+  animation: v4-vt-in 0.48s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes v4-vt-out {
+  0%   { opacity: 1; filter: brightness(1) saturate(1); }
+  30%  { opacity: 1; filter: brightness(1.5) saturate(1.6) hue-rotate(-6deg); }
+  100% { opacity: 0; filter: brightness(2.2) saturate(0.3) blur(3px); }
+}
+@keyframes v4-vt-in {
+  0%   { opacity: 0; clip-path: inset(0 100% 0 0); filter: brightness(2.4) saturate(0.25); }
+  55%  { opacity: 1; clip-path: inset(0 0 0 0);     filter: brightness(1.5) saturate(1.5); }
+  100% { opacity: 1; clip-path: inset(0 0 0 0);     filter: brightness(1) saturate(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+}
+
 /* ── HUD BOOT SEQUENCE — first-visit only, plays once as the interface
    settles in after the big bang. A handful of clean, right-angle SVG
    traces "laser in" toward the specific bits of UI about to fade in (nav,

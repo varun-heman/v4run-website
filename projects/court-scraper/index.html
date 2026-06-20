@@ -61,6 +61,15 @@ a{color:inherit;text-decoration:none;}
   .proj-detail__content{margin-left:0;width:100%;min-height:0;overflow-y:visible;padding:28px 20px 56px;}
   .proj-detail__title{font-size:25px;}
 }
+/* Page transition for real cross-document navigation to/from the homepage
+   (View Transitions API, enabled by the view-transition meta tag above) —
+   mirrors the same keyframes in index.html so the effect looks identical
+   no matter which side of the navigation this document is on. */
+::view-transition-old(root){animation:v4-vt-out .4s cubic-bezier(.4,0,1,1) both;}
+::view-transition-new(root){animation:v4-vt-in .48s cubic-bezier(.16,1,.3,1) both;}
+@keyframes v4-vt-out{0%{opacity:1;filter:brightness(1) saturate(1);}30%{opacity:1;filter:brightness(1.5) saturate(1.6) hue-rotate(-6deg);}100%{opacity:0;filter:brightness(2.2) saturate(.3) blur(3px);}}
+@keyframes v4-vt-in{0%{opacity:0;clip-path:inset(0 100% 0 0);filter:brightness(2.4) saturate(.25);}55%{opacity:1;clip-path:inset(0 0 0 0);filter:brightness(1.5) saturate(1.5);}100%{opacity:1;clip-path:inset(0 0 0 0);filter:brightness(1) saturate(1);}}
+@media (prefers-reduced-motion: reduce){::view-transition-old(root),::view-transition-new(root){animation:none !important;}}
 </style>
 </head>
 <body>
