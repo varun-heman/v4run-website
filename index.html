@@ -5793,7 +5793,8 @@ const NAV_LABELS = {};  // key → display label
   }
 
   // ── Caption typewriter + glitch ───────────────────────────────────────────
-  const CAPTION_GLITCH_CHARS = '!<>-_\\/[]{}—=+*^?#@░▒│';
+  // Uses same GLITCH charset + RAF burst pattern as the quotes/sphere system.
+  const CAP_GLITCH = '!<>_\\/[]{}|=+*^?#@░▒▓│╡╢╖╣║╗╝╜╛┐└┴┬├─┼╔╩╦╠═╬╧╨╙╘╒╓╫╪┘┌01010110';
 
   function typeCaptionIn(slot) {
     const el = slot.el.querySelector('.memory-caption');
@@ -5802,40 +5803,56 @@ const NAV_LABELS = {};  // key → display label
     el.textContent = '';
     if (!text) return;
 
-    let charTimer = null, glitchInterval = null;
+    let charTimer = null, glitchRaf = null, glitchTimeout = null;
+    let glitchActive = false;
 
+    // RAF-based glitch burst: replaces ~50% of chars each frame for 180–320ms,
+    // then rests 1.2–3.5 s, then repeats — identical to doGlitchBurst in quotes.
     function startGlitch() {
-      glitchInterval = setInterval(() => {
-        if (Math.random() > 0.45) return;
-        // Briefly corrupt 5-8% of characters
-        const chars = text.split('');
-        chars.forEach((c, i) => {
-          if (c !== ' ' && Math.random() < 0.06)
-            chars[i] = CAPTION_GLITCH_CHARS[Math.floor(Math.random() * CAPTION_GLITCH_CHARS.length)];
-        });
-        el.textContent = chars.join('');
-        setTimeout(() => { if (el.dataset.caption) el.textContent = text; }, 55 + Math.random() * 65);
-      }, 4500 + Math.random() * 4000);
+      glitchActive = true;
+      const dur = 180 + Math.random() * 140;
+      const t0  = performance.now();
+      function tick(now) {
+        if (!glitchActive) { el.textContent = text; return; }
+        if (now - t0 > dur) {
+          el.textContent = text;
+          glitchTimeout = setTimeout(() => {
+            if (glitchActive) startGlitch();
+          }, 1200 + Math.random() * 2300);
+          return;
+        }
+        let out = '';
+        for (let i = 0; i < text.length; i++) {
+          if (text[i] === ' ' || text[i] === "'") { out += text[i]; continue; }
+          out += Math.random() < 0.5
+            ? CAP_GLITCH[Math.floor(Math.random() * CAP_GLITCH.length)]
+            : text[i];
+        }
+        el.textContent = out;
+        glitchRaf = requestAnimationFrame(tick);
+      }
+      glitchRaf = requestAnimationFrame(tick);
     }
 
     let i = 0;
     function typeNext() {
-      if (!slot.el.classList.contains('is-center')) return; // slot left center; abort
+      if (!slot.el.classList.contains('is-center')) return;
       i++;
       el.textContent = text.slice(0, i);
       if (i < text.length) {
         charTimer = setTimeout(typeNext, 24 + Math.random() * 36);
       } else {
-        startGlitch(); // typing done → occasional corruption
+        startGlitch();
       }
     }
 
     charTimer = setTimeout(typeNext, 55);
 
-    // Cleanup clears timers and wipes text — called when slot leaves center
     slot.captionCleanup = () => {
       clearTimeout(charTimer);
-      clearInterval(glitchInterval);
+      clearTimeout(glitchTimeout);
+      cancelAnimationFrame(glitchRaf);
+      glitchActive = false;
       el.textContent = '';
     };
   }
@@ -5992,6 +6009,58 @@ const NAV_LABELS = {};  // key → display label
     if (overlay.classList.contains('open') && !sliding) {
       setTrackX(baseX(), false);
     }
+  });
+
+  // ── Drag / swipe / click-side-slot ───────────────────────────────────────
+  // Pointer events handle trackpad swipe, touch swipe, mouse drag, and click.
+  const DRAG_MIN = 8, DRAG_NAV = 52; // px: deadband, then navigate threshold
+  let dragStartX = null, dragCurX = null, dragActive = false, dragConsumed = false;
+
+  overlay.addEventListener('pointerdown', e => {
+    if (sliding || e.button !== 0) return;
+    if (e.target.closest('button, #moments-close')) return;
+    dragStartX = dragCurX = e.clientX;
+    dragActive = dragConsumed = false;
+  });
+
+  overlay.addEventListener('pointermove', e => {
+    if (dragStartX === null || sliding) return;
+    dragCurX = e.clientX;
+    const dx = dragCurX - dragStartX;
+    if (Math.abs(dx) > DRAG_MIN) {
+      dragActive = true;
+      track.classList.remove('sliding');
+      track.style.transform = `translateX(${baseX() + dx}px)`;
+    }
+  });
+
+  overlay.addEventListener('pointerup', e => {
+    if (dragStartX === null) return;
+    const dx = (dragCurX ?? dragStartX) - dragStartX;
+    if (dragActive) {
+      dragConsumed = true;
+      setTrackX(baseX(), false);                  // snap back first
+      if      (dx < -DRAG_NAV) navigate(1);       // swiped left  → next
+      else if (dx >  DRAG_NAV) navigate(-1);      // swiped right → prev
+    }
+    dragStartX = dragCurX = null;
+    dragActive = false;
+    setTimeout(() => { dragConsumed = false; }, 0); // clear after click events fire
+  });
+
+  overlay.addEventListener('pointercancel', () => {
+    if (dragActive) setTrackX(baseX(), false);
+    dragStartX = dragCurX = null;
+    dragActive = false;
+  });
+
+  // Click on a side slot navigates to it
+  track.addEventListener('click', e => {
+    if (dragConsumed || sliding) return;
+    const clickedSlot = e.target.closest('.moments-slot');
+    if (!clickedSlot) return;
+    if (clickedSlot === slots[0]?.el) navigate(-1);
+    else if (clickedSlot === slots[2]?.el) navigate(1);
   });
 
   prevBtn.addEventListener('click', () => navigate(-1));
