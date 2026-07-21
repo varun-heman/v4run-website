@@ -6011,8 +6011,30 @@ const NAV_LABELS = {};  // key → display label
     }
   });
 
+  // ── Trackpad 2-finger swipe (wheel events) ───────────────────────────────
+  // Mac 2-finger swipe fires wheel deltaX, not pointer events.
+  let wheelAccum = 0, wheelTimer = null, wheelCooldown = false;
+  overlay.addEventListener('wheel', e => {
+    if (!overlay.classList.contains('open')) return;
+    e.preventDefault(); // stop page scroll while moments is open
+    if (wheelCooldown) return;
+    wheelAccum += e.deltaX;
+    clearTimeout(wheelTimer);
+    wheelTimer = setTimeout(() => { wheelAccum = 0; }, 180); // reset if gesture pauses
+    if (Math.abs(wheelAccum) > 60) {
+      const dir = wheelAccum > 0 ? 1 : -1;
+      wheelAccum = 0;
+      clearTimeout(wheelTimer);
+      if (!sliding) {
+        wheelCooldown = true;
+        navigate(dir);
+        setTimeout(() => { wheelCooldown = false; }, 700);
+      }
+    }
+  }, { passive: false });
+
   // ── Drag / swipe / click-side-slot ───────────────────────────────────────
-  // Pointer events handle trackpad swipe, touch swipe, mouse drag, and click.
+  // Pointer events handle touch swipe, mouse drag, and click.
   const DRAG_MIN = 8, DRAG_NAV = 52; // px: deadband, then navigate threshold
   let dragStartX = null, dragCurX = null, dragActive = false, dragConsumed = false;
 
