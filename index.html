@@ -566,10 +566,8 @@ body.ui-ready #writings-section.ready {
   position: relative;
   width: 100%;
   transform-style: preserve-3d;
-  /* Auto-drift while idle. Paused on hover so JS mouse-tracking takes over. */
-  animation: memory-tilt-drift 9s ease-in-out infinite;
+  /* No idle tilt — sits flat at rest, JS takes over fully on hover. */
 }
-.memory-card.paused .memory-tilt { animation-play-state: paused; }
 .memory-tilt {
   --memory-feather: radial-gradient(ellipse 50% 50% at 50% 50%, #000 46%, transparent 86%);
 }
@@ -614,15 +612,21 @@ body.ui-ready #writings-section.ready {
   pointer-events: none;
   transition: opacity 0.4s ease;
 }
-/* Gloss shimmer — a radial spotlight that tracks the cursor to simulate
-   light reflecting off a physical surface. Updated by JS on mousemove. */
+/* Gloss shimmer — an oversized circular highlight that translates across
+   the photo surface as the cursor moves, like a specular light rolling
+   over a physical card. Sits 160%×160% centered so it can slide in from
+   any direction without disappearing; clipped by the frame's overflow:hidden. */
 .memory-shimmer {
-  position: absolute; inset: 0;
+  position: absolute;
+  width: 160%; height: 160%;
+  top: -30%; left: -30%;
   z-index: 5; pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.07) 40%, transparent 68%);
   opacity: 0;
   mix-blend-mode: overlay;
-  border-radius: inherit;
   transition: opacity 0.35s ease;
+  will-change: transform;
 }
 .memory-card.paused .memory-shimmer { opacity: 1; }
 /* Caption shown prominently at the bottom of the photo on hover. */
@@ -5841,20 +5845,27 @@ const NAV_LABELS = {};  // key → display label
 
       card.appendChild(tilt);
 
-      // ── Spring tilt: mouse-driven 3D perspective with lerp smoothing ──
-      // curX/Y are the running values, tgtX/Y the instantaneous targets.
-      // tiltTick auto-stops if this card is replaced (currentCard !== card),
-      // so there's no need to cancel RAFs from outside the closure.
-      let curX = 0, curY = 0, tgtX = 0, tgtY = 0, localRaf = null;
-      const MAX_TILT = 14, LERP = 0.1;
+      // ── Spring tilt + shimmer: mouse-driven 3D perspective with lerp ──
+      // tilt (curX/Y) and shimmer translate (shimCurX/Y) are lerped
+      // independently in one RAF loop. Shimmer uses a softer lerp so it
+      // trails the cursor slightly behind the tilt — more physical feel.
+      // tiltTick auto-stops when currentCard changes (card replaced/removed).
+      let curX = 0, curY = 0, tgtX = 0, tgtY = 0;
+      let shimCurX = 0, shimCurY = 0, tgtShimX = 0, tgtShimY = 0;
+      let localRaf = null;
+      const MAX_TILT = 12, LERP_TILT = 0.10, LERP_SHIM = 0.07;
 
       function tiltTick() {
-        if (currentCard !== card) { localRaf = null; return; } // card replaced — bail
-        curX += (tgtX - curX) * LERP;
-        curY += (tgtY - curY) * LERP;
-        const settled = Math.abs(tgtX - curX) < 0.02 && Math.abs(tgtY - curY) < 0.02;
-        tilt.style.transform = `perspective(700px) rotateX(${curX.toFixed(2)}deg) rotateY(${curY.toFixed(2)}deg)`;
-        localRaf = settled ? null : requestAnimationFrame(tiltTick);
+        if (currentCard !== card) { localRaf = null; return; }
+        curX    += (tgtX    - curX)    * LERP_TILT;
+        curY    += (tgtY    - curY)    * LERP_TILT;
+        shimCurX += (tgtShimX - shimCurX) * LERP_SHIM;
+        shimCurY += (tgtShimY - shimCurY) * LERP_SHIM;
+        const settledTilt = Math.abs(tgtX - curX) < 0.02 && Math.abs(tgtY - curY) < 0.02;
+        const settledShim = Math.abs(tgtShimX - shimCurX) < 0.05 && Math.abs(tgtShimY - shimCurY) < 0.05;
+        tilt.style.transform    = `perspective(700px) rotateX(${curX.toFixed(2)}deg) rotateY(${curY.toFixed(2)}deg)`;
+        shimmer.style.transform = `translate(${shimCurX.toFixed(2)}%, ${shimCurY.toFixed(2)}%)`;
+        localRaf = (settledTilt && settledShim) ? null : requestAnimationFrame(tiltTick);
       }
 
       frame.addEventListener('mouseenter', () => {
@@ -5869,21 +5880,19 @@ const NAV_LABELS = {};  // key → display label
         cardHovered = false;
         card.classList.remove('paused');
         tgtX = 0; tgtY = 0;
-        shimmer.style.background = '';
-        if (!localRaf) localRaf = requestAnimationFrame(tiltTick); // spring back to neutral
+        tgtShimX = 0; tgtShimY = 0;
+        if (!localRaf) localRaf = requestAnimationFrame(tiltTick); // spring everything back
       });
 
       frame.addEventListener('mousemove', (e) => {
         const r = frame.getBoundingClientRect();
         const nx = ((e.clientX - r.left) / r.width  - 0.5) * 2; // -1…1
         const ny = ((e.clientY - r.top)  / r.height - 0.5) * 2;
-        tgtX = -ny * MAX_TILT;
-        tgtY =  nx * MAX_TILT;
+        tgtX     = -ny * MAX_TILT;
+        tgtY     =  nx * MAX_TILT;
+        tgtShimX =  nx * 38; // percent — shimmer slides across like a rolling light
+        tgtShimY =  ny * 38;
         if (!localRaf) localRaf = requestAnimationFrame(tiltTick);
-        // Shimmer follows cursor like a gloss highlight
-        const px = ((e.clientX - r.left) / r.width  * 100).toFixed(1);
-        const py = ((e.clientY - r.top)  / r.height * 100).toFixed(1);
-        shimmer.style.background = `radial-gradient(circle at ${px}% ${py}%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.06) 35%, transparent 65%)`;
       });
 
       container.innerHTML = '';
