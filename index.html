@@ -598,6 +598,14 @@ body.moments-open #sphere-label {
   pointer-events: none !important;
   transition: opacity 0.3s ease !important;
 }
+/* On close: snap back immediately without the slow page-load transition-delay */
+body.moments-closing #nav,
+body.moments-closing .corner {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transition: opacity 0.35s ease !important;
+  transition-delay: 0s !important;
+}
 /* Close button — matches site's modal-x: red-tinted, small bordered box */
 #moments-close {
   position: absolute; top: 20px; right: 22px; z-index: 12;
@@ -5996,6 +6004,9 @@ const NAV_LABELS = {};  // key → display label
     overlay.classList.remove('open');
     overlay.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('moments-open');
+    // moments-closing forces nav/corners back immediately (bypasses slow page-load delays)
+    document.body.classList.add('moments-closing');
+    setTimeout(() => document.body.classList.remove('moments-closing'), 450);
     window._modalOpen = false;
     document.removeEventListener('mousemove', onGlobalMouse);
     if (tiltRaf) { cancelAnimationFrame(tiltRaf); tiltRaf = null; }
