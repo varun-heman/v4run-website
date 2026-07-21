@@ -558,8 +558,6 @@ body.ui-ready #writings-section.ready {
 }
 
 /* ─── MOMENTS OVERLAY ────────────────────────────────────── */
-/* No blackout — overlay is a transparent container that clips the
-   sliding track. Nav/corners/writings-section are hidden via body class. */
 #moments-overlay {
   position: fixed; inset: 0; z-index: 901;
   overflow: hidden;
@@ -573,6 +571,24 @@ body.ui-ready #writings-section.ready {
   transition: opacity 0.45s ease;
   pointer-events: auto;
 }
+/* Screen-edge feather: gradient panels fade peeking cards into page bg */
+#moments-overlay::before,
+#moments-overlay::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 13vw;
+  z-index: 5;
+  pointer-events: none;
+}
+#moments-overlay::before {
+  left: 0;
+  background: linear-gradient(to right, var(--bg) 0%, transparent 100%);
+}
+#moments-overlay::after {
+  right: 0;
+  background: linear-gradient(to left, var(--bg) 0%, transparent 100%);
+}
 /* What to hide from the page while Moments is open */
 body.moments-open #nav,
 body.moments-open .corner,
@@ -582,14 +598,24 @@ body.moments-open #sphere-label {
   pointer-events: none !important;
   transition: opacity 0.3s ease !important;
 }
+/* Close button — prominent, mono style with border */
 #moments-close {
-  position: absolute; top: 22px; right: 26px; z-index: 10;
-  font-family: var(--mono); font-size: 16px; line-height: 1;
-  color: rgba(232,232,226,0.45);
-  cursor: pointer; background: none; border: none; padding: 8px;
-  transition: color 0.2s;
+  position: absolute; top: 20px; right: 22px; z-index: 12;
+  font-family: var(--mono); font-size: 18px; line-height: 1;
+  color: rgba(232,232,226,0.75);
+  cursor: pointer;
+  background: rgba(8,8,8,0.82);
+  border: 1px solid rgba(232,232,226,0.22);
+  border-radius: 3px;
+  padding: 7px 14px;
+  letter-spacing: 0.08em;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
 }
-#moments-close:hover { color: rgba(232,232,226,0.85); }
+#moments-close:hover {
+  color: rgba(232,232,226,1);
+  border-color: rgba(100,255,160,0.5);
+  background: rgba(8,8,8,0.97);
+}
 /* Rail: full-width row, vertically centered, allows peek overflow */
 #moments-rail {
   position: absolute;
@@ -620,6 +646,35 @@ body.moments-open #sphere-label {
   height: min(60vh, 600px);
   border-radius: 8px;
   box-shadow: 0 24px 72px rgba(0,0,0,0.65);
+}
+/* Caption: hidden on side slots; glitches in on center, out when leaving */
+.moments-slot .memory-caption {
+  opacity: 0 !important;
+  animation: none !important;
+}
+.moments-slot.is-center .memory-caption {
+  animation: caption-glitch-in 0.7s forwards !important;
+}
+.moments-slot.caption-out .memory-caption {
+  animation: caption-glitch-out 0.48s forwards !important;
+}
+@keyframes caption-glitch-in {
+  0%   { opacity: 0;   transform: translateY(3px); filter: brightness(4) blur(2px); }
+  12%  { opacity: 0.9; transform: translateY(1px); filter: brightness(3); }
+  20%  { opacity: 0.15; filter: brightness(5); }
+  32%  { opacity: 1;   transform: translateY(0);   filter: brightness(1.8); }
+  42%  { opacity: 0.45; filter: brightness(0.7); }
+  55%  { opacity: 1;   filter: brightness(1.3); }
+  68%  { opacity: 0.75; filter: none; }
+  100% { opacity: 1;   filter: none; transform: translateY(0); }
+}
+@keyframes caption-glitch-out {
+  0%   { opacity: 1;   filter: none; transform: translateY(0); }
+  18%  { opacity: 0.7; filter: brightness(3) blur(1px); }
+  32%  { opacity: 1;   filter: brightness(4);  transform: translateY(-2px); }
+  48%  { opacity: 0.2; filter: brightness(1); }
+  62%  { opacity: 0.5; filter: brightness(3.5) blur(2px); transform: translateY(2px); }
+  100% { opacity: 0;   filter: none; transform: translateY(3px); }
 }
 /* Nav at bottom */
 #moments-nav {
@@ -5628,6 +5683,17 @@ const NAV_LABELS = {};  // key → display label
     return photos[((idx % photos.length) + photos.length) % photos.length];
   }
 
+  // ── RGB-split glitch — brief hue shift + displacement, like site theme ──────
+  function triggerPhotoGlitch(mediaEl) {
+    const seq = [
+      [0,   () => { mediaEl.style.transform = 'translate(5px,0)';    mediaEl.style.filter = 'hue-rotate(90deg) saturate(4) brightness(1.4)'; }],
+      [48,  () => { mediaEl.style.transform = 'translate(-4px,1px)'; mediaEl.style.filter = 'hue-rotate(-80deg) saturate(5) brightness(0.8)'; }],
+      [88,  () => { mediaEl.style.transform = 'translate(2px,-1px)'; mediaEl.style.filter = 'hue-rotate(35deg) saturate(2) brightness(1.1)'; }],
+      [118, () => { mediaEl.style.transform = '';                     mediaEl.style.filter = ''; }]
+    ];
+    seq.forEach(([delay, fn]) => setTimeout(fn, delay));
+  }
+
   // ── Card builder ──────────────────────────────────────────────────────────
   function buildCard(p) {
     const slot = document.createElement('div');
@@ -5673,7 +5739,12 @@ const NAV_LABELS = {};  // key → display label
       setTimeout(() => media.play().catch(() => {}), 50);
     }
 
-    return { el: slot, tiltEl, shimmer };
+    // Random glitch bursts; interval ID stored so we can clear on slot removal
+    const glitchInterval = setInterval(() => {
+      if (Math.random() < 0.45) triggerPhotoGlitch(media);
+    }, 3200 + Math.random() * 3000);
+
+    return { el: slot, tiltEl, shimmer, media, glitchInterval };
   }
 
   // ── Global tilt RAF loop ──────────────────────────────────────────────────
@@ -5711,8 +5782,12 @@ const NAV_LABELS = {};  // key → display label
     // Global tilt: normalised -1..1 from screen center
     const nx =  (e.clientX / innerWidth  - 0.5) * 2;
     const ny =  (e.clientY / innerHeight - 0.5) * 2;
-    gTgtX = -ny * MAX_TILT;
-    gTgtY =  nx * MAX_TILT;
+
+    // Flatten tilt when mouse is near the nav buttons at the bottom
+    const NAV_DEAD = 110; // px from bottom where tilt starts fading to zero
+    const tiltScale = Math.max(0, Math.min(1, (innerHeight - e.clientY) / NAV_DEAD));
+    gTgtX = -ny * MAX_TILT * tiltScale;
+    gTgtY =  nx * MAX_TILT * tiltScale;
 
     // Per-card shimmer: position relative to each slot's bounding rect
     slots.forEach((s, i) => {
@@ -5750,6 +5825,9 @@ const NAV_LABELS = {};  // key → display label
       }
     });
 
+    // Mark the center slot so its caption animates in
+    if (slots[1]) slots[1].el.classList.add('is-center');
+
     setTrackX(baseX(), false);
     updateCounter();
   }
@@ -5773,6 +5851,12 @@ const NAV_LABELS = {};  // key → display label
     const shift = slotW() + gap();
     const base  = baseX();
 
+    // Caption glitch-out on current center before it slides away
+    if (slots[1]) {
+      slots[1].el.classList.remove('is-center');
+      slots[1].el.classList.add('caption-out');
+    }
+
     // Slide track one slot-width in the chosen direction
     setTrackX(base - dir * shift, true);
 
@@ -5790,7 +5874,7 @@ const NAV_LABELS = {};  // key → display label
       if (dir === 1) {
         // Moved forward: drop leftmost slot, append new next-next
         track.removeChild(track.firstElementChild);
-        slots.shift();
+        const removed = slots.shift(); clearInterval(removed.glitchInterval);
         shimState.shift();
 
         const p = photoAt(currentIdx + 1);
@@ -5803,7 +5887,7 @@ const NAV_LABELS = {};  // key → display label
       } else {
         // Moved backward: drop rightmost slot, prepend new prev-prev
         track.removeChild(track.lastElementChild);
-        slots.pop();
+        const removed = slots.pop(); clearInterval(removed.glitchInterval);
         shimState.pop();
 
         const p = photoAt(currentIdx - 1);
@@ -5817,6 +5901,9 @@ const NAV_LABELS = {};  // key → display label
 
       // Snap back to base without animation — same sync block, one repaint
       track.style.transform = `translateX(${baseX()}px)`;
+
+      // Caption glitch-in on new center
+      if (slots[1]) slots[1].el.classList.add('is-center');
 
       updateCounter();
       sliding = false;
@@ -5856,6 +5943,7 @@ const NAV_LABELS = {};  // key → display label
     window._modalOpen = false;
     document.removeEventListener('mousemove', onGlobalMouse);
     if (tiltRaf) { cancelAnimationFrame(tiltRaf); tiltRaf = null; }
+    slots.forEach(s => clearInterval(s.glitchInterval));
     // Clear track after fade-out completes
     setTimeout(() => { track.innerHTML = ''; slots = []; shimState = []; }, 460);
   }
