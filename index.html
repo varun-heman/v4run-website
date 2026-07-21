@@ -558,63 +558,96 @@ body.ui-ready #writings-section.ready {
 }
 
 /* ─── MOMENTS OVERLAY ────────────────────────────────────── */
+/* No blackout — overlay is a transparent container that clips the
+   sliding track. Nav/corners/writings-section are hidden via body class. */
 #moments-overlay {
   position: fixed; inset: 0; z-index: 901;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 28px;
-  background: rgba(5,5,5,0.97);
+  overflow: hidden;
+  background: transparent;
   opacity: 0; visibility: hidden;
-  transition: opacity 0.4s ease, visibility 0s 0.4s;
+  transition: opacity 0.45s ease, visibility 0s 0.45s;
+  pointer-events: none;
 }
 #moments-overlay.open {
   opacity: 1; visibility: visible;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.45s ease;
+  pointer-events: auto;
+}
+/* What to hide from the page while Moments is open */
+body.moments-open #nav,
+body.moments-open .corner,
+body.moments-open #writings-section,
+body.moments-open #sphere-label {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.3s ease !important;
 }
 #moments-close {
-  position: absolute; top: 22px; right: 26px;
+  position: absolute; top: 22px; right: 26px; z-index: 10;
   font-family: var(--mono); font-size: 16px; line-height: 1;
-  color: rgba(232,232,226,0.3);
+  color: rgba(232,232,226,0.45);
   cursor: pointer; background: none; border: none; padding: 8px;
   transition: color 0.2s;
 }
-#moments-close:hover { color: rgba(232,232,226,0.7); }
-#moments-stage {
-  width: min(72vw, 720px);
-  position: relative;
+#moments-close:hover { color: rgba(232,232,226,0.85); }
+/* Rail: full-width row, vertically centered, allows peek overflow */
+#moments-rail {
+  position: absolute;
+  top: 50%; left: 0; right: 0;
+  transform: translateY(calc(-50% - 28px));
+  overflow: visible;
+}
+/* Track: slides horizontally; transition added via JS on navigate */
+#moments-track {
+  display: flex;
+  gap: 3vw;
+  will-change: transform;
+}
+#moments-track.sliding {
+  transition: transform 0.52s cubic-bezier(0.32, 0, 0.12, 1);
+}
+/* Each slot holds one photo */
+.moments-slot {
+  width: 70vw;
+  flex-shrink: 0;
 }
 .moments-tilt {
   position: relative;
   transform-style: preserve-3d;
   width: 100%;
 }
-#moments-stage .memory-photo {
+.moments-slot .memory-photo {
   height: min(60vh, 600px);
   border-radius: 8px;
-  box-shadow: 0 24px 72px rgba(0,0,0,0.7);
+  box-shadow: 0 24px 72px rgba(0,0,0,0.65);
 }
+/* Nav at bottom */
 #moments-nav {
+  position: absolute; bottom: 32px; left: 50%;
+  transform: translateX(-50%);
   display: flex; align-items: center; gap: 28px;
   font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em;
-  text-transform: uppercase; color: rgba(232,232,226,0.4);
+  text-transform: uppercase; color: rgba(232,232,226,0.5);
+  z-index: 10;
 }
 #moments-prev, #moments-next {
   display: flex; align-items: center; justify-content: center;
   width: 34px; height: 34px;
-  border: 1px solid rgba(100,255,160,0.15); border-radius: 3px;
-  color: rgba(232,232,226,0.45);
-  background: rgba(100,255,160,0.02);
+  border: 1px solid rgba(100,255,160,0.2); border-radius: 3px;
+  color: rgba(232,232,226,0.55);
+  background: rgba(6,6,6,0.6);
   cursor: pointer; font-size: 11px;
   transition: color 0.2s, border-color 0.2s, background 0.2s;
 }
 #moments-prev:hover, #moments-next:hover {
-  color: rgba(232,232,226,0.85);
-  border-color: rgba(100,255,160,0.35);
-  background: rgba(100,255,160,0.06);
+  color: rgba(232,232,226,0.9);
+  border-color: rgba(100,255,160,0.45);
+  background: rgba(6,6,6,0.85);
 }
 #moments-counter { min-width: 54px; text-align: center; }
 @media (max-width: 768px) {
-  #moments-stage { width: 92vw; }
-  #moments-stage .memory-photo { height: 62vw; }
+  .moments-slot { width: 88vw; }
+  .moments-slot .memory-photo { height: 62vw; }
 }
 
 /* ─── ACCESS GATE ────────────────────────────────────── */
@@ -3632,7 +3665,9 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 <!-- Moments carousel overlay — opened by clicking "Moments" in nav -->
 <div id="moments-overlay" aria-hidden="true">
   <button id="moments-close" aria-label="Close Moments">×</button>
-  <div id="moments-stage"></div>
+  <div id="moments-rail">
+    <div id="moments-track"></div>
+  </div>
   <div id="moments-nav">
     <button id="moments-prev" aria-label="Previous photo"><i class="fa-solid fa-arrow-left"></i></button>
     <span id="moments-counter"></span>
@@ -5523,22 +5558,51 @@ const NAV_LABELS = {};  // key → display label
 
 // ═══════════════════════════════════════════════════
 //  MOMENTS CAROUSEL
-//  Opened by clicking "Moments" in nav. Loads photos tagged "memfog"
-//  from gallery.json and displays them one at a time with spring-physics
-//  3D tilt + specular shimmer on hover. Quotes cycle as normal when closed.
+//  3-slot sliding track. No blackout — transparent overlay hides nav/writings
+//  via body.moments-open class. Global mouse drives tilt on all slots at once.
+//  Adjacent cards peek from screen edges; arrow keys / buttons slide them in.
 // ═══════════════════════════════════════════════════
 (function () {
   const MEMFOG_TAG = 'memfog';
   const overlay  = document.getElementById('moments-overlay');
-  const stage    = document.getElementById('moments-stage');
+  const track    = document.getElementById('moments-track');
   const counter  = document.getElementById('moments-counter');
   const prevBtn  = document.getElementById('moments-prev');
   const nextBtn  = document.getElementById('moments-next');
   const closeBtn = document.getElementById('moments-close');
-  if (!overlay || !stage) return;
+  if (!overlay || !track) return;
 
-  let photos = null, currentIdx = 0, cleanupTilt = null;
+  const SLOT_VW = 0.70, GAP_VW = 0.03;
+  const MAX_TILT = 12, LERP_T = 0.10, LERP_S = 0.07;
 
+  let photos = null, currentIdx = 0, sliding = false;
+  // slots[]: array of {el (slot div), tiltEl, shimmer} — always 3 while open
+  let slots = [];
+  // Global tilt state (shared across all cards — mouse drives all equally)
+  let gTgtX = 0, gTgtY = 0, gCurX = 0, gCurY = 0;
+  // Per-slot shimmer state (position relative to each card's rect)
+  let shimState = [];
+  let tiltRaf = null;
+
+  // ── Layout helpers ────────────────────────────────────────────────────────
+  function slotW() { return SLOT_VW * innerWidth; }
+  function gap()   { return GAP_VW  * innerWidth; }
+
+  // Transform that centers track slot[1] in the viewport
+  function baseX() {
+    return innerWidth / 2 - slotW() / 2 - (slotW() + gap());
+  }
+
+  function setTrackX(x, animated) {
+    if (animated) {
+      track.classList.add('sliding');
+    } else {
+      track.classList.remove('sliding');
+    }
+    track.style.transform = `translateX(${x}px)`;
+  }
+
+  // ── Photo loading ─────────────────────────────────────────────────────────
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -5556,60 +5620,19 @@ const NAV_LABELS = {};  // key → display label
       const all = (data.albums || []).flatMap(a => a.photos || [])
         .filter(p => Array.isArray(p.tags) && p.tags.includes(MEMFOG_TAG) && p.src);
       photos = shuffle(all);
-    } catch(e) { photos = []; }
+    } catch (e) { photos = []; }
   }
 
-  // ── Spring tilt + light-source shimmer ──────────────────────────────────
-  // Attaches mouse-driven 3D tilt with spring physics to `tiltEl`.
-  // Shimmer opacity scales with tilt magnitude (zero when flat, bright when
-  // tilted) — the surface "catches" light only when angled toward the viewer.
-  // Returns a cleanup function that cancels any running RAF.
-  function attachTilt(tiltEl, frame, shimmer) {
-    let curX = 0, curY = 0, tgtX = 0, tgtY = 0;
-    let shimCurX = 0, shimCurY = 0, tgtShimX = 0, tgtShimY = 0;
-    let raf = null, isHovering = false;
-    const MAX_TILT = 12, LERP_T = 0.10, LERP_S = 0.07;
-
-    function tick() {
-      curX    += (tgtX    - curX)    * LERP_T;
-      curY    += (tgtY    - curY)    * LERP_T;
-      shimCurX += (tgtShimX - shimCurX) * LERP_S;
-      shimCurY += (tgtShimY - shimCurY) * LERP_S;
-      const st = Math.abs(tgtX - curX) < 0.02 && Math.abs(tgtY - curY) < 0.02;
-      const ss = Math.abs(tgtShimX - shimCurX) < 0.05 && Math.abs(tgtShimY - shimCurY) < 0.05;
-      tiltEl.style.transform    = `perspective(700px) rotateX(${curX.toFixed(2)}deg) rotateY(${curY.toFixed(2)}deg)`;
-      shimmer.style.transform   = `translate(${shimCurX.toFixed(2)}%, ${shimCurY.toFixed(2)}%)`;
-      // Shimmer brightens with tilt angle — zero when flat, max when tilted.
-      // Physically: a surface only reflects a specular highlight when angled.
-      const mag = Math.min(Math.sqrt(curX * curX + curY * curY) / MAX_TILT, 1);
-      shimmer.style.opacity = mag < 0.005 ? '0' : (mag * 0.95).toFixed(3);
-      raf = (st && ss) ? null : requestAnimationFrame(tick);
-    }
-
-    frame.addEventListener('mouseenter', () => {
-      isHovering = true;
-      if (!raf) raf = requestAnimationFrame(tick);
-    });
-    frame.addEventListener('mouseleave', () => {
-      isHovering = false;
-      tgtX = 0; tgtY = 0; tgtShimX = 0; tgtShimY = 0;
-      if (!raf) raf = requestAnimationFrame(tick);
-    });
-    frame.addEventListener('mousemove', (e) => {
-      const r = frame.getBoundingClientRect();
-      const nx = ((e.clientX - r.left) / r.width  - 0.5) * 2;
-      const ny = ((e.clientY - r.top)  / r.height - 0.5) * 2;
-      tgtX     = -ny * MAX_TILT;
-      tgtY     =  nx * MAX_TILT;
-      tgtShimX =  nx * 38;
-      tgtShimY =  ny * 38;
-      if (!raf) raf = requestAnimationFrame(tick);
-    });
-
-    return () => { if (raf) { cancelAnimationFrame(raf); raf = null; } };
+  function photoAt(idx) {
+    if (!photos || !photos.length) return null;
+    return photos[((idx % photos.length) + photos.length) % photos.length];
   }
 
+  // ── Card builder ──────────────────────────────────────────────────────────
   function buildCard(p) {
+    const slot = document.createElement('div');
+    slot.className = 'moments-slot';
+
     const tiltEl = document.createElement('div');
     tiltEl.className = 'moments-tilt';
 
@@ -5644,57 +5667,215 @@ const NAV_LABELS = {};  // key → display label
     frame.appendChild(captionEl);
 
     tiltEl.appendChild(frame);
+    slot.appendChild(tiltEl);
 
     if (p.type === 'video') {
-      // Autoplay once inserted
       setTimeout(() => media.play().catch(() => {}), 50);
     }
 
-    const cleanup = attachTilt(tiltEl, frame, shimmer);
-    return { el: tiltEl, cleanup };
+    return { el: slot, tiltEl, shimmer };
   }
 
-  function showPhoto(idx) {
-    if (!photos || !photos.length) return;
-    currentIdx = ((idx % photos.length) + photos.length) % photos.length;
-    const p = photos[currentIdx];
-    counter.textContent = `${currentIdx + 1} / ${photos.length}`;
+  // ── Global tilt RAF loop ──────────────────────────────────────────────────
+  // All cards share one loop; tilt angle driven by global mouse position,
+  // shimmer position driven by mouse relative to each card's own rect.
+  function tiltTick() {
+    gCurX += (gTgtX - gCurX) * LERP_T;
+    gCurY += (gTgtY - gCurY) * LERP_T;
+    const stTilt = Math.abs(gTgtX - gCurX) < 0.02 && Math.abs(gTgtY - gCurY) < 0.02;
+    const mag = Math.min(Math.sqrt(gCurX * gCurX + gCurY * gCurY) / MAX_TILT, 1);
+    const shimOp = mag < 0.005 ? '0' : (mag * 0.95).toFixed(3);
 
-    if (cleanupTilt) { cleanupTilt(); cleanupTilt = null; }
-    stage.innerHTML = '';
+    let stShim = true;
+    slots.forEach((s, i) => {
+      s.tiltEl.style.transform =
+        `perspective(700px) rotateX(${gCurX.toFixed(2)}deg) rotateY(${gCurY.toFixed(2)}deg)`;
+      const ss = shimState[i];
+      if (!ss) return;
+      ss.curX += (ss.tgtX - ss.curX) * LERP_S;
+      ss.curY += (ss.tgtY - ss.curY) * LERP_S;
+      s.shimmer.style.transform = `translate(${ss.curX.toFixed(2)}%, ${ss.curY.toFixed(2)}%)`;
+      s.shimmer.style.opacity = shimOp;
+      if (Math.abs(ss.tgtX - ss.curX) > 0.05 || Math.abs(ss.tgtY - ss.curY) > 0.05) stShim = false;
+    });
 
-    const { el, cleanup } = buildCard(p);
-    stage.appendChild(el);
-    cleanupTilt = cleanup;
+    tiltRaf = (stTilt && stShim) ? null : requestAnimationFrame(tiltTick);
   }
 
+  function startTiltLoop() {
+    if (!tiltRaf) tiltRaf = requestAnimationFrame(tiltTick);
+  }
+
+  // ── Global mouse handler ──────────────────────────────────────────────────
+  function onGlobalMouse(e) {
+    // Global tilt: normalised -1..1 from screen center
+    const nx =  (e.clientX / innerWidth  - 0.5) * 2;
+    const ny =  (e.clientY / innerHeight - 0.5) * 2;
+    gTgtX = -ny * MAX_TILT;
+    gTgtY =  nx * MAX_TILT;
+
+    // Per-card shimmer: position relative to each slot's bounding rect
+    slots.forEach((s, i) => {
+      const r = s.el.getBoundingClientRect();
+      const sx = ((e.clientX - r.left) / r.width  - 0.5) * 2;
+      const sy = ((e.clientY - r.top)  / r.height - 0.5) * 2;
+      if (shimState[i]) {
+        shimState[i].tgtX = sx * 38;
+        shimState[i].tgtY = sy * 38;
+      }
+    });
+
+    startTiltLoop();
+  }
+
+  function freshShimState() {
+    return { tgtX: 0, tgtY: 0, curX: 0, curY: 0 };
+  }
+
+  // ── Track initialisation ──────────────────────────────────────────────────
+  function initTrack() {
+    track.innerHTML = '';
+    slots = [];
+    shimState = [];
+    gCurX = 0; gCurY = 0; gTgtX = 0; gTgtY = 0;
+
+    // Build 3 slots: [prev, current, next]
+    [-1, 0, 1].forEach(offset => {
+      const p = photoAt(currentIdx + offset);
+      if (p) {
+        const card = buildCard(p);
+        slots.push(card);
+        shimState.push(freshShimState());
+        track.appendChild(card.el);
+      }
+    });
+
+    setTrackX(baseX(), false);
+    updateCounter();
+  }
+
+  function updateCounter() {
+    if (photos && photos.length) {
+      counter.textContent = `${currentIdx + 1} / ${photos.length}`;
+    }
+  }
+
+  // ── Navigation ────────────────────────────────────────────────────────────
+  // dir: +1 = next, -1 = prev
+  // Animates the track, then on transitionend swaps one slot and snaps back.
+  // Key insight: snap-back + DOM swap happen in one sync block → single repaint.
+  function navigate(dir) {
+    if (sliding || !photos || !photos.length) return;
+    sliding = true;
+    prevBtn.disabled = true;
+    nextBtn.disabled = true;
+
+    const shift = slotW() + gap();
+    const base  = baseX();
+
+    // Slide track one slot-width in the chosen direction
+    setTrackX(base - dir * shift, true);
+
+    let done = false;
+    function complete() {
+      if (done) return;
+      done = true;
+
+      // Update logical index
+      currentIdx = ((currentIdx + dir) % photos.length + photos.length) % photos.length;
+
+      // ── Sync block: remove transition, DOM swap, snap — one browser paint ──
+      track.classList.remove('sliding');
+
+      if (dir === 1) {
+        // Moved forward: drop leftmost slot, append new next-next
+        track.removeChild(track.firstElementChild);
+        slots.shift();
+        shimState.shift();
+
+        const p = photoAt(currentIdx + 1);
+        if (p) {
+          const card = buildCard(p);
+          track.appendChild(card.el);
+          slots.push(card);
+          shimState.push(freshShimState());
+        }
+      } else {
+        // Moved backward: drop rightmost slot, prepend new prev-prev
+        track.removeChild(track.lastElementChild);
+        slots.pop();
+        shimState.pop();
+
+        const p = photoAt(currentIdx - 1);
+        if (p) {
+          const card = buildCard(p);
+          track.prepend(card.el);
+          slots.unshift(card);
+          shimState.unshift(freshShimState());
+        }
+      }
+
+      // Snap back to base without animation — same sync block, one repaint
+      track.style.transform = `translateX(${baseX()}px)`;
+
+      updateCounter();
+      sliding = false;
+      prevBtn.disabled = false;
+      nextBtn.disabled = false;
+    }
+
+    // Listen for CSS transition end; fallback in case transitionend misfires
+    function handler(e) {
+      if (e.propertyName !== 'transform') return;
+      track.removeEventListener('transitionend', handler);
+      clearTimeout(fallback);
+      complete();
+    }
+    track.addEventListener('transitionend', handler);
+    const fallback = setTimeout(complete, 620);
+  }
+
+  // ── Open / Close ──────────────────────────────────────────────────────────
   function openMoments() {
     loadPhotos().then(() => {
       if (!photos || !photos.length) return;
-      showPhoto(0);
+      currentIdx = 0;
+      initTrack();
+      document.body.classList.add('moments-open');
       overlay.classList.add('open');
       overlay.setAttribute('aria-hidden', 'false');
       window._modalOpen = true;
+      document.addEventListener('mousemove', onGlobalMouse);
     });
   }
 
   function closeMoments() {
     overlay.classList.remove('open');
     overlay.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('moments-open');
     window._modalOpen = false;
-    if (cleanupTilt) { cleanupTilt(); cleanupTilt = null; }
-    setTimeout(() => { stage.innerHTML = ''; }, 400); // after fade-out
+    document.removeEventListener('mousemove', onGlobalMouse);
+    if (tiltRaf) { cancelAnimationFrame(tiltRaf); tiltRaf = null; }
+    // Clear track after fade-out completes
+    setTimeout(() => { track.innerHTML = ''; slots = []; shimState = []; }, 460);
   }
 
-  prevBtn.addEventListener('click', () => showPhoto(currentIdx - 1));
-  nextBtn.addEventListener('click', () => showPhoto(currentIdx + 1));
+  // Recalculate track position on resize (while open and not mid-slide)
+  window.addEventListener('resize', () => {
+    if (overlay.classList.contains('open') && !sliding) {
+      setTrackX(baseX(), false);
+    }
+  });
+
+  prevBtn.addEventListener('click', () => navigate(-1));
+  nextBtn.addEventListener('click', () => navigate(1));
   closeBtn.addEventListener('click', closeMoments);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closeMoments(); });
   document.addEventListener('keydown', (e) => {
     if (!overlay.classList.contains('open')) return;
-    if (e.key === 'Escape') closeMoments();
-    if (e.key === 'ArrowLeft')  showPhoto(currentIdx - 1);
-    if (e.key === 'ArrowRight') showPhoto(currentIdx + 1);
+    if (e.key === 'Escape')     closeMoments();
+    if (e.key === 'ArrowLeft')  navigate(-1);
+    if (e.key === 'ArrowRight') navigate(1);
   });
 
   window._openMoments = openMoments;
