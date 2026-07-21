@@ -6016,19 +6016,20 @@ const NAV_LABELS = {};  // key → display label
   let wheelAccum = 0, wheelTimer = null, wheelCooldown = false;
   overlay.addEventListener('wheel', e => {
     if (!overlay.classList.contains('open')) return;
-    e.preventDefault(); // stop page scroll while moments is open
+    e.preventDefault();
     if (wheelCooldown) return;
     wheelAccum += e.deltaX;
     clearTimeout(wheelTimer);
-    wheelTimer = setTimeout(() => { wheelAccum = 0; }, 180); // reset if gesture pauses
-    if (Math.abs(wheelAccum) > 60) {
+    wheelTimer = setTimeout(() => { wheelAccum = 0; }, 180);
+    if (Math.abs(wheelAccum) > 90) {
       const dir = wheelAccum > 0 ? 1 : -1;
       wheelAccum = 0;
       clearTimeout(wheelTimer);
       if (!sliding) {
         wheelCooldown = true;
         navigate(dir);
-        setTimeout(() => { wheelCooldown = false; }, 700);
+        // 1000ms outlasts Mac inertia; reset accum on end so tail events don't re-trigger
+        setTimeout(() => { wheelCooldown = false; wheelAccum = 0; }, 1000);
       }
     }
   }, { passive: false });
