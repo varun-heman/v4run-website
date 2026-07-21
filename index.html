@@ -647,34 +647,14 @@ body.moments-open #sphere-label {
   border-radius: 8px;
   box-shadow: 0 24px 72px rgba(0,0,0,0.65);
 }
-/* Caption: hidden on side slots; glitches in on center, out when leaving.
-   No !important — CSS animations can't override !important opacity. */
+/* Caption: gradient shadow always present on center; text typed in via JS.
+   Side slots hidden. Simple opacity transition — no CSS animation on caption. */
 .moments-slot .memory-caption {
   opacity: 0;
+  transition: opacity 0.2s ease;
 }
 .moments-slot.is-center .memory-caption {
-  animation: caption-glitch-in 0.7s forwards;
-}
-.moments-slot.caption-out .memory-caption {
-  animation: caption-glitch-out 0.48s forwards;
-}
-@keyframes caption-glitch-in {
-  0%   { opacity: 0;   transform: translateY(3px); filter: brightness(4) blur(2px); }
-  12%  { opacity: 0.9; transform: translateY(1px); filter: brightness(3); }
-  20%  { opacity: 0.15; filter: brightness(5); }
-  32%  { opacity: 1;   transform: translateY(0);   filter: brightness(1.8); }
-  42%  { opacity: 0.45; filter: brightness(0.7); }
-  55%  { opacity: 1;   filter: brightness(1.3); }
-  68%  { opacity: 0.75; filter: none; }
-  100% { opacity: 1;   filter: none; transform: translateY(0); }
-}
-@keyframes caption-glitch-out {
-  0%   { opacity: 1;   filter: none; transform: translateY(0); }
-  18%  { opacity: 0.7; filter: brightness(3) blur(1px); }
-  32%  { opacity: 1;   filter: brightness(4);  transform: translateY(-2px); }
-  48%  { opacity: 0.2; filter: brightness(1); }
-  62%  { opacity: 0.5; filter: brightness(3.5) blur(2px); transform: translateY(2px); }
-  100% { opacity: 0;   filter: none; transform: translateY(3px); }
+  opacity: 1;
 }
 /* Nav at bottom */
 #moments-nav {
@@ -5729,7 +5709,8 @@ const NAV_LABELS = {};  // key → display label
 
     const captionEl = document.createElement('div');
     captionEl.className = 'memory-caption';
-    captionEl.textContent = p.caption || p.alt || p.location || '';
+    captionEl.dataset.caption = p.caption || p.alt || p.location || '';
+    captionEl.textContent = ''; // typed in by typeCaptionIn() when slot enters center
     frame.appendChild(captionEl);
 
     tiltEl.appendChild(frame);
@@ -5811,6 +5792,54 @@ const NAV_LABELS = {};  // key → display label
     return { tgtX: 0, tgtY: 0, curX: 0, curY: 0 };
   }
 
+  // ── Caption typewriter + glitch ───────────────────────────────────────────
+  const CAPTION_GLITCH_CHARS = '!<>-_\\/[]{}—=+*^?#@░▒│';
+
+  function typeCaptionIn(slot) {
+    const el = slot.el.querySelector('.memory-caption');
+    if (!el) return;
+    const text = el.dataset.caption || '';
+    el.textContent = '';
+    if (!text) return;
+
+    let charTimer = null, glitchInterval = null;
+
+    function startGlitch() {
+      glitchInterval = setInterval(() => {
+        if (Math.random() > 0.45) return;
+        // Briefly corrupt 5-8% of characters
+        const chars = text.split('');
+        chars.forEach((c, i) => {
+          if (c !== ' ' && Math.random() < 0.06)
+            chars[i] = CAPTION_GLITCH_CHARS[Math.floor(Math.random() * CAPTION_GLITCH_CHARS.length)];
+        });
+        el.textContent = chars.join('');
+        setTimeout(() => { if (el.dataset.caption) el.textContent = text; }, 55 + Math.random() * 65);
+      }, 4500 + Math.random() * 4000);
+    }
+
+    let i = 0;
+    function typeNext() {
+      if (!slot.el.classList.contains('is-center')) return; // slot left center; abort
+      i++;
+      el.textContent = text.slice(0, i);
+      if (i < text.length) {
+        charTimer = setTimeout(typeNext, 24 + Math.random() * 36);
+      } else {
+        startGlitch(); // typing done → occasional corruption
+      }
+    }
+
+    charTimer = setTimeout(typeNext, 55);
+
+    // Cleanup clears timers and wipes text — called when slot leaves center
+    slot.captionCleanup = () => {
+      clearTimeout(charTimer);
+      clearInterval(glitchInterval);
+      el.textContent = '';
+    };
+  }
+
   // ── Track initialisation ──────────────────────────────────────────────────
   function initTrack() {
     track.innerHTML = '';
@@ -5829,8 +5858,11 @@ const NAV_LABELS = {};  // key → display label
       }
     });
 
-    // Mark the center slot so its caption animates in
-    if (slots[1]) slots[1].el.classList.add('is-center');
+    // Mark center slot: show gradient, type in caption
+    if (slots[1]) {
+      slots[1].el.classList.add('is-center');
+      typeCaptionIn(slots[1]);
+    }
 
     setTrackX(baseX(), false);
     updateCounter();
@@ -5855,10 +5887,10 @@ const NAV_LABELS = {};  // key → display label
     const shift = slotW() + gap();
     const base  = baseX();
 
-    // Caption glitch-out on current center before it slides away
+    // Clear caption on departing center (clears typewriter + glitch timers, wipes text)
     if (slots[1]) {
+      slots[1].captionCleanup?.();
       slots[1].el.classList.remove('is-center');
-      slots[1].el.classList.add('caption-out');
     }
 
     // Slide track one slot-width in the chosen direction
@@ -5906,8 +5938,11 @@ const NAV_LABELS = {};  // key → display label
       // Snap back to base without animation — same sync block, one repaint
       track.style.transform = `translateX(${baseX()}px)`;
 
-      // Caption glitch-in on new center
-      if (slots[1]) slots[1].el.classList.add('is-center');
+      // New center: show gradient + type in caption
+      if (slots[1]) {
+        slots[1].el.classList.add('is-center');
+        typeCaptionIn(slots[1]);
+      }
 
       updateCounter();
       sliding = false;
@@ -5947,7 +5982,7 @@ const NAV_LABELS = {};  // key → display label
     window._modalOpen = false;
     document.removeEventListener('mousemove', onGlobalMouse);
     if (tiltRaf) { cancelAnimationFrame(tiltRaf); tiltRaf = null; }
-    slots.forEach(s => clearInterval(s.glitchInterval));
+    slots.forEach(s => { s.captionCleanup?.(); clearInterval(s.glitchInterval); });
     // Clear track after fade-out completes
     setTimeout(() => { track.innerHTML = ''; slots = []; shimState = []; }, 460);
   }
