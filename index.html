@@ -503,214 +503,118 @@ body.ui-ready #writings-section.ready {
    see the "hover to pause" behaviour below. Self-contained: this block +
    the matching JS IIFE + the #memory-fog div (search "MEMORY FOG") can be
    deleted to fully undo. */
-#memory-fog {
-  position: fixed; top: 50%; left: 50%;
-  width: min(64vw, 640px);
-  transform: translate(-50%, -50%);
-  z-index: 11; /* above the carousel (10) */
-  pointer-events: none;
-}
-/* One-time 8s preloader shown the first time memory fog activates —
-   see startMemoryLoop() in the JS. Centred the same way #memory-fog is,
-   so it hands off to the first real photo without any visual jump.
-   #quotes-preloader shares the same look (same ring/text classes below)
-   but is its own element with its own show/hide state, since unlike the
-   memory-fog one it's meant to reappear every single time — see the
-   "ENTERING QUOTES MODE" block further down in the JS. */
-#memory-fog-preloader, #quotes-preloader {
-  position: fixed; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 11;
-  display: flex; align-items: center; gap: 16px;
-  pointer-events: none;
-  opacity: 0; visibility: hidden;
-  transition: opacity 0.5s ease, visibility 0.5s ease;
-}
-#memory-fog-preloader.visible, #quotes-preloader.visible { opacity: 1; visibility: visible; }
-#memory-fog-preloader .mf-preloader-ring, #quotes-preloader .mf-preloader-ring { overflow: visible; flex: none; }
-#memory-fog-preloader .mf-preloader-ring circle, #quotes-preloader .mf-preloader-ring circle { fill: none; }
-.mf-ring-track { stroke: rgba(184,240,210,0.14); stroke-width: 2; }
-/* Two rings, opposite directions/speeds, each a short "comet" arc
-   (stroke-dasharray) rather than a full circle — reads as a more alive,
-   less generic spinner than one ring slowly rotating. */
-.mf-ring-sweep-a {
-  stroke: rgba(184,240,210,0.92); stroke-width: 3; stroke-linecap: round;
-  stroke-dasharray: 50 214; /* circumference of r=42 is ~264 */
-  filter: drop-shadow(0 0 6px rgba(184,240,210,0.55));
-  transform-origin: 50px 50px;
-  animation: mf-ring-spin 1.4s linear infinite;
-}
-.mf-ring-sweep-b {
-  stroke: rgba(184,240,210,0.5); stroke-width: 2; stroke-linecap: round;
-  stroke-dasharray: 26 162; /* circumference of r=30 is ~188 */
-  transform-origin: 50px 50px;
-  animation: mf-ring-spin-reverse 2.1s linear infinite;
-}
-@keyframes mf-ring-spin { to { transform: rotate(360deg); } }
-@keyframes mf-ring-spin-reverse { to { transform: rotate(-360deg); } }
-.mf-preloader-text {
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
-  text-transform: uppercase; white-space: nowrap;
-  color: rgba(184,240,210,0.85);
-  text-shadow: 0 0 10px rgba(184,240,210,0.4);
-}
-.memory-card {
-  position: relative;
-  display: flex; flex-direction: column; align-items: center;
-  opacity: 0;
-  will-change: opacity, transform;
-  animation: memory-drift 10s cubic-bezier(0.22,0.61,0.36,1) forwards;
-}
-.memory-card.paused { animation-play-state: paused; opacity: 1 !important; }
-.memory-tilt {
-  position: relative;
-  width: 100%;
-  transform-style: preserve-3d;
-  /* No idle tilt — sits flat at rest, JS takes over fully on hover. */
-}
-.memory-tilt {
-  --memory-feather: radial-gradient(ellipse 50% 50% at 50% 50%, #000 46%, transparent 86%);
-}
+/* ─── MOMENTS PHOTO CARD ─────────────────────────────────
+   Shared elements reused between the Moments carousel overlay
+   and any future photo contexts. No fog animations here —
+   Moments photos are clean and static. */
 .memory-photo {
   position: relative;
   z-index: 2;
   width: 100%; height: min(64vw, 640px);
   overflow: hidden; display: block;
-  -webkit-mask-image: var(--memory-feather);
-          mask-image: var(--memory-feather);
   transform: translateZ(0);
-  /* Pointer events live here so the shimmer/tilt only fires over the
-     actual visible image, not the full (much wider) card container. */
   pointer-events: auto;
-  transition: opacity 0.5s ease, box-shadow 0.4s ease, border-radius 0.4s ease;
-  animation: memory-photo-blur 10s cubic-bezier(0.22,0.61,0.36,1) forwards;
-}
-/* On hover the feathered oval dissolves away and the photo snaps to clean
-   edges — the "find their edges" moment. A subtle green outline frames it. */
-.memory-card.paused .memory-photo {
-  animation-play-state: paused;
-  filter: blur(0) !important;
-  opacity: 1 !important;
-  -webkit-mask-image: none;
-          mask-image: none;
-  border-radius: 4px;
-  box-shadow: 0 0 0 1px rgba(100,255,160,0.2), 0 8px 40px rgba(0,0,0,0.55);
 }
 .memory-photo-media {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover; display: block;
-  will-change: transform;
-  animation: memory-kenburns 10s cubic-bezier(0.22,0.61,0.36,1) forwards;
 }
-.memory-card.paused .memory-photo-media { animation-play-state: paused; }
 .memory-photo-tint {
   position: absolute; inset: 0;
   background: hsl(150, 50%, 32%);
   mix-blend-mode: color;
-  opacity: 0.55;
+  opacity: 0.28; /* subtle warmth */
   pointer-events: none;
-  transition: opacity 0.4s ease;
 }
-/* Gloss shimmer — an oversized circular highlight that translates across
-   the photo surface as the cursor moves, like a specular light rolling
-   over a physical card. Sits 160%×160% centered so it can slide in from
-   any direction without disappearing; clipped by the frame's overflow:hidden. */
+/* Gloss shimmer — oversized circle that translates across the surface
+   like a specular highlight rolling over a physical card. Opacity is
+   controlled entirely by JS (scales with tilt magnitude: zero when flat,
+   bright when tilted) so no CSS opacity/transition needed here. */
 .memory-shimmer {
   position: absolute;
   width: 160%; height: 160%;
   top: -30%; left: -30%;
   z-index: 5; pointer-events: none;
   border-radius: 50%;
-  background: radial-gradient(circle at center, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.07) 40%, transparent 68%);
+  background: radial-gradient(circle at center, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.14) 30%, transparent 58%);
   opacity: 0;
   mix-blend-mode: overlay;
-  transition: opacity 0.35s ease;
   will-change: transform;
 }
-.memory-card.paused .memory-shimmer { opacity: 1; }
-/* Caption shown prominently at the bottom of the photo on hover. */
+/* Caption — prominent, always visible in Moments context. */
 .memory-caption {
   position: absolute;
   bottom: 0; left: 0; right: 0;
   z-index: 6; pointer-events: none;
-  padding: 40px 18px 16px;
-  background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.3) 60%, transparent 100%);
+  padding: 64px 22px 22px;
+  background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.45) 55%, transparent 100%);
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
+  font-size: 15px;
+  letter-spacing: 0.04em;
   line-height: 1.5;
-  color: rgba(232,232,226,0.92);
-  text-shadow: 0 1px 6px rgba(0,0,0,0.9);
-  opacity: 0;
-  transition: opacity 0.5s ease 0.1s;
+  color: rgba(232,232,226,0.95);
+  text-shadow: 0 1px 8px rgba(0,0,0,0.95);
 }
-.memory-card.paused .memory-caption { opacity: 1; }
-/* Ambient glow behind the frame while paused. */
-.memory-smoke {
-  position: absolute;
-  inset: -10%;
-  z-index: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(184,240,210,0.18), rgba(184,240,210,0.05) 50%, transparent 75%);
-  filter: blur(28px);
-  opacity: 0;
-  transition: opacity 0.8s ease;
-  animation: memory-smoke-drift 10s ease-in-out infinite;
+
+/* ─── MOMENTS OVERLAY ────────────────────────────────────── */
+#moments-overlay {
+  position: fixed; inset: 0; z-index: 901;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 28px;
+  background: rgba(5,5,5,0.97);
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.4s ease, visibility 0s 0.4s;
 }
-.memory-card.paused .memory-smoke { opacity: 0.45; }
-/* Total lifecycle is 10s — holds near-full visibility/clarity from
-   22%-65% (≈2.2s-6.5s, a good 4.3s window) so there's actually enough
-   time to look at the photo, not just a blink. No tilt here any more —
-   see .memory-tilt for that. */
-@keyframes memory-drift {
-  0%   { opacity: 0;    transform: perspective(900px) translateZ(-200px) scale(0.86) translateY(20px); }
-  12%  { opacity: 0.78; transform: perspective(900px) translateZ(-60px)  scale(0.96) translateY(6px); }
-  22%  { opacity: 0.92; transform: perspective(900px) translateZ(0)      scale(1)    translateY(0); }
-  65%  { opacity: 0.88; transform: perspective(900px) translateZ(-8px)  scale(1)    translateY(-2px); }
-  85%  { opacity: 0.6;  transform: perspective(900px) translateZ(-110px) scale(1)    translateY(-16px); }
-  100% { opacity: 0;    transform: perspective(900px) translateZ(-360px) scale(1.04) translateY(-48px); }
+#moments-overlay.open {
+  opacity: 1; visibility: visible;
+  transition: opacity 0.4s ease;
 }
-/* --tilt-x/--tilt-y are set per-instance in JS (random magnitude/sign,
-   never zero) and inherited down to .memory-tilt as custom properties.
-   Every stop here is that base angle times a positive multiplier, so the
-   tilt drifts slowly and continuously but never crosses through flat/0deg
-   — and crucially never stops, even while the fade/recede is paused on
-   hover. */
-@keyframes memory-tilt-drift {
-  0%   { transform: rotateX(var(--tilt-x, 10deg))                          rotateY(calc(var(--tilt-y, 10deg) * 1.15)); }
-  33%  { transform: rotateX(calc(var(--tilt-x, 10deg) * 1.3))               rotateY(calc(var(--tilt-y, 10deg) * 0.85)); }
-  66%  { transform: rotateX(calc(var(--tilt-x, 10deg) * 0.9))               rotateY(calc(var(--tilt-y, 10deg) * 1.25)); }
-  100% { transform: rotateX(var(--tilt-x, 10deg))                          rotateY(calc(var(--tilt-y, 10deg) * 1.15)); }
+#moments-close {
+  position: absolute; top: 22px; right: 26px;
+  font-family: var(--mono); font-size: 16px; line-height: 1;
+  color: rgba(232,232,226,0.3);
+  cursor: pointer; background: none; border: none; padding: 8px;
+  transition: color 0.2s;
 }
-@keyframes memory-smoke-drift {
-  0%   { transform: scale(1)     translate(0, 0); }
-  50%  { transform: scale(1.14) translate(2%, -3%); }
-  100% { transform: scale(1)     translate(0, 0); }
+#moments-close:hover { color: rgba(232,232,226,0.7); }
+#moments-stage {
+  width: min(72vw, 720px);
+  position: relative;
 }
-/* --kb-scale/--kb-x/--kb-y are set per-instance in JS (random within a
-   modest range) and inherited down from .memory-card. Slow, one-way
-   zoom-and-drift — deliberately not a back-and-forth loop, since the
-   photo itself only lives once through this same 10s span. */
-@keyframes memory-kenburns {
-  0%   { transform: scale(1) translate(0%, 0%); }
-  100% { transform: scale(var(--kb-scale, 1.1)) translate(var(--kb-x, -3%), var(--kb-y, 2%)); }
+.moments-tilt {
+  position: relative;
+  transform-style: preserve-3d;
+  width: 100%;
 }
-/* Mirrors the drift timing above exactly so the photo's fog-in/fog-out
-   tracks its own opacity/position, just isolated to this element. */
-@keyframes memory-photo-blur {
-  0%   { filter: blur(20px); }
-  12%  { filter: blur(7px); }
-  22%  { filter: blur(1.5px); }
-  65%  { filter: blur(1.5px); }
-  85%  { filter: blur(6px); }
-  100% { filter: blur(20px); }
+#moments-stage .memory-photo {
+  height: min(60vh, 600px);
+  border-radius: 8px;
+  box-shadow: 0 24px 72px rgba(0,0,0,0.7);
 }
-@media (prefers-reduced-motion: reduce) {
-  #memory-fog { display: none; }
+#moments-nav {
+  display: flex; align-items: center; gap: 28px;
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(232,232,226,0.4);
 }
+#moments-prev, #moments-next {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px;
+  border: 1px solid rgba(100,255,160,0.15); border-radius: 3px;
+  color: rgba(232,232,226,0.45);
+  background: rgba(100,255,160,0.02);
+  cursor: pointer; font-size: 11px;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+#moments-prev:hover, #moments-next:hover {
+  color: rgba(232,232,226,0.85);
+  border-color: rgba(100,255,160,0.35);
+  background: rgba(100,255,160,0.06);
+}
+#moments-counter { min-width: 54px; text-align: center; }
 @media (max-width: 768px) {
-  #memory-fog { display: none; } /* no hover/mouse concept on touch — quotes stay as-is */
+  #moments-stage { width: 92vw; }
+  #moments-stage .memory-photo { height: 62vw; }
 }
 
 /* ─── ACCESS GATE ────────────────────────────────────── */
@@ -3725,28 +3629,15 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 <div class="sphere-label" id="sphere-label"></div>
 <!-- Experimental — see "MEMORY FOG" CSS/JS blocks. Remove this div +
      those blocks to fully undo. -->
-<div id="memory-fog"></div>
-<!-- One-time, 8s "loading" beat shown the very first time memory fog
-     activates in a session — see startMemoryLoop() in the memory-fog
-     JS IIFE. Purely decorative; safe to remove along with that block. -->
-<div id="memory-fog-preloader" aria-hidden="true">
-  <svg class="mf-preloader-ring" viewBox="0 0 100 100" width="56" height="56">
-    <circle class="mf-ring-track" cx="50" cy="50" r="42"></circle>
-    <circle class="mf-ring-sweep-a" cx="50" cy="50" r="42"></circle>
-    <circle class="mf-ring-sweep-b" cx="50" cy="50" r="30"></circle>
-  </svg>
-  <span class="mf-preloader-text">LOADING MEMORY FOG...</span>
-</div>
-<!-- Shown every time (not just once) the centre is about to hand over
-     to quotes — see the "ENTERING QUOTES MODE" block in the memory-fog
-     JS IIFE. Purely decorative; safe to remove along with that block. -->
-<div id="quotes-preloader" aria-hidden="true">
-  <svg class="mf-preloader-ring" viewBox="0 0 100 100" width="56" height="56">
-    <circle class="mf-ring-track" cx="50" cy="50" r="42"></circle>
-    <circle class="mf-ring-sweep-a" cx="50" cy="50" r="42"></circle>
-    <circle class="mf-ring-sweep-b" cx="50" cy="50" r="30"></circle>
-  </svg>
-  <span class="mf-preloader-text">LOADING WORDS I LIVE BY...</span>
+<!-- Moments carousel overlay — opened by clicking "Moments" in nav -->
+<div id="moments-overlay" aria-hidden="true">
+  <button id="moments-close" aria-label="Close Moments">×</button>
+  <div id="moments-stage"></div>
+  <div id="moments-nav">
+    <button id="moments-prev" aria-label="Previous photo"><i class="fa-solid fa-arrow-left"></i></button>
+    <span id="moments-counter"></span>
+    <button id="moments-next" aria-label="Next photo"><i class="fa-solid fa-arrow-right"></i></button>
+  </div>
 </div>
 <div class="esc-hint" id="esc-hint"></div>
 <div id="writings-section">
@@ -5631,66 +5522,22 @@ const NAV_LABELS = {};  // key → display label
 })();
 
 // ═══════════════════════════════════════════════════
-//  MEMORY FOG — EXPERIMENTAL (may be reverted — see CSS block of the same
-//  name, the #memory-fog div, and the SVG mask defs in the markup for the
-//  rest of this feature; deleting all of it undoes it cleanly)
-//
-//  Quotes only get the centre spot once the page has been idle 60s+ or the
-//  mouse has left the page entirely — any other time (mouse present and
-//  moving anywhere on the page), random photos pulled from
-//  content/gallery.json drift in and out of the same spot one at a time,
-//  feathered and translucent via the .memory-photo CSS. Hovering the
-//  current photo "touches" it: the fade/recede freezes in place
-//  (animation-play-state, not removed) while a separate, never-paused
-//  tilt animation keeps it gently turning in 3D, the photo just dims way
-//  down (kept deliberately simple — a patchy dissolve effect here turned
-//  out to wash everything to a flat white glow), and a fixed line of text
-//  glitches in behind it, same style as the nav-hint/intro-name glitch.
-//  Hovering a card always counts as engagement regardless of how long the
-//  idle-timeout (below) would otherwise wait — see cardHovered. Desktop/
-//  fine-pointer only — touch devices have no hover concept, so quotes
-//  just keep behaving as they always have there.
+//  MOMENTS CAROUSEL
+//  Opened by clicking "Moments" in nav. Loads photos tagged "memfog"
+//  from gallery.json and displays them one at a time with spring-physics
+//  3D tilt + specular shimmer on hover. Quotes cycle as normal when closed.
 // ═══════════════════════════════════════════════════
 (function () {
-  const hasFinePointer = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-  const prefersReduced  = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const container = document.getElementById('memory-fog');
-  if (!hasFinePointer || prefersReduced || !container || window.innerWidth <= 768) return;
+  const MEMFOG_TAG = 'memfog';
+  const overlay  = document.getElementById('moments-overlay');
+  const stage    = document.getElementById('moments-stage');
+  const counter  = document.getElementById('moments-counter');
+  const prevBtn  = document.getElementById('moments-prev');
+  const nextBtn  = document.getElementById('moments-next');
+  const closeBtn = document.getElementById('moments-close');
+  if (!overlay || !stage) return;
 
-  const IDLE_MS = 60000; // 1 minute of no mouse movement hands the centre back to quotes
-
-  // Same scramble-and-settle glitch used for the sphere-centre nav hints —
-  // reimplemented standalone here since that one lives inside a different
-  // IIFE and is wired to its own label element/state.
-  const GLITCH_CHARS = '!<>_\\/[]{}|=+*^?#@░▒▓│╡╢╖╣║╗╝╜╛┐└┴┬├─┼╔╩╦╠═╬╧╨╙╘╒╓╫╪┘┌01010110';
-  function glitchLoop(target, orig, isActive) {
-    const dur = 180 + Math.random() * 140;
-    const t0  = performance.now();
-    function tick(now) {
-      if (!isActive()) { target.textContent = orig; return; }
-      if (now - t0 > dur) {
-        target.textContent = orig;
-        setTimeout(() => { if (isActive()) glitchLoop(target, orig, isActive); }, 600 + Math.random() * 1200);
-        return;
-      }
-      let out = '';
-      for (let i = 0; i < orig.length; i++) {
-        if (orig[i] === ' ' || orig[i] === "'") { out += orig[i]; continue; }
-        out += Math.random() < 0.55
-          ? GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)]
-          : orig[i];
-      }
-      target.textContent = out;
-      requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
-  }
-
-  let photos = null, photoQueue = [], active = false;
-  let currentCard = null;  // the .memory-card currently in the DOM, if any
-  let hovering = false;    // true while the mouse is over the visible memory photo
-
-  const MAX_PHOTOS = 30; // capped pool size — see the mix logic below
+  let photos = null, currentIdx = 0, cleanupTilt = null;
 
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -5700,403 +5547,157 @@ const NAV_LABELS = {};  // key → display label
     return arr;
   }
 
-  // Only photos/videos explicitly tagged "memfog" in their album's meta.md
-  // are eligible — see scripts/gen-gallery.js for the meta.md tags column.
-  // That tag is never shown anywhere in the gallery UI itself, it only
-  // gates this pool. If nothing's tagged yet, memory fog just stays empty
-  // (showNextMemory() no-ops on an empty pool) until something is.
-  const MEMFOG_TAG = 'memfog';
-
-  function loadPhotos() {
-    if (photos) return Promise.resolve(photos);
-    return fetch('content/gallery.json')
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (!data) { photos = []; return photos; }
-        const all = (data.albums || []).flatMap(a => a.photos || [])
-          .filter(p => Array.isArray(p.tags) && p.tags.includes(MEMFOG_TAG));
-        // Keep the full photo object (not just .src) — date/location travel
-        // with it even though the caption itself isn't shown here. Local
-        // videos are eligible too (rendered as autoplaying/looping/muted
-        // <video>, see showNextMemory) — YouTube entries aren't real files
-        // on disk, so those stay excluded.
-        const images = shuffle(all.filter(p => p.type === 'image' && p.src));
-        const videos = shuffle(all.filter(p => p.type === 'video' && p.src));
-
-        // This runs once per page load (photos is cached above), so a
-        // refresh redraws the pool each time, while the rest of that
-        // session just cycles within it. Take every video there is (up to
-        // the overall cap) and let photos fill whatever slots are left —
-        // so the pool stays a full, varied MAX_PHOTOS as long as there are
-        // enough photos to fill it, and video's share of that pool simply
-        // grows on its own as more videos get added, with no artificial
-        // floor or ceiling on either side.
-        const videoCount = Math.min(videos.length, MAX_PHOTOS);
-        const imageCount = Math.min(images.length, MAX_PHOTOS - videoCount);
-        photos = shuffle(videos.slice(0, videoCount).concat(images.slice(0, imageCount)));
-        return photos;
-      })
-      .catch(() => { photos = []; return photos; });
+  async function loadPhotos() {
+    if (photos) return;
+    try {
+      const r = await fetch('content/gallery.json');
+      if (!r.ok) throw new Error();
+      const data = await r.json();
+      const all = (data.albums || []).flatMap(a => a.photos || [])
+        .filter(p => Array.isArray(p.tags) && p.tags.includes(MEMFOG_TAG) && p.src);
+      photos = shuffle(all);
+    } catch(e) { photos = []; }
   }
 
-  // Loads a photo/video fully off-DOM before showNextMemory ever shows
-  // it — otherwise the entrance animation was starting immediately on an
-  // element whose src had only just been set, so it visibly popped in
-  // mid-animation instead of already being there. Resolves with the
-  // ready-to-use element (so we're not fetching it twice), or null if it
-  // errored/timed out, so the caller can just move on to a different one.
-  function preloadMedia(p) {
-    return new Promise((resolve) => {
-      let done = false;
-      const finish = (el) => {
-        if (done) return;
-        done = true;
-        clearTimeout(timer);
-        resolve(el);
-      };
-      // Video gets more headroom than an image — even with a fast-start
-      // moov atom (see strip-metadata.js), it's still a bigger fetch than
-      // a single photo, and we'd rather wait a bit longer than have a
-      // video repeatedly time out and leave the fog blank between retries.
-      const timer = setTimeout(() => finish(null), p.type === 'video' ? 8000 : 4000);
+  // ── Spring tilt + light-source shimmer ──────────────────────────────────
+  // Attaches mouse-driven 3D tilt with spring physics to `tiltEl`.
+  // Shimmer opacity scales with tilt magnitude (zero when flat, bright when
+  // tilted) — the surface "catches" light only when angled toward the viewer.
+  // Returns a cleanup function that cancels any running RAF.
+  function attachTilt(tiltEl, frame, shimmer) {
+    let curX = 0, curY = 0, tgtX = 0, tgtY = 0;
+    let shimCurX = 0, shimCurY = 0, tgtShimX = 0, tgtShimY = 0;
+    let raf = null, isHovering = false;
+    const MAX_TILT = 12, LERP_T = 0.10, LERP_S = 0.07;
 
-      if (p.type === 'video') {
-        const v = document.createElement('video');
-        v.muted = true;
-        v.loop = true;
-        v.playsInline = true;
-        v.controls = false;
-        v.preload = 'auto';
-        v.disablePictureInPicture = true;
-        v.addEventListener('loadeddata', () => finish(v), { once: true });
-        v.addEventListener('error', () => finish(null), { once: true });
-        v.src = p.src;
-      } else {
-        const img = new Image();
-        img.alt = '';
-        img.addEventListener('load', () => finish(img), { once: true });
-        img.addEventListener('error', () => finish(null), { once: true });
-        img.src = p.src;
-      }
+    function tick() {
+      curX    += (tgtX    - curX)    * LERP_T;
+      curY    += (tgtY    - curY)    * LERP_T;
+      shimCurX += (tgtShimX - shimCurX) * LERP_S;
+      shimCurY += (tgtShimY - shimCurY) * LERP_S;
+      const st = Math.abs(tgtX - curX) < 0.02 && Math.abs(tgtY - curY) < 0.02;
+      const ss = Math.abs(tgtShimX - shimCurX) < 0.05 && Math.abs(tgtShimY - shimCurY) < 0.05;
+      tiltEl.style.transform    = `perspective(700px) rotateX(${curX.toFixed(2)}deg) rotateY(${curY.toFixed(2)}deg)`;
+      shimmer.style.transform   = `translate(${shimCurX.toFixed(2)}%, ${shimCurY.toFixed(2)}%)`;
+      // Shimmer brightens with tilt angle — zero when flat, max when tilted.
+      // Physically: a surface only reflects a specular highlight when angled.
+      const mag = Math.min(Math.sqrt(curX * curX + curY * curY) / MAX_TILT, 1);
+      shimmer.style.opacity = mag < 0.005 ? '0' : (mag * 0.95).toFixed(3);
+      raf = (st && ss) ? null : requestAnimationFrame(tick);
+    }
+
+    frame.addEventListener('mouseenter', () => {
+      isHovering = true;
+      if (!raf) raf = requestAnimationFrame(tick);
+    });
+    frame.addEventListener('mouseleave', () => {
+      isHovering = false;
+      tgtX = 0; tgtY = 0; tgtShimX = 0; tgtShimY = 0;
+      if (!raf) raf = requestAnimationFrame(tick);
+    });
+    frame.addEventListener('mousemove', (e) => {
+      const r = frame.getBoundingClientRect();
+      const nx = ((e.clientX - r.left) / r.width  - 0.5) * 2;
+      const ny = ((e.clientY - r.top)  / r.height - 0.5) * 2;
+      tgtX     = -ny * MAX_TILT;
+      tgtY     =  nx * MAX_TILT;
+      tgtShimX =  nx * 38;
+      tgtShimY =  ny * 38;
+      if (!raf) raf = requestAnimationFrame(tick);
+    });
+
+    return () => { if (raf) { cancelAnimationFrame(raf); raf = null; } };
+  }
+
+  function buildCard(p) {
+    const tiltEl = document.createElement('div');
+    tiltEl.className = 'moments-tilt';
+
+    const frame = document.createElement('div');
+    frame.className = 'memory-photo';
+
+    let media;
+    if (p.type === 'video') {
+      media = document.createElement('video');
+      media.muted = true; media.loop = true; media.playsInline = true;
+      media.controls = false; media.disablePictureInPicture = true;
+      media.src = p.src;
+    } else {
+      media = new Image();
+      media.alt = p.caption || p.alt || '';
+      media.src = p.src;
+    }
+    media.className = 'memory-photo-media';
+    frame.appendChild(media);
+
+    const tint = document.createElement('div');
+    tint.className = 'memory-photo-tint';
+    frame.appendChild(tint);
+
+    const shimmer = document.createElement('div');
+    shimmer.className = 'memory-shimmer';
+    frame.appendChild(shimmer);
+
+    const captionEl = document.createElement('div');
+    captionEl.className = 'memory-caption';
+    captionEl.textContent = p.caption || p.alt || p.location || '';
+    frame.appendChild(captionEl);
+
+    tiltEl.appendChild(frame);
+
+    if (p.type === 'video') {
+      // Autoplay once inserted
+      setTimeout(() => media.play().catch(() => {}), 50);
+    }
+
+    const cleanup = attachTilt(tiltEl, frame, shimmer);
+    return { el: tiltEl, cleanup };
+  }
+
+  function showPhoto(idx) {
+    if (!photos || !photos.length) return;
+    currentIdx = ((idx % photos.length) + photos.length) % photos.length;
+    const p = photos[currentIdx];
+    counter.textContent = `${currentIdx + 1} / ${photos.length}`;
+
+    if (cleanupTilt) { cleanupTilt(); cleanupTilt = null; }
+    stage.innerHTML = '';
+
+    const { el, cleanup } = buildCard(p);
+    stage.appendChild(el);
+    cleanupTilt = cleanup;
+  }
+
+  function openMoments() {
+    loadPhotos().then(() => {
+      if (!photos || !photos.length) return;
+      showPhoto(0);
+      overlay.classList.add('open');
+      overlay.setAttribute('aria-hidden', 'false');
+      window._modalOpen = true;
     });
   }
 
-  function showNextMemory() {
-    if (!active) return;
-    if (window._modalOpen) { setTimeout(showNextMemory, 800); return; } // retry, don't die
-    if (!photos.length) { active = false; return; }
-
-    // Shuffle-without-replacement: exhaust the full pool before reshuffling,
-    // so every photo shows once before any repeats.
-    if (!photoQueue.length) photoQueue = shuffle([...photos]);
-    const p = photoQueue.pop();
-
-    preloadMedia(p).then((media) => {
-      if (!active) return; // stopped/suspended while that was loading
-      if (!media) { setTimeout(showNextMemory, 400); return; } // failed/timed out — try a different one
-
-      // .memory-card carries the fade/recede animation only (pausable on
-      // hover). .memory-tilt is the inner wrapper that carries the
-      // continuous, never-paused 3D tilt, so the two motions are fully
-      // decoupled — pausing one never touches the other.
-      const card = document.createElement('div');
-      card.className = 'memory-card';
-      // Random per-image tilt, read by the memory-tilt-drift keyframes via
-      // var(--tilt-x)/var(--tilt-y) (inherited down to .memory-tilt).
-      // Magnitude (7-15deg) is kept modest so the image stays readable;
-      // sign is independently randomised per axis so different images lean
-      // different directions.
-      const tiltX = (Math.random() < 0.5 ? -1 : 1) * (7 + Math.random() * 8);
-      const tiltY = (Math.random() < 0.5 ? -1 : 1) * (7 + Math.random() * 8);
-      card.style.setProperty('--tilt-x', tiltX.toFixed(1) + 'deg');
-      card.style.setProperty('--tilt-y', tiltY.toFixed(1) + 'deg');
-      // Ken Burns: zoom + pan on the photo content itself (see
-      // .memory-photo-media), independent of the feathered frame around
-      // it, which never moves. Randomised per instance. Bumped up from a
-      // subtle 1.07-1.16/2-5% drift to something much more noticeable.
-      card.style.setProperty('--kb-scale', (1.18 + Math.random() * 0.22).toFixed(3));
-      card.style.setProperty('--kb-x', ((Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 7)).toFixed(1) + '%');
-      card.style.setProperty('--kb-y', ((Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 7)).toFixed(1) + '%');
-
-      const tilt = document.createElement('div');
-      tilt.className = 'memory-tilt';
-
-      const smoke = document.createElement('div');
-      smoke.className = 'memory-smoke';
-      tilt.appendChild(smoke);
-
-      const frame = document.createElement('div');
-      frame.className = 'memory-photo';
-      media.className = 'memory-photo-media';
-      frame.appendChild(media);
-      const tint = document.createElement('div');
-      tint.className = 'memory-photo-tint';
-      frame.appendChild(tint);
-      // Gloss shimmer that tracks the cursor like light on a physical surface
-      const shimmer = document.createElement('div');
-      shimmer.className = 'memory-shimmer';
-      frame.appendChild(shimmer);
-      // Caption shown prominently at bottom of photo on hover
-      const captionEl = document.createElement('div');
-      captionEl.className = 'memory-caption';
-      captionEl.textContent = p.caption || p.alt || p.location || '';
-      frame.appendChild(captionEl);
-      tilt.appendChild(frame);
-
-      card.appendChild(tilt);
-
-      // ── Spring tilt + shimmer: mouse-driven 3D perspective with lerp ──
-      // tilt (curX/Y) and shimmer translate (shimCurX/Y) are lerped
-      // independently in one RAF loop. Shimmer uses a softer lerp so it
-      // trails the cursor slightly behind the tilt — more physical feel.
-      // tiltTick auto-stops when currentCard changes (card replaced/removed).
-      let curX = 0, curY = 0, tgtX = 0, tgtY = 0;
-      let shimCurX = 0, shimCurY = 0, tgtShimX = 0, tgtShimY = 0;
-      let localRaf = null;
-      const MAX_TILT = 12, LERP_TILT = 0.10, LERP_SHIM = 0.07;
-
-      function tiltTick() {
-        if (currentCard !== card) { localRaf = null; return; }
-        curX    += (tgtX    - curX)    * LERP_TILT;
-        curY    += (tgtY    - curY)    * LERP_TILT;
-        shimCurX += (tgtShimX - shimCurX) * LERP_SHIM;
-        shimCurY += (tgtShimY - shimCurY) * LERP_SHIM;
-        const settledTilt = Math.abs(tgtX - curX) < 0.02 && Math.abs(tgtY - curY) < 0.02;
-        const settledShim = Math.abs(tgtShimX - shimCurX) < 0.05 && Math.abs(tgtShimY - shimCurY) < 0.05;
-        tilt.style.transform    = `perspective(700px) rotateX(${curX.toFixed(2)}deg) rotateY(${curY.toFixed(2)}deg)`;
-        shimmer.style.transform = `translate(${shimCurX.toFixed(2)}%, ${shimCurY.toFixed(2)}%)`;
-        localRaf = (settledTilt && settledShim) ? null : requestAnimationFrame(tiltTick);
-      }
-
-      frame.addEventListener('mouseenter', () => {
-        hovering = true;
-        cardHovered = true;
-        card.classList.add('paused');
-        if (!localRaf) localRaf = requestAnimationFrame(tiltTick);
-      });
-
-      frame.addEventListener('mouseleave', () => {
-        hovering = false;
-        cardHovered = false;
-        card.classList.remove('paused');
-        tgtX = 0; tgtY = 0;
-        tgtShimX = 0; tgtShimY = 0;
-        if (!localRaf) localRaf = requestAnimationFrame(tiltTick); // spring everything back
-      });
-
-      frame.addEventListener('mousemove', (e) => {
-        const r = frame.getBoundingClientRect();
-        const nx = ((e.clientX - r.left) / r.width  - 0.5) * 2; // -1…1
-        const ny = ((e.clientY - r.top)  / r.height - 0.5) * 2;
-        tgtX     = -ny * MAX_TILT;
-        tgtY     =  nx * MAX_TILT;
-        tgtShimX =  nx * 38; // percent — shimmer slides across like a rolling light
-        tgtShimY =  ny * 38;
-        if (!localRaf) localRaf = requestAnimationFrame(tiltTick);
-      });
-
-      container.innerHTML = '';
-      container.appendChild(card);
-      currentCard = card;
-
-      // The autoplay attribute alone is sometimes unreliable on elements
-      // built via JS before insertion — muted, so this is allowed without
-      // a user gesture under standard autoplay policies.
-      if (p.type === 'video') media.play().catch(() => {});
-
-      // animationend bubbles up from any descendant's animation too (the
-      // Ken Burns pan on .memory-photo-media, the blur on .memory-photo —
-      // both also 10s, so they finish at essentially the same moment as
-      // the card's own memory-drift and bubble up as separate events).
-      // { once: true } would auto-remove the listener after whichever of
-      // those arrives FIRST, even if it's a bubbled child event filtered
-      // out below — leaving nothing left to catch the card's own event
-      // and silently killing the whole rotation (only a suspend/resume
-      // elsewhere, e.g. mousing over the carousel, would restart it via
-      // startMemoryLoop). So this removes itself manually, only once it's
-      // actually confirmed to be the card's own animation ending.
-      function onCardAnimEnd(e) {
-        if (e.target !== card) return;
-        card.removeEventListener('animationend', onCardAnimEnd);
-        if (card.parentNode) card.parentNode.removeChild(card);
-        if (currentCard === card) {
-          currentCard = null;
-          hovering = false;
-          cardHovered = false;
-        }
-        if (active) setTimeout(showNextMemory, 500 + Math.random() * 400);
-      }
-      card.addEventListener('animationend', onCardAnimEnd);
-    });
+  function closeMoments() {
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden', 'true');
+    window._modalOpen = false;
+    if (cleanupTilt) { cleanupTilt(); cleanupTilt = null; }
+    setTimeout(() => { stage.innerHTML = ''; }, 400); // after fade-out
   }
 
-  // One-time 8s "loading" beat the very first time memory fog activates
-  // in a session — every later resume (after a modal closes, the
-  // carousel stops being hovered, idle hands back over, etc.) skips
-  // straight to showNextMemory() as before. Purely time-based (not tied
-  // to the actual gallery.json fetch, which is far faster than 8s) —
-  // loadPhotos() just runs alongside it so there's no extra wait once
-  // the preloader's own timer is up.
-  const PRELOADER_MS = 8000;
-  const preloaderEl   = document.getElementById('memory-fog-preloader');
-  const preloaderText = preloaderEl && preloaderEl.querySelector('.mf-preloader-text');
-  let preloaderShown = false;
-
-  function startMemoryLoop() {
-    if (active) return;
-    active = true;
-    if (!preloaderShown && preloaderEl) {
-      preloaderShown = true;
-      preloaderEl.classList.add('visible');
-      if (preloaderText) {
-        const orig = preloaderText.textContent;
-        glitchLoop(preloaderText, orig, () => active && preloaderEl.classList.contains('visible'));
-      }
-      Promise.all([
-        new Promise(resolve => setTimeout(resolve, PRELOADER_MS)),
-        loadPhotos(),
-      ]).then(() => {
-        preloaderEl.classList.remove('visible');
-        if (active) showNextMemory();
-      });
-    } else {
-      loadPhotos().then(() => { if (active) showNextMemory(); });
-    }
-  }
-  function stopMemoryLoop() {
-    active = false;
-    currentCard = null;
-    hovering = false;
-    cardHovered = false;
-    container.innerHTML = '';
-    if (preloaderEl) preloaderEl.classList.remove('visible');
-  }
-
-  // quotesMode: true means the centre belongs to quotes right now (idle
-  // 60s+, or mouse off the page); false means memory-fog runs instead.
-  // Starts true so nothing fires before the first real signal arrives.
-  let quotesMode = true;
-  let suspended = false; // forced off by other UI (carousel/nav hover) regardless of quotesMode
-  let lastMove = Date.now();
-  let mouseOnPage = true;
-  // True while the cursor is actually resting on a memory-card (reading
-  // the hover text). Without this, sitting still to read it for 60s+
-  // would get treated as "idle" and the idle-timeout would yank the
-  // whole card away via stopMemoryLoop()'s container.innerHTML = '' —
-  // mid-read, which is what was happening. Hovering always counts as
-  // engagement, regardless of how long the mouse itself stays still.
-  let cardHovered = false;
-
-  function applyMode() {
-    if (suspended) { stopMemoryLoop(); return; }
-    if (quotesMode) stopMemoryLoop(); else startMemoryLoop();
-  }
-
-  // ── ENTERING QUOTES MODE: preloader + "show at least one quote" lock ──
-  // Unlike the memory-fog preloader above (shown once per session), this
-  // one is meant to reappear every single time the centre hands over to
-  // quotes. quotesLocked also blocks evaluate() from immediately handing
-  // back to memory fog — e.g. if the mouse twitches right after going
-  // idle — until one full quote has actually played out.
-  const QUOTES_PRELOADER_MS_MIN = 3000;
-  const QUOTES_PRELOADER_MS_MAX = 4000;
-  const quotesPreloaderEl   = document.getElementById('quotes-preloader');
-  const quotesPreloaderText = quotesPreloaderEl && quotesPreloaderEl.querySelector('.mf-preloader-text');
-  let quotesLocked = false;
-
-  function unlockQuotes() {
-    if (!quotesLocked) return;
-    quotesLocked = false;
-    evaluate(); // mouse may have already moved back — re-check now the lock's off
-  }
-
-  function showQuotesPreloader(callback) {
-    if (!quotesPreloaderEl) { callback(); return; }
-    quotesPreloaderEl.classList.add('visible');
-    if (quotesPreloaderText) {
-      const orig = quotesPreloaderText.textContent;
-      glitchLoop(quotesPreloaderText, orig, () => quotesPreloaderEl.classList.contains('visible'));
-    }
-    const ms = QUOTES_PRELOADER_MS_MIN + Math.random() * (QUOTES_PRELOADER_MS_MAX - QUOTES_PRELOADER_MS_MIN);
-    setTimeout(() => {
-      quotesPreloaderEl.classList.remove('visible');
-      callback();
-    }, ms);
-  }
-
-  function evaluate() {
-    if (!document.body.classList.contains('ui-ready')) return; // never during the intro
-    if (cardHovered) return; // never switch modes out from under an active hover
-    if (quotesLocked) return; // a quotes-preloader + its guaranteed first quote are in progress
-    const idle = (Date.now() - lastMove) >= IDLE_MS;
-    const shouldQuotes = idle || !mouseOnPage;
-    if (shouldQuotes === quotesMode) return;
-    quotesMode = shouldQuotes;
-    applyMode(); // clears memory-fog's own DOM immediately either way
-    if (quotesMode) {
-      quotesLocked = true;
-      showQuotesPreloader(() => {
-        if (window._setQuoteCenterPaused) window._setQuoteCenterPaused(false);
-        if (window._onFirstQuoteComplete) window._onFirstQuoteComplete(unlockQuotes);
-        else unlockQuotes();
-      });
-      setTimeout(unlockQuotes, 15000); // safety net in case the quote-complete hook never fires (e.g. a modal is open the whole time)
-    } else {
-      if (window._setQuoteCenterPaused) window._setQuoteCenterPaused(true);
-    }
-  }
-
-  // Lets other UI (carousel hover, nav-item hover) force memory-fog off
-  // regardless of the idle/quotes state, then hand control back once
-  // that's done.
-  window._setMemoryFogSuspended = (v) => {
-    suspended = v;
-    applyMode();
-  };
-
-  // Any modal/overlay being open should also suspend memory-fog outright
-  // (not just pause spawning new photos — the existing showNextMemory()
-  // check for window._modalOpen only skipped starting a *new* card, so a
-  // card already mid-animation kept playing for up to its full 10s after
-  // a modal opened). window._modalOpen is set directly (not through one
-  // shared function) from many places across the file — the gallery,
-  // reads, projects, writing overlays, the lightbox, etc. — so rather
-  // than hunting down and editing every call site, this turns the plain
-  // property into an accessor: every assignment anywhere automatically
-  // routes through the same suspend/resume path as the carousel/nav hover
-  // above.
-  let _modalOpenValue = false;
-  Object.defineProperty(window, '_modalOpen', {
-    configurable: true,
-    get() { return _modalOpenValue; },
-    set(v) {
-      _modalOpenValue = v;
-      window._setMemoryFogSuspended(!!v);
-    },
+  prevBtn.addEventListener('click', () => showPhoto(currentIdx - 1));
+  nextBtn.addEventListener('click', () => showPhoto(currentIdx + 1));
+  closeBtn.addEventListener('click', closeMoments);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeMoments(); });
+  document.addEventListener('keydown', (e) => {
+    if (!overlay.classList.contains('open')) return;
+    if (e.key === 'Escape') closeMoments();
+    if (e.key === 'ArrowLeft')  showPhoto(currentIdx - 1);
+    if (e.key === 'ArrowRight') showPhoto(currentIdx + 1);
   });
 
-  document.addEventListener('mousemove', () => {
-    lastMove = Date.now();
-    mouseOnPage = true;
-    evaluate();
-  });
-  document.addEventListener('mouseenter', () => {
-    mouseOnPage = true;
-    lastMove = Date.now();
-    evaluate();
-  });
-  document.addEventListener('mouseleave', () => {
-    mouseOnPage = false;
-    // If cursor leaves the window while hovering a card, release the hover state
-    if (hovering && currentCard) {
-      hovering = false;
-      cardHovered = false;
-      currentCard.classList.remove('paused');
-    }
-    evaluate();
-  });
-  // Catches the idle-timeout transition even when no mouse event fires.
-  setInterval(evaluate, 1000);
+  window._openMoments = openMoments;
 })();
 
 // ═══════════════════════════════════════════════════
@@ -6341,6 +5942,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
     div.dataset.modal = key;
     div.innerHTML   = `<span class="nav-link">${label}</span>`;
     div.addEventListener('click', () => {
+      if (key === 'moments'  && window._openMoments)   { window._openMoments();    return; }
       if (key === 'memories' && window._openGallery)   { window._openGallery();    return; }
       if (key === 'writing'  && window._openViewAll)   { window._openViewAll();    return; }
       if (key === 'reads'    && window._openReads)     { window._openReads();      return; }
@@ -6376,7 +5978,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
   // Pre-warm MD cache in background so modals open instantly
   navItems.forEach(({ key }) => {
-    if (key === 'memories' || _mdCache[key]) return;
+    if (key === 'memories' || key === 'moments' || _mdCache[key]) return;
     fetch(`content/${key}.md`).then(r => r.ok ? r.text() : null).then(md => {
       if (md && !_mdCache[key] && window.marked) _mdCache[key] = marked.parse(md);
     }).catch(() => {});
