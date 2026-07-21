@@ -598,23 +598,23 @@ body.moments-open #sphere-label {
   pointer-events: none !important;
   transition: opacity 0.3s ease !important;
 }
-/* Close button — prominent, mono style with border */
+/* Close button — matches site's modal-x: red-tinted, small bordered box */
 #moments-close {
   position: absolute; top: 20px; right: 22px; z-index: 12;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
   font-family: var(--mono); font-size: 18px; line-height: 1;
-  color: rgba(232,232,226,0.75);
+  color: rgba(224,48,48,0.65);
   cursor: pointer;
-  background: rgba(8,8,8,0.82);
-  border: 1px solid rgba(232,232,226,0.22);
-  border-radius: 3px;
-  padding: 7px 14px;
-  letter-spacing: 0.08em;
-  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  background: none;
+  border: 1px solid rgba(224,48,48,0.22);
+  border-radius: 2px;
+  padding: 0;
+  transition: color 0.15s, border-color 0.15s;
 }
 #moments-close:hover {
-  color: rgba(232,232,226,1);
-  border-color: rgba(100,255,160,0.5);
-  background: rgba(8,8,8,0.97);
+  color: #e03030;
+  border-color: rgba(224,48,48,0.5);
 }
 /* Rail: full-width row, vertically centered, allows peek overflow */
 #moments-rail {
@@ -647,16 +647,16 @@ body.moments-open #sphere-label {
   border-radius: 8px;
   box-shadow: 0 24px 72px rgba(0,0,0,0.65);
 }
-/* Caption: hidden on side slots; glitches in on center, out when leaving */
+/* Caption: hidden on side slots; glitches in on center, out when leaving.
+   No !important — CSS animations can't override !important opacity. */
 .moments-slot .memory-caption {
-  opacity: 0 !important;
-  animation: none !important;
+  opacity: 0;
 }
 .moments-slot.is-center .memory-caption {
-  animation: caption-glitch-in 0.7s forwards !important;
+  animation: caption-glitch-in 0.7s forwards;
 }
 .moments-slot.caption-out .memory-caption {
-  animation: caption-glitch-out 0.48s forwards !important;
+  animation: caption-glitch-out 0.48s forwards;
 }
 @keyframes caption-glitch-in {
   0%   { opacity: 0;   transform: translateY(3px); filter: brightness(4) blur(2px); }
@@ -5783,9 +5783,13 @@ const NAV_LABELS = {};  // key → display label
     const nx =  (e.clientX / innerWidth  - 0.5) * 2;
     const ny =  (e.clientY / innerHeight - 0.5) * 2;
 
-    // Flatten tilt when mouse is near the nav buttons at the bottom
-    const NAV_DEAD = 110; // px from bottom where tilt starts fading to zero
-    const tiltScale = Math.max(0, Math.min(1, (innerHeight - e.clientY) / NAV_DEAD));
+    // Flatten tilt near the nav buttons at the bottom.
+    // Below NAV_FLOOR px from bottom → fully flat; above NAV_START → full tilt.
+    const NAV_FLOOR = 80, NAV_START = 240;
+    const dist = innerHeight - e.clientY;
+    const tiltScale = dist <= NAV_FLOOR ? 0
+                    : dist >= NAV_START  ? 1
+                    : (dist - NAV_FLOOR) / (NAV_START - NAV_FLOOR);
     gTgtX = -ny * MAX_TILT * tiltScale;
     gTgtY =  nx * MAX_TILT * tiltScale;
 
