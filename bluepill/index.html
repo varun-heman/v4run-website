@@ -154,7 +154,6 @@ main {
   .corner-tr { top: 18px; right: 18px; }
   .corner-bl { bottom: 18px; left: 18px; }
   .bp-panel { padding: 34px 26px 30px; }
-  .pill-swap__label { display: none; }
 }
 </style>
 </head>
@@ -168,8 +167,12 @@ main {
 <div class="corner corner-tr">
   <button class="pill-swap pill-swap--red" id="take-red"
           aria-label="Go back and take the red pill instead">
-    <span class="pill-swap__label">Take the red pill</span>
-    <span class="pill-swap__pill" aria-hidden="true"></span>
+    <span class="pill-swap__glow" aria-hidden="true"></span>
+    <span class="pill-swap__pill" aria-hidden="true">
+      <i class="pill-swap__mote"></i><i class="pill-swap__mote"></i>
+      <i class="pill-swap__mote"></i><i class="pill-swap__mote"></i>
+    </span>
+    <span class="pill-swap__label" aria-hidden="true">Take the red pill</span>
   </button>
 </div>
 

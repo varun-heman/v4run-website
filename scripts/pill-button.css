@@ -1,77 +1,143 @@
-/* The pill you did not take, offered again from the corner. Drawn rather
-   than cropped from the stills — a photo crop brings the palm with it, and
-   this has to read at 26px against black. */
+/* The pill you did not take, offered again from the corner. Drawn rather than
+   cropped from the stills — a crop brings the palm with it, and this has to
+   read at 34px against black — but built to the same idea as the ones in the
+   scene: a translucent shell with something alive moving inside it. */
 .pill-swap {
-  display: inline-flex; align-items: center; gap: 10px;
-  background: none; border: 0; padding: 6px 2px;
+  position: relative;
+  display: inline-flex; align-items: center;
+  background: none; border: 0; padding: 8px;
   cursor: pointer;
-  font-family: var(--mono, 'Space Mono', monospace);
-  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
-  color: rgba(232, 232, 226, 0.28);
-  transition: color 0.3s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.pill-swap:hover, .pill-swap:focus-visible { color: rgba(232, 232, 226, 0.75); }
 .pill-swap:focus { outline: none; }
-.pill-swap__label { white-space: nowrap; }
 
+/* ── the shell ───────────────────────────────────────── */
 .pill-swap__pill {
   position: relative;
-  width: 34px; height: 15px;
-  border-radius: 8px;
+  display: block;
+  width: 36px; height: 16px;
+  border-radius: 9px;
   flex-shrink: 0;
-  /* unlit: the pill as it sits in the open palm, catching only a little light */
+  overflow: hidden;
+  /* glass, not paint: mostly transparent, holding a little colour, with the
+     light catching the top of the curve */
   background:
-    linear-gradient(150deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.05) 34%, rgba(0,0,0,0.25) 100%),
-    linear-gradient(180deg, rgba(var(--pill), 0.85) 0%, rgba(var(--pill), 0.42) 60%, rgba(var(--pill), 0.22) 100%);
+    linear-gradient(168deg,
+      rgba(255,255,255,0.34) 0%,
+      rgba(255,255,255,0.06) 26%,
+      rgba(var(--pill), 0.16) 55%,
+      rgba(var(--pill), 0.34) 100%);
+  border: 1px solid rgba(var(--pill), 0.42);
   box-shadow:
-    inset 0 1px 1px rgba(255,255,255,0.35),
-    inset 0 -2px 3px rgba(0,0,0,0.45),
+    inset 0 1px 2px rgba(255,255,255,0.30),
+    inset 0 -3px 6px rgba(var(--pill), 0.28),
     0 0 0 rgba(var(--pill), 0);
-  filter: brightness(0.62) saturate(0.85);
-  transition: filter 0.45s ease, box-shadow 0.45s ease, transform 0.45s cubic-bezier(0.16,1,0.3,1);
+  filter: saturate(0.8) brightness(0.78);
+  transition: filter 0.5s ease, box-shadow 0.5s ease,
+              transform 0.5s cubic-bezier(0.16,1,0.3,1),
+              border-color 0.5s ease;
 }
-/* the highlight running along the top of the capsule */
+/* the specular streak along the top */
 .pill-swap__pill::before {
   content: '';
-  position: absolute; left: 5px; right: 9px; top: 2px; height: 3px;
+  position: absolute; left: 5px; right: 10px; top: 2px; height: 3px;
   border-radius: 3px;
-  background: linear-gradient(90deg, rgba(255,255,255,0.75), rgba(255,255,255,0.1));
-  opacity: 0.7;
+  background: linear-gradient(90deg, rgba(255,255,255,0.85), rgba(255,255,255,0.08));
+  opacity: 0.75;
+  pointer-events: none; z-index: 3;
 }
-/* the bloom it throws once it wakes */
-.pill-swap__pill::after {
-  content: '';
-  position: absolute; inset: -14px;
+/* the bloom it throws once it wakes — outside the shell, so not clipped */
+.pill-swap__glow {
+  position: absolute; inset: -16px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(var(--pill), 0.55) 0%, rgba(var(--pill), 0.18) 38%, rgba(var(--pill), 0) 70%);
-  opacity: 0;
-  transition: opacity 0.45s ease;
-  pointer-events: none;
+  background: radial-gradient(circle,
+    rgba(var(--pill), 0.5) 0%, rgba(var(--pill), 0.16) 40%, rgba(var(--pill), 0) 70%);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.5s ease;
 }
+
+/* ── what is alive inside it ─────────────────────────── */
+.pill-swap__mote {
+  position: absolute;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 0 4px rgba(var(--pill), 0.95), 0 0 8px rgba(var(--pill), 0.6);
+  opacity: 0.25;
+  z-index: 2;
+  animation: pill-mote 3.4s ease-in-out infinite;
+}
+.pill-swap__mote:nth-child(1) { left: 5px;  top: 5px; animation-duration: 3.1s; animation-delay: -0.2s; }
+.pill-swap__mote:nth-child(2) { left: 14px; top: 8px; animation-duration: 4.3s; animation-delay: -1.4s; }
+.pill-swap__mote:nth-child(3) { left: 22px; top: 4px; animation-duration: 3.7s; animation-delay: -2.6s; }
+.pill-swap__mote:nth-child(4) { left: 28px; top: 8px; animation-duration: 4.9s; animation-delay: -0.9s; }
+@keyframes pill-mote {
+  0%   { transform: translate(0, 0)      scale(0.7); opacity: 0.16; }
+  25%  { transform: translate(-3px, 3px) scale(1);   opacity: 0.62; }
+  50%  { transform: translate(2px, -2px) scale(0.8); opacity: 0.30; }
+  75%  { transform: translate(4px, 2px)  scale(1.1); opacity: 0.70; }
+  100% { transform: translate(0, 0)      scale(0.7); opacity: 0.16; }
+}
+
+/* ── awake ───────────────────────────────────────────── */
 .pill-swap:hover .pill-swap__pill,
 .pill-swap:focus-visible .pill-swap__pill {
-  filter: brightness(1.35) saturate(1.15);
-  transform: scale(1.06);
+  filter: saturate(1.2) brightness(1.5);
+  transform: scale(1.08);
+  border-color: rgba(var(--pill), 0.85);
   box-shadow:
-    inset 0 1px 1px rgba(255,255,255,0.5),
-    inset 0 -2px 3px rgba(0,0,0,0.3),
-    0 0 22px rgba(var(--pill), 0.75),
-    0 0 46px rgba(var(--pill), 0.35);
-  animation: pill-swap-alive 2.2s ease-in-out infinite;
+    inset 0 1px 2px rgba(255,255,255,0.5),
+    inset 0 -3px 8px rgba(var(--pill), 0.6),
+    0 0 20px rgba(var(--pill), 0.7),
+    0 0 44px rgba(var(--pill), 0.32);
+  animation: pill-swap-breathe 2.3s ease-in-out infinite;
 }
-.pill-swap:hover .pill-swap__pill::after,
-.pill-swap:focus-visible .pill-swap__pill::after { opacity: 1; }
+.pill-swap:hover .pill-swap__glow,
+.pill-swap:focus-visible .pill-swap__glow { opacity: 1; }
+.pill-swap:hover .pill-swap__mote,
+.pill-swap:focus-visible .pill-swap__mote { animation-duration: 1.5s; opacity: 1; }
+@keyframes pill-swap-breathe {
+  0%, 100% { filter: saturate(1.15) brightness(1.38); }
+  50%      { filter: saturate(1.3)  brightness(1.75); }
+}
 
-@keyframes pill-swap-alive {
-  0%, 100% { filter: brightness(1.28) saturate(1.1); }
-  50%      { filter: brightness(1.6) saturate(1.25); }
+/* ── the callout, only while hovered ─────────────────── */
+.pill-swap__label {
+  position: absolute; top: calc(100% + 10px); right: 0;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px;
+  white-space: nowrap;
+  font-family: var(--mono, 'Space Mono', monospace);
+  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: rgba(var(--pill), 0.95);
+  background: rgba(3, 6, 9, 0.9);
+  border: 1px solid rgba(var(--pill), 0.28);
+  border-radius: 2px;
+  backdrop-filter: blur(5px);
+  text-shadow: 0 1px 6px rgba(0,0,0,0.95);
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+.pill-swap__label::before {
+  content: '';
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(var(--pill), 0.95);
+  box-shadow: 0 0 8px rgba(var(--pill), 0.8);
+  flex-shrink: 0;
+}
+.pill-swap:hover .pill-swap__label,
+.pill-swap:focus-visible .pill-swap__label {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .pill-swap--blue { --pill: 58, 178, 255; }
 .pill-swap--red  { --pill: 226, 44, 52; }
 
 @media (prefers-reduced-motion: reduce) {
+  .pill-swap__mote { animation: none; opacity: 0.5; }
   .pill-swap:hover .pill-swap__pill,
   .pill-swap:focus-visible .pill-swap__pill { animation: none; }
 }
