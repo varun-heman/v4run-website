@@ -749,8 +749,15 @@ body.pill-busy #bg-canvas { pointer-events: none; }
   object-fit: contain; object-position: center center;
 }
 
-/* Stills are the rest states — exactly one is lit at a time. */
-#pill-scene .frame { opacity: 0; z-index: 0; transition: opacity 0.12s linear; }
+/* Stills are the rest states — exactly one is lit at a time.
+
+   Cut, never fade. These layers all show the same hands a fraction of a
+   second apart, so any cross-fade puts two poses on screen together and
+   reads as a double exposure rather than a dissolve. The fades were here
+   because the stills and the clip frames used to disagree badly; they are
+   now cut from the clips themselves and match to codec noise, so there is
+   nothing left for a fade to hide. */
+#pill-scene .frame { opacity: 0; z-index: 0; }
 #pill-scene .frame.on { opacity: 1; }
 
 /* Clips sit on top and only exist while a transition is running. Their
@@ -758,7 +765,6 @@ body.pill-busy #bg-canvas { pointer-events: none; }
    short cross-fade rather than a cut. */
 #pill-scene .clip {
   opacity: 0; z-index: 1; pointer-events: none;
-  transition: opacity 0.12s linear;
 }
 #pill-scene .clip.on { opacity: 1; }
 
@@ -1170,10 +1176,13 @@ body.pill-busy #bg-canvas { pointer-events: none; }
               transform 1.7s cubic-bezier(0.16, 1, 0.3, 1),
               filter 1.3s ease;
 }
+/* Rises out of the dark on brightness and a small push. No blur: the unfurl
+   is already playing underneath this, and a blurred copy scaling over moving
+   hands reads as a double exposure rather than as focus arriving. */
 #pill-scene.prelude #emerge {
   opacity: 0;
-  transform: scale(1.18);
-  filter: brightness(0.15) blur(9px);
+  transform: scale(1.06);
+  filter: brightness(0.12);
 }
 #pill-scene #vignette { transition: opacity 1.8s ease; }
 #pill-scene.prelude #vignette { opacity: 0; }
