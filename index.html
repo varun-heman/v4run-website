@@ -41,6 +41,9 @@
   --fg-dim: rgba(232, 232, 226, 0.38);
   --fg-dimmer: rgba(232, 232, 226, 0.18);
   --accent: #b8f0d2;
+  --green: 100, 255, 160;
+  --red: 226, 44, 52;
+  --blue: 58, 178, 255;
   --mono: 'Space Mono', 'Courier New', monospace;
   --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
@@ -691,6 +694,635 @@ body.moments-closing .corner {
 @media (max-width: 768px) {
   .moments-slot { width: 88vw; }
   .moments-slot .memory-photo { height: 62vw; }
+}
+
+/* ══════════════════════════════════════════════════════
+   THE CHOICE — the pill scene that opens the site. Every rule is scoped to
+   #pill-scene so it cannot reach the site underneath it; the scene's own
+   state classes live on that element rather than on <body>.
+   ══════════════════════════════════════════════════════ */
+#pill-scene {
+  position: fixed; inset: 0; z-index: 150;
+  display: none;
+  background: var(--bg);
+  cursor: default;
+}
+#pill-scene.running { display: block; }
+#pill-scene.dismissed { display: none; }
+
+/* ─── STAGE / FRAMES ─────────────────────────────────── */
+#pill-scene #stage {
+  position: fixed; inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 1.1s ease;
+}
+#pill-scene.booted #stage { opacity: 1; }
+
+#pill-scene #frames {
+  position: absolute; inset: 0;
+  transform: scale(1);
+  transition: transform 1.6s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+/* #frames transform is set from JS (see computeZoom) so the reticle,
+   glow and particles can be projected through the exact same matrix. */
+
+#pill-scene .frame, #pill-scene .clip {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center 46%;
+  display: block;
+  user-select: none; -webkit-user-drag: none;
+}
+#pill-scene.fit-contain .frame, #pill-scene.fit-contain .clip {
+  object-fit: contain; object-position: center center;
+}
+
+/* Stills are the rest states — exactly one is lit at a time. */
+#pill-scene .frame { opacity: 0; z-index: 0; transition: opacity 0.12s linear; }
+#pill-scene .frame.on { opacity: 1; }
+
+/* Clips sit on top and only exist while a transition is running. Their
+   first/last frames are the stills below them, so the hand-off is a
+   short cross-fade rather than a cut. */
+#pill-scene .clip {
+  opacity: 0; z-index: 1; pointer-events: none;
+  transition: opacity 0.12s linear;
+}
+#pill-scene .clip.on { opacity: 1; }
+
+/* vignette to sink the edges into the site's black */
+#pill-scene #vignette {
+  position: absolute; inset: 0; pointer-events: none; z-index: 3;
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 52%, transparent 40%, rgba(0,0,0,0.55) 100%),
+    linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 22%, transparent 76%, rgba(0,0,0,0.62) 100%);
+}
+
+/* ─── PILL BLOOM (staggered random glow) ─────────────── */
+#pill-scene .pill-glow {
+  position: absolute; z-index: 4;
+  width: 300px; height: 300px;
+  margin: -150px 0 0 -150px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+  transition: opacity 0.32s ease;
+  will-change: opacity, transform;
+}
+#pill-scene #glow-red {
+  background: radial-gradient(circle, rgba(255,72,64,0.85) 0%, rgba(226,44,52,0.42) 22%,
+              rgba(180,20,30,0.16) 46%, transparent 70%);
+}
+#pill-scene #glow-blue {
+  background: radial-gradient(circle, rgba(140,225,255,0.85) 0%, rgba(58,178,255,0.42) 22%,
+              rgba(20,120,200,0.16) 46%, transparent 70%);
+}
+
+/* particle + shockwave canvas, additively blended */
+#pill-scene #fx {
+  position: absolute; inset: 0; z-index: 5;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* ─── HUD LEADER LINES ───────────────────────────────── */
+#pill-scene #hud-lines {
+  position: absolute; inset: 0; z-index: 6;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+#pill-scene #hud-lines path {
+  fill: none;
+  stroke: rgba(var(--hue), 0.42);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  opacity: 0;
+  transition: opacity 0.3s ease 0.16s;
+}
+#pill-scene #hud-lines circle {
+  fill: rgba(var(--hue), 0.9);
+  opacity: 0;
+  transition: opacity 0.3s ease 0.16s;
+}
+#pill-scene #hud-lines .lead.show { opacity: 1; }
+
+/* ─── RETICLE ────────────────────────────────────────── */
+#pill-scene .reticle {
+  position: absolute; z-index: 7;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+#pill-scene .reticle.show { opacity: 1; }
+#pill-scene .ret-corner {
+  position: absolute; width: 15px; height: 15px;
+  border-color: rgba(var(--green), 0.85); border-style: solid;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.9));
+}
+#pill-scene .ret-corner--tl { top: 50%; left: 50%;  border-width: 1px 0 0 1px; }
+#pill-scene .ret-corner--tr { top: 50%; right: 50%; border-width: 1px 1px 0 0; }
+#pill-scene .ret-corner--bl { bottom: 50%; left: 50%;  border-width: 0 0 1px 1px; }
+#pill-scene .ret-corner--br { bottom: 50%; right: 50%; border-width: 0 1px 1px 0; }
+#pill-scene .reticle.show .ret-corner--tl { animation: ret-tl 0.42s cubic-bezier(0.16,1,0.3,1) forwards; }
+#pill-scene .reticle.show .ret-corner--tr { animation: ret-tr 0.42s cubic-bezier(0.16,1,0.3,1) forwards; }
+#pill-scene .reticle.show .ret-corner--bl { animation: ret-bl 0.42s cubic-bezier(0.16,1,0.3,1) forwards; }
+#pill-scene .reticle.show .ret-corner--br { animation: ret-br 0.42s cubic-bezier(0.16,1,0.3,1) forwards; }
+@keyframes ret-tl { 0%{top:50%;left:50%;transform:translate(-50%,-50%);opacity:0}35%{opacity:1}100%{top:0;left:0;transform:none;opacity:1} }
+@keyframes ret-tr { 0%{top:50%;right:50%;transform:translate(50%,-50%);opacity:0}35%{opacity:1}100%{top:0;right:0;transform:none;opacity:1} }
+@keyframes ret-bl { 0%{bottom:50%;left:50%;transform:translate(-50%,50%);opacity:0}35%{opacity:1}100%{bottom:0;left:0;transform:none;opacity:1} }
+@keyframes ret-br { 0%{bottom:50%;right:50%;transform:translate(50%,50%);opacity:0}35%{opacity:1}100%{bottom:0;right:0;transform:none;opacity:1} }
+
+/* thin frame + travelling scan inside the reticle */
+#pill-scene .ret-box {
+  position: absolute; inset: 0;
+  border: 1px solid rgba(var(--green), 0.07);
+  overflow: hidden;
+}
+#pill-scene .ret-scan {
+  position: absolute; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--green),0.5), transparent);
+  top: 0;
+}
+#pill-scene .reticle.show .ret-scan { animation: ret-scan 2.4s linear 0.4s infinite; }
+@keyframes ret-scan { 0%{top:0;opacity:0} 8%{opacity:1} 92%{opacity:1} 100%{top:100%;opacity:0} }
+
+#pill-scene .ret-label {
+  position: absolute; left: 0; bottom: calc(100% + 9px);
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: rgba(var(--green), 0.95);
+  white-space: nowrap;
+  opacity: 0;
+  /* it lands on brightly lit skin, so it carries its own ground */
+  padding: 4px 9px;
+  background: rgba(3, 7, 4, 0.82);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(var(--green), 0.2);
+  border-radius: 2px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.95);
+}
+#pill-scene .reticle.show .ret-label { animation: hud-in 0.36s steps(1,end) 0.26s forwards; }
+#pill-scene .ret-lock {
+  padding: 1px 6px;
+  border: 1px solid rgba(var(--green), 0.45);
+  border-radius: 2px;
+  color: rgb(var(--green));
+  font-size: 8px; letter-spacing: 0.16em;
+  animation: lock-blink 1.15s steps(1,end) infinite;
+}
+@keyframes lock-blink { 0%,62%{opacity:1} 63%,100%{opacity:0.25} }
+
+@keyframes hud-in {
+  0%   { opacity: 0; clip-path: inset(0 0 100% 0); transform: translateX(0); }
+  12%  { opacity: 1; clip-path: inset(0 55% 0 0);  transform: translateX(-6px); }
+  24%  { opacity: 0; clip-path: inset(0 0 35% 60%); transform: translateX(4px); }
+  38%  { opacity: 1; clip-path: inset(38% 0 0 0);  transform: translateX(-3px); }
+  52%  { opacity: 0.2; transform: translateX(2px); }
+  66%  { opacity: 1; clip-path: inset(0 0 0 0); transform: translateX(0); }
+  100% { opacity: 1; clip-path: inset(0 0 0 0); transform: translateX(0); }
+}
+
+/* ─── GREEN CALLOUT ──────────────────────────────────── */
+#pill-scene .callout {
+  position: absolute; z-index: 8;
+  width: min(360px, 34vw);
+  padding: 18px 20px 16px;
+  background: rgba(4, 8, 5, 0.9);
+  backdrop-filter: blur(3px);
+  border: 1px solid rgba(var(--hue), 0.22);
+  box-shadow: 0 0 60px rgba(0,0,0,0.85),
+              0 0 0 1px rgba(var(--hue), 0.05),
+              inset 0 0 34px rgba(0,0,0,0.5);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.26s ease, transform 0.34s cubic-bezier(0.16,1,0.3,1);
+}
+#pill-scene .callout.show { opacity: 1; transform: translateY(0); }
+#pill-scene .callout::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg,
+    transparent, transparent 3px,
+    rgba(0,0,0,0.09) 3px, rgba(0,0,0,0.09) 4px);
+  pointer-events: none;
+}
+#pill-scene .callout::after {
+  content: '';
+  position: absolute; inset: 6px;
+  border: 1px solid rgba(var(--hue), 0.06);
+  pointer-events: none;
+}
+/* Each transmission takes the colour of the pill it is about, lifted a
+   little brighter than the pill itself so the text still reads against a
+   palm lit that same colour. */
+#pill-scene .callout, #pill-scene #hud-lines { --hue: var(--green); }
+#pill-scene #call-red,  #pill-scene #lead-red  { --hue: 255, 96, 86; }
+#pill-scene #call-blue, #pill-scene #lead-blue { --hue: 120, 205, 255; }
+
+#pill-scene #call-red { left: 44px;  bottom: 116px; }
+#pill-scene #call-blue { right: 44px; bottom: 116px; }
+
+#pill-scene .co-corner {
+  position: absolute; width: 10px; height: 10px;
+  border-color: rgba(var(--hue), 0.55); border-style: solid;
+}
+#pill-scene .co-corner--tl { top: -1px; left: -1px;  border-width: 1px 0 0 1px; }
+#pill-scene .co-corner--tr { top: -1px; right: -1px; border-width: 1px 1px 0 0; }
+#pill-scene .co-corner--bl { bottom: -1px; left: -1px;  border-width: 0 0 1px 1px; }
+#pill-scene .co-corner--br { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+
+#pill-scene .co-head {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(var(--hue), 0.5);
+  margin-bottom: 12px;
+}
+#pill-scene .co-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(var(--hue), 0.85);
+  box-shadow: 0 0 8px rgba(var(--hue), 0.7);
+  animation: co-dot 1.6s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes co-dot { 0%,100%{opacity:0.35} 50%{opacity:1} }
+#pill-scene .co-rule { flex: 1; height: 1px; background: rgba(var(--hue), 0.14); }
+
+#pill-scene .co-msg {
+  position: relative; z-index: 1;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.72;
+  letter-spacing: 0.02em;
+  color: rgba(var(--hue), 0.96);
+  text-shadow: 0 0 22px rgba(var(--hue), 0.22);
+  min-height: 4.3em;
+}
+#pill-scene .co-caret {
+  display: inline-block;
+  width: 7px; height: 13px;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: rgba(var(--hue), 0.8);
+  animation: co-caret 0.85s steps(1,end) infinite;
+}
+@keyframes co-caret { 0%,50%{opacity:1} 51%,100%{opacity:0} }
+#pill-scene .co-msg.done .co-caret { animation-duration: 1.3s; }
+
+#pill-scene .co-foot {
+  position: relative; z-index: 1;
+  margin-top: 14px; padding-top: 11px;
+  border-top: 1px solid rgba(var(--hue), 0.1);
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: rgba(232,232,226,0.38);
+}
+#pill-scene .co-key {
+  padding: 1px 6px;
+  border: 1px solid rgba(232,232,226,0.16);
+  border-radius: 2px;
+  color: rgba(232,232,226,0.6);
+  font-size: 8px;
+}
+
+/* ─── CLICK ZONES ────────────────────────────────────── */
+#pill-scene .zone {
+  position: absolute; z-index: 9;
+  background: transparent; border: 0;
+  cursor: pointer;
+  font: inherit; color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+#pill-scene .zone:focus { outline: none; }
+#pill-scene .zone:focus-visible { outline: 1px dashed rgba(var(--green),0.5); outline-offset: -8px; }
+
+/* ─── CORNER UI ──────────────────────────────────────── */
+#pill-scene .corner {
+  position: fixed; z-index: 20;
+  font-family: var(--mono);
+  font-size: 10px; letter-spacing: 0.08em; line-height: 1.7;
+  color: rgba(232, 232, 226, 0.72);
+  opacity: 0;
+  transition: opacity 1.4s ease;
+  pointer-events: none;
+}
+#pill-scene.booted .corner { opacity: 1; }
+#pill-scene.booted .corner a, #pill-scene.booted .corner button { pointer-events: auto; }
+#pill-scene .corner-tl { top: 28px; left: 32px; }
+#pill-scene .corner-tr { top: 28px; right: 32px; text-align: right; text-transform: uppercase; letter-spacing: 0.12em; }
+#pill-scene .corner-bl { bottom: 28px; left: 32px; }
+#pill-scene .corner-br { bottom: 28px; right: 32px; text-align: right; text-transform: uppercase; letter-spacing: 0.12em; }
+
+#pill-scene .c-title {
+  font-size: 11px; font-weight: 700;
+  color: rgba(232,232,226,0.9);
+  letter-spacing: 0.02em;
+}
+#pill-scene .c-sub {
+  font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: rgba(var(--green), 0.5);
+  margin-top: 5px;
+}
+#pill-scene .c-meta {
+  font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgba(232,232,226,0.3);
+}
+#pill-scene .c-status {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 3px 9px;
+  border: 1px solid rgba(var(--green), 0.18);
+  border-radius: 3px;
+  background: rgba(var(--green), 0.02);
+  color: rgba(232,232,226,0.55);
+  transition: border-color 0.3s, color 0.3s, background 0.3s;
+}
+#pill-scene.armed .c-status { border-color: rgba(var(--green),0.4); color: rgba(var(--green),0.85); background: rgba(var(--green),0.05); }
+#pill-scene .c-status i { font-size: 7px; color: rgba(var(--green), 0.8); }
+
+
+#pill-scene .c-hint {
+  font-size: 9px; letter-spacing: 0.18em;
+  color: rgba(232,232,226,0.34);
+}
+#pill-scene .c-hint b { color: rgba(var(--green), 0.75); font-weight: 400; }
+#pill-scene .c-coords {
+  font-size: 9px; letter-spacing: 0.12em;
+  color: rgba(232,232,226,0.22);
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── BOOT ───────────────────────────────────────────── */
+#pill-scene #boot {
+  position: fixed; inset: 0; z-index: 80;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px;
+  background: var(--bg);
+  transition: opacity 0.7s ease;
+}
+#pill-scene.booted #boot { opacity: 0; pointer-events: none; }
+#pill-scene .boot-label {
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.34em; text-transform: uppercase;
+  color: rgba(var(--green), 0.55);
+}
+#pill-scene .boot-bar {
+  width: min(260px, 60vw); height: 1px;
+  background: rgba(232,232,226,0.1);
+  position: relative; overflow: hidden;
+}
+#pill-scene .boot-fill {
+  position: absolute; inset: 0 100% 0 0;
+  background: rgba(var(--green), 0.7);
+  box-shadow: 0 0 10px rgba(var(--green), 0.6);
+  transition: right 0.28s ease;
+}
+#pill-scene .boot-pct {
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.2em;
+  color: rgba(232,232,226,0.28);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── EXIT FLASH ─────────────────────────────────────── */
+#pill-scene #flash {
+  position: fixed; inset: 0; z-index: 90;
+  pointer-events: none; opacity: 0;
+  background: #fff;
+}
+#pill-scene.exit-red #stage { animation: exit-glitch 1.5s steps(1,end) forwards; }
+#pill-scene.exit-blue #stage { animation: exit-calm 1.55s ease-in forwards; }
+#pill-scene.exit-red #flash { background: radial-gradient(circle at 32% 51%, #fff 0%, #ff5a4a 34%, #2a0406 100%); animation: flash-in 1.5s ease-in forwards; }
+#pill-scene.exit-blue #flash { background: radial-gradient(circle at 67% 53%, #fff 0%, #6fd0ff 34%, #04121f 100%); animation: flash-in 1.55s ease-in forwards; }
+@keyframes flash-in {
+  0%   { opacity: 0;   filter: brightness(1); }
+  40%  { opacity: 0.1; filter: brightness(1); }
+  58%  { opacity: 1;   filter: brightness(1.7); }
+  100% { opacity: 1;   filter: brightness(0.2) saturate(0.75); }
+}
+@keyframes exit-glitch {
+  0%   { transform: none; filter: none; }
+  9%   { transform: translateX(-14px) skewX(3deg); filter: brightness(1.8) saturate(1.6); }
+  17%  { transform: translateX(11px) skewX(-2deg); filter: brightness(0.6); clip-path: inset(22% 0 0 0); }
+  26%  { transform: translateX(-7px); filter: brightness(2.1) hue-rotate(-12deg); clip-path: none; }
+  35%  { transform: translateX(9px) skewX(2deg); filter: brightness(0.8); clip-path: inset(0 0 44% 0); }
+  46%  { transform: none; filter: brightness(1.5); clip-path: none; }
+  60%  { transform: scale(1.05); filter: brightness(1.2) saturate(2); }
+  100% { transform: scale(1.22); filter: brightness(3) saturate(2.4); }
+}
+@keyframes exit-calm {
+  0%   { transform: scale(1); filter: none; }
+  100% { transform: scale(1.06); filter: brightness(1.5) saturate(0.4) blur(3px); }
+}
+
+/* Opening beat: he speaks before the hands are shown, so only the moving
+   air is visible. The canvas is deliberately left alone here.
+   The reveal is a push out of the dark — the hands come forward into focus
+   rather than a flat cross-fade. #emerge wraps the stills and clips so this
+   never fights the JS-driven zoom on #frames. */
+#pill-scene #emerge {
+  position: absolute; inset: 0;
+  transform-origin: 50% 46%;
+  transition: opacity 2.0s ease,
+              transform 2.8s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 2.4s ease;
+}
+#pill-scene.prelude #emerge {
+  opacity: 0;
+  transform: scale(1.18);
+  filter: brightness(0.15) blur(9px);
+}
+#pill-scene #vignette { transition: opacity 1.8s ease; }
+#pill-scene.prelude #vignette { opacity: 0; }
+#pill-scene.prelude .corner, #pill-scene.prelude .zone { pointer-events: none; }
+#pill-scene.prelude .corner-tr,
+#pill-scene.prelude .corner-bl,
+#pill-scene.prelude .corner-br { opacity: 0; }
+
+/* While he is mid-monologue the hands demonstrate rather than offer, so the
+   prompts that invite a click stand down until he has finished. */
+#pill-scene .co-foot, #pill-scene .corner-br { transition: opacity 0.35s ease; }
+#pill-scene.scripted .co-foot,
+#pill-scene.scripted .corner-br { opacity: 0; pointer-events: none; }
+
+/* ─── CURSOR ──────────────────────────────────────────
+   The pointer carries the state of the offer: struck through while he is
+   still talking, and lit once the choice is actually yours. The native
+   cursor stays underneath the glow rather than being replaced, so it never
+   lags behind the real pointer position.
+
+   Position and pulse are deliberately on separate elements — a keyframe
+   animating `transform` on the same node would override the inline
+   translate that follows the mouse, and the glow would sit at the origin. */
+#pill-cursor {
+  position: fixed; top: 0; left: 0;
+  width: 0; height: 0;
+  pointer-events: none;
+  z-index: 40;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  will-change: transform;
+}
+#pill-cursor i {
+  position: absolute;
+  top: -23px; left: -23px;
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  display: block;
+  background: radial-gradient(circle,
+    rgba(var(--hue), 0.34) 0%,
+    rgba(var(--hue), 0.14) 38%,
+    rgba(var(--hue), 0) 70%);
+}
+#pill-cursor i::after {
+  content: '';
+  position: absolute; inset: 16px;
+  border: 1px solid rgba(var(--hue), 0.8);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(var(--hue), 0.55),
+              inset 0 0 6px rgba(var(--hue), 0.35);
+}
+#pill-scene #pill-cursor { --hue: var(--green); }
+#pill-scene #pill-cursor.on-red  { --hue: 255, 96, 86; }
+#pill-scene #pill-cursor.on-blue { --hue: 120, 205, 255; }
+
+#pill-scene.choosable #pill-cursor { opacity: 1; }
+#pill-scene.choosable #pill-cursor i { animation: pc-breathe 2.4s ease-in-out infinite; }
+@keyframes pc-breathe {
+  0%, 100% { transform: scale(0.86); opacity: 0.75; }
+  50%      { transform: scale(1.10); opacity: 1; }
+}
+
+/* The moment choosing opens up, a few louder pulses to say so. */
+#pill-scene.just-open #pill-cursor i { animation: pc-alert 0.75s ease-out 3; }
+@keyframes pc-alert {
+  0%   { transform: scale(0.6);  opacity: 1; }
+  55%  { transform: scale(2.0);  opacity: 0.25; }
+  100% { transform: scale(0.86); opacity: 0.9; }
+}
+
+/* Not yours to take yet. */
+#pill-scene .zone { cursor: pointer; }
+#pill-scene.prelude .zone,
+#pill-scene.scripted .zone,
+#pill-scene.taken .zone,
+#pill-scene.prelude,
+#pill-scene.scripted,
+#pill-scene.taken { cursor: not-allowed; }
+
+/* ─── OUTCOME ────────────────────────────────────────── */
+#pill-scene #outcome {
+  position: fixed; inset: 0; z-index: 95;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none; opacity: 0;
+  transition: opacity 0.5s ease;
+}
+#pill-scene #outcome.show { opacity: 1; pointer-events: auto; }
+#pill-scene .oc-panel {
+  position: relative;
+  width: min(520px, 88vw);
+  padding: 34px 38px 30px;
+  background: rgba(4, 8, 5, 0.96);
+  border: 1px solid rgba(var(--green), 0.22);
+  box-shadow: 0 0 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(var(--green), 0.06),
+              inset 0 0 40px rgba(0,0,0,0.5);
+  transform: translateY(10px);
+  transition: transform 0.55s cubic-bezier(0.16,1,0.3,1);
+}
+#pill-scene #outcome.show .oc-panel { transform: translateY(0); }
+#pill-scene .oc-panel::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg,
+    transparent, transparent 3px,
+    rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px);
+  pointer-events: none;
+}
+#pill-scene .oc-panel::after {
+  content: '';
+  position: absolute; inset: 8px;
+  border: 1px solid rgba(var(--green), 0.06);
+  pointer-events: none;
+}
+#pill-scene .oc-head {
+  position: relative; z-index: 1;
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(var(--green), 0.5);
+  margin-bottom: 22px;
+}
+#pill-scene .oc-pill {
+  position: relative; z-index: 1;
+  font-family: var(--mono);
+  font-size: clamp(24px, 3.4vw, 38px);
+  letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: 16px;
+}
+#pill-scene.exit-red  .oc-pill { color: rgba(255,120,110,0.95); text-shadow: 0 0 34px rgba(var(--red), 0.45); }
+#pill-scene.exit-blue .oc-pill { color: rgba(150,215,255,0.95); text-shadow: 0 0 34px rgba(var(--blue), 0.4); }
+#pill-scene .oc-msg {
+  position: relative; z-index: 1;
+  font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  letter-spacing: 0.02em;
+  color: rgba(232,232,226,0.55);
+  margin-bottom: 26px;
+}
+#pill-scene .oc-btn {
+  position: relative; z-index: 1;
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 9px 22px; border-radius: 2px; cursor: pointer;
+  border: 1px solid rgba(var(--green), 0.35);
+  background: rgba(var(--green), 0.06);
+  color: rgba(var(--green), 0.9);
+  transition: all 0.15s ease;
+}
+#pill-scene .oc-btn:hover {
+  background: rgba(var(--green), 0.13);
+  border-color: rgba(var(--green), 0.6);
+  box-shadow: 0 0 16px rgba(var(--green), 0.12);
+  color: rgb(var(--green));
+}
+
+/* ─── RESPONSIVE ─────────────────────────────────────── */
+@media (max-width: 900px) {
+  #pill-scene .corner-tl { top: 18px; left: 18px; }
+  #pill-scene .corner-tr { top: 18px; right: 18px; }
+  #pill-scene .corner-bl { bottom: 18px; left: 18px; }
+  #pill-scene .corner-br { bottom: 18px; right: 18px; }
+  #pill-scene .callout {
+    width: calc(100vw - 36px);
+    left: 18px !important; right: auto !important;
+    bottom: 46px;
+  }
+  #pill-scene .co-msg { font-size: 12px; min-height: 5.2em; }
+  #pill-scene .corner-br { display: none; }
+}
+@media (max-width: 560px) {
+  #pill-scene .co-msg { font-size: 11.5px; }
+  #pill-scene .corner-tr .c-status { font-size: 8px; padding: 2px 7px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #pill-scene .frame { transition: none; }
+  #pill-scene #frames { transition: none; }
+  #pill-scene .reticle.show .ret-corner--tl, #pill-scene .reticle.show .ret-corner--tr, #pill-scene .reticle.show .ret-corner--bl, #pill-scene .reticle.show .ret-corner--br, #pill-scene .reticle.show .ret-scan, #pill-scene .reticle.show .ret-label, #pill-scene .co-dot, #pill-scene .ret-lock, #pill-scene .co-caret { animation: none !important; }
+  #pill-scene .reticle.show .ret-corner--tl { top: 0; left: 0; opacity: 1; }
+  #pill-scene .reticle.show .ret-corner--tr { top: 0; right: 0; opacity: 1; }
+  #pill-scene .reticle.show .ret-corner--bl { bottom: 0; left: 0; opacity: 1; }
+  #pill-scene .reticle.show .ret-corner--br { bottom: 0; right: 0; opacity: 1; }
+  #pill-scene .reticle.show .ret-label { opacity: 1; }
 }
 
 /* ─── ACCESS GATE ────────────────────────────────────── */
@@ -3606,6 +4238,111 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
   </div>
 </div>
 
+<div id="pill-scene" class="booting prelude" aria-label="The choice">
+<div id="stage">
+  <div id="emerge">
+  <div id="frames">
+    <img class="frame" id="s-neutral" src="/images/choice/neutral.jpg" alt="Two open hands, one offering a red pill and the other a blue pill.">
+    <img class="frame" id="s-red"    src="/images/choice/red.jpg"    alt="" aria-hidden="true">
+    <img class="frame" id="s-blue"   src="/images/choice/blue.jpg"   alt="" aria-hidden="true">
+    <img class="frame on" id="s-closed" src="/images/choice/closed.jpg" alt="" aria-hidden="true">
+
+    <video class="clip" id="v-red-forward"   src="/video/web/red-forward.mp4"   muted playsinline preload="auto" aria-hidden="true"></video>
+    <video class="clip" id="v-red-back"      src="/video/web/red-back.mp4"      muted playsinline preload="auto" aria-hidden="true"></video>
+    <video class="clip" id="v-blue-forward"  src="/video/web/blue-forward.mp4"  muted playsinline preload="auto" aria-hidden="true"></video>
+    <video class="clip" id="v-blue-back"     src="/video/web/blue-back.mp4"     muted playsinline preload="auto" aria-hidden="true"></video>
+    <video class="clip" id="v-both-back"     src="/video/web/both-back.mp4"     muted playsinline preload="auto" aria-hidden="true"></video>
+    <video class="clip" id="v-both-back-rev" src="/video/web/both-back-rev.mp4" muted playsinline preload="auto" aria-hidden="true"></video>
+  </div>
+  </div>
+
+  <div id="vignette"></div>
+
+  <div id="glow-red" class="pill-glow"></div>
+  <div id="glow-blue" class="pill-glow"></div>
+
+  <canvas id="fx"></canvas>
+
+  <svg id="hud-lines" aria-hidden="true">
+    <g class="lead" id="lead-red"><path id="lead-red-p"></path><circle id="lead-red-c" r="2.2"></circle></g>
+    <g class="lead" id="lead-blue"><path id="lead-blue-p"></path><circle id="lead-blue-c" r="2.2"></circle></g>
+  </svg>
+
+  <div class="reticle" id="ret-red" aria-hidden="true">
+    <div class="ret-box"><div class="ret-scan"></div></div>
+    <div class="ret-corner ret-corner--tl"></div>
+    <div class="ret-corner ret-corner--tr"></div>
+    <div class="ret-corner ret-corner--bl"></div>
+    <div class="ret-corner ret-corner--br"></div>
+    <div class="ret-label"><span>Target // Red_Pill</span><span class="ret-lock">Lock</span></div>
+  </div>
+
+  <div class="reticle" id="ret-blue" aria-hidden="true">
+    <div class="ret-box"><div class="ret-scan"></div></div>
+    <div class="ret-corner ret-corner--tl"></div>
+    <div class="ret-corner ret-corner--tr"></div>
+    <div class="ret-corner ret-corner--bl"></div>
+    <div class="ret-corner ret-corner--br"></div>
+    <div class="ret-label"><span>Target // Blue_Pill</span><span class="ret-lock">Lock</span></div>
+  </div>
+
+  <aside class="callout" id="call-red">
+    <div class="co-corner co-corner--tl"></div><div class="co-corner co-corner--tr"></div>
+    <div class="co-corner co-corner--bl"></div><div class="co-corner co-corner--br"></div>
+    <div class="co-head"><span class="co-dot"></span><span>// transmission &middot; red</span><span class="co-rule"></span></div>
+    <p class="co-msg" id="msg-red"></p>
+    <div class="co-foot"><span class="co-key">Click</span><span>to take the red pill</span></div>
+  </aside>
+
+  <aside class="callout" id="call-blue">
+    <div class="co-corner co-corner--tl"></div><div class="co-corner co-corner--tr"></div>
+    <div class="co-corner co-corner--bl"></div><div class="co-corner co-corner--br"></div>
+    <div class="co-head"><span class="co-dot"></span><span>// transmission &middot; blue</span><span class="co-rule"></span></div>
+    <p class="co-msg" id="msg-blue"></p>
+    <div class="co-foot"><span class="co-key">Click</span><span>to take the blue pill</span></div>
+  </aside>
+
+  <button class="zone" id="zone-red"  aria-label="Take the red pill — see how deep the rabbit hole goes"></button>
+  <button class="zone" id="zone-blue" aria-label="Take the blue pill — see the work profile"></button>
+</div>
+
+<div class="corner corner-tl">
+  <div class="c-title">v4run</div>
+  <div class="c-sub">// choice.protocol</div>
+</div>
+
+<div class="corner corner-tr">
+  <span class="c-status" id="status"><i class="fa-solid fa-circle"></i><span id="status-text">Awaiting input</span></span>
+  <div class="c-coords" id="coords">X 000.0 &nbsp; Y 000.0</div>
+</div>
+
+<div class="corner corner-bl">
+  <div class="c-meta">SYS // 02 offered &nbsp;&middot;&nbsp; 01 taken</div>
+</div>
+
+<div class="corner corner-br">
+  <div class="c-hint" id="hint">Hover a hand &middot; <b>&larr; &rarr;</b> to aim &middot; <b>Enter</b> to choose</div>
+</div>
+
+<audio id="a-breath" src="/audio/slowbreathing.mp3" loop preload="auto"></audio>
+<audio id="a-voice" preload="auto"></audio>
+
+<div id="pill-cursor"><i></i></div>
+
+<div id="flash"></div>
+
+<div id="outcome" aria-live="polite">
+  <div class="oc-panel">
+    <div class="co-corner co-corner--tl"></div><div class="co-corner co-corner--tr"></div>
+    <div class="co-corner co-corner--bl"></div><div class="co-corner co-corner--br"></div>
+    <div class="oc-head" id="oc-head">// signal lost</div>
+    <div class="oc-pill" id="oc-pill">Coming soon</div>
+    <p class="oc-msg" id="oc-msg"></p>
+    <button class="oc-btn" id="oc-reset"><i class="fa-solid fa-arrow-left"></i> Back to the choice</button>
+  </div>
+</div>
+</div>
+
 <div id="access-gate">
   <div id="access-dialog">
     <div class="ag-corner ag-corner--tl"></div>
@@ -4890,7 +5627,11 @@ const NAV_LABELS = {};  // key → display label
   // ── INTRO SEQUENCE ───────────────────────────────────────────────────────
 
   function hasVisited() {
-    return document.cookie.split(';').some(c => c.trim().startsWith('v4run_v='));
+    // TEMPORARILY DISABLED — every load gets the gate and the choice, even on
+    // a repeat visit. Restore the line below to let return visitors skip
+    // straight into the site again.
+    return false;
+    // return document.cookie.split(';').some(c => c.trim().startsWith('v4run_v='));
   }
   function setVisited() {
     // TODO: change to 7-day expiry before launch
@@ -5271,24 +6012,40 @@ const NAV_LABELS = {};  // key → display label
           setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9200);
         } else {
           setVisited();
-          // Flash a lone cursor for ~2s (music is already playing), then type
-          lbl.innerHTML = '';
-          lbl.classList.add('quote-mode', 'intro-mode', 'visible');
-          const preCursor = document.createElement('span');
-          preCursor.className = 'tw-cursor';
-          lbl.appendChild(preCursor);
-          setTimeout(() => {
-            lbl.innerHTML = '';
-            lbl.classList.remove('visible');
-            runIntro(() => {
-              if (window._triggerBigBang) window._triggerBigBang();
-              setTimeout(() => { if (!isNavHover) showNextQuote(); }, 11800);
-            });
-          }, 2000);
+          // First visit: the choice comes before the site does. The intro
+          // waits for a pill to be taken (see _pillTaken below).
+          if (window._pillStart) window._pillStart();
+          else startTypedIntro();
         }
       }, 620); // matches the new shrink-and-glitch dismiss animation
     });
     } // end runGateLogic
+
+    // The typed opening, factored out so both the gate and the pill scene
+    // can trigger it.
+    function startTypedIntro() {
+      lbl.innerHTML = '';
+      lbl.classList.add('quote-mode', 'intro-mode', 'visible');
+      const preCursor = document.createElement('span');
+      preCursor.className = 'tw-cursor';
+      lbl.appendChild(preCursor);
+      setTimeout(() => {
+        lbl.innerHTML = '';
+        lbl.classList.remove('visible');
+        runIntro(() => {
+          if (window._triggerBigBang) window._triggerBigBang();
+          setTimeout(() => { if (!isNavHover) showNextQuote(); }, 11800);
+        });
+      }, 2000);
+    }
+
+    // Handed control back by the pill scene once the red pill is taken. Blue
+    // resolves inside the scene for now — there is nothing behind it yet.
+    window._pillTaken = function () {
+      const sc = document.getElementById('pill-scene');
+      if (sc) { sc.classList.add('dismissed'); sc.classList.remove('running'); }
+      startTypedIntro();
+    };
   })();
 
   // ── MUSIC TOGGLE ────────────────────────────────────────────────────────
@@ -6125,6 +6882,9 @@ const closeBtn = document.getElementById('modal-close');
 const escHint  = document.getElementById('esc-hint');
 
 const _mdCache = {}; // key → rendered HTML (cached after first load)
+
+// Exposed so the pill scene can hand off straight into a section.
+setTimeout(() => { window._openPanel = openModal; }, 0);
 
 // Format article dates as "Month DD, YYYY"
 function fmtArticleDate(d) {
@@ -8031,6 +8791,1694 @@ window.addEventListener('popstate', (e) => {
   scheduleNext();
 })();
 
+</script>
+<script>
+(function () {
+  'use strict';
+
+  var RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var IMG_W = 1672, IMG_H = 941, IMG_AR = IMG_W / IMG_H;
+  var OBJ_POS_Y = 0.46; /* must match .frame object-position */
+
+  /* Normalised pill centres, measured off the source frames. */
+  /* Hover targets sit on the hands themselves. Measured as the union of each
+     hand's extent across all four poses (neutral, both forward states and
+     closed) with a little padding, so a hand advancing never slides out from
+     under the pointer. Normalised to the image, not the viewport. */
+  var HAND_ZONE = {
+    red:  { x0: 0.050, x1: 0.495, y0: 0.255, y1: 0.845 },
+    blue: { x0: 0.505, x1: 0.950, y0: 0.255, y1: 0.875 }
+  };
+
+  var PILL = {
+    red:  { rest: [0.2990, 0.5460], fwd: [0.3225, 0.5105], rgb: [255, 78, 66] },
+    blue: { rest: [0.7150, 0.5480], fwd: [0.6705, 0.5330], rgb: [128, 216, 255] }
+  };
+
+  var MSG = {
+    red:  "Take the red pill and we'll show you how deep the rabbit hole goes.",
+    blue: "Take the blue pill and you'll see my work profile. And we all go back to normal."
+  };
+
+  /* Where each pill leads is decided by the host page (see _pillTaken). */
+
+  var scene = document.getElementById('pill-scene');
+  if (!scene) return;
+  var el = function (id) { return scene.querySelector('#' + id); };
+  var body = scene;                 /* class carrier for the scene's states */
+  var stage = el('stage');
+  var stills = {
+    neutral: el('s-neutral'), red: el('s-red'), blue: el('s-blue'), closed: el('s-closed')
+  };
+  /* Which clip carries you out of each non-neutral state. Every transition
+     routes through neutral, so red -> blue is red's clip reversed followed
+     by blue's clip forward. */
+  var CLIP = { red: 'red-forward', blue: 'blue-forward', closed: 'both-back' };
+  var BACK = { red: 'red-back',    blue: 'blue-back',     closed: 'both-back-rev' };
+  var clips = {};
+  ['red-forward', 'blue-forward', 'both-back', 'red-back', 'blue-back', 'both-back-rev']
+    .forEach(function (n) { clips[n] = el('v-' + n); });
+
+  var ONE_LEG = 1.0;         /* a hand coming forward, and the idle close/open */
+  var BACK_LEG = 0.2;        /* a pill hand snapping back to neutral */
+
+  /* None of the source clips ease out — measured frame-to-frame, they are all
+     still travelling at 35-70% of peak speed on their last frames, and the
+     reversed ones end where the sources abruptly start. Landing straight on a
+     static still from that reads as a jolt, so we ramp playbackRate down over
+     the tail: the hand decelerates into the pose the still already holds.
+     EASE_FROM is where the braking starts, EASE_TO the speed it lands at. */
+  var EASE_FROM = 0.55;
+  var EASE_TO = 0.35;
+
+  function rateShape(p) {
+    if (p <= EASE_FROM) return 1;
+    var u = (p - EASE_FROM) / (1 - EASE_FROM);
+    if (u > 1) u = 1;
+    return 1 - (1 - EASE_TO) * (u * u * (3 - 2 * u));   /* smoothstep */
+  }
+
+  /* Mean of 1/shape, so a ramped clip still lands in exactly ONE_LEG seconds
+     rather than running long because of its own slow tail. */
+  var RATE_K = (function () {
+    var n = 512, sum = 0;
+    for (var i = 0; i < n; i++) sum += 1 / rateShape((i + 0.5) / n);
+    return sum / n;
+  })();
+  var IDLE_MS = 2000;        /* pointer still this long and the hands close */
+  var glow = { red: el('glow-red'), blue: el('glow-blue') };
+  var ret  = { red: el('ret-red'),  blue: el('ret-blue') };
+  var call = { red: el('call-red'), blue: el('call-blue') };
+  var msgEl = { red: el('msg-red'), blue: el('msg-blue') };
+  var zone = { red: el('zone-red'), blue: el('zone-blue') };
+  var lead = {
+    red:  { g: el('lead-red'),  p: el('lead-red-p'),  c: el('lead-red-c') },
+    blue: { g: el('lead-blue'), p: el('lead-blue-p'), c: el('lead-blue-c') }
+  };
+  var framesEl = el('frames');
+  var canvas = el('fx'), ctx = canvas.getContext('2d');
+  var vignetteEl = el('vignette');
+  var breathTick = 0;
+
+  /* The image layer is scaled about the offered pill. Everything drawn on top
+     of it (reticle, bloom, particles, leader lines) has to go through the same
+     transform, or the HUD drifts off the pill as the push happens. */
+  var zoom = { s: 1, ox: 0, oy: 0 };
+
+  var state = 'closed';   /* settled state: neutral | red | blue | closed */
+  var desired = 'closed'; /* where the pointer says we should be */
+  var leg = null;         /* clip currently playing, or null when at rest */
+  var locked = false;     /* a pill has been chosen; ignore everything */
+  var contain = false;
+  var idleTimer = null;
+
+  /* Cached view of the machine for the HUD and particle code: `active` is the
+     side whose pill is forward, `settled` means nothing is moving. */
+  var active = null;
+  var settled = true;
+  function syncActive() {
+    active = (!leg && (state === 'red' || state === 'blue')) ? state : null;
+    settled = !leg;
+  }
+
+  /* ─── GEOMETRY ──────────────────────────────────────── */
+  function fitRect() {
+    var vw = window.innerWidth, vh = window.innerHeight, w, h, x, y;
+    if (contain) {
+      if (vw / vh > IMG_AR) { h = vh; w = vh * IMG_AR; } else { w = vw; h = vw / IMG_AR; }
+      x = (vw - w) / 2; y = (vh - h) / 2;
+    } else {
+      if (vw / vh > IMG_AR) { w = vw; h = vw / IMG_AR; } else { h = vh; w = vh * IMG_AR; }
+      x = (vw - w) / 2;
+      y = (vh - h) * OBJ_POS_Y;
+    }
+    return { x: x, y: y, w: w, h: h };
+  }
+
+  function toScreen(n) {
+    var r = fitRect();
+    return { x: r.x + n[0] * r.w, y: r.y + n[1] * r.h };
+  }
+
+  function project(p) {
+    return { x: zoom.ox + (p.x - zoom.ox) * zoom.s,
+             y: zoom.oy + (p.y - zoom.oy) * zoom.s };
+  }
+
+  function pillPoint(side) {
+    var p = PILL[side];
+    return project(toScreen(active === side && settled ? p.fwd : p.rest));
+  }
+
+  function computeZoom() {
+    if (active && settled) {
+      /* Portrait letterboxes a 16:9 frame down to a thin band, so push hard
+         into the chosen hand there; on wide screens it's just a nudge. */
+      zoom.s = contain ? 2.2 : 1.022;
+      var o = toScreen(PILL[active].fwd);
+      zoom.ox = o.x; zoom.oy = o.y;
+    } else {
+      /* Keep the last origin on the way out: at scale(1) the origin is
+         irrelevant, and moving it mid-transition would snap the image. */
+      zoom.s = 1;
+      if (!zoom.ox && !zoom.oy) {
+        zoom.ox = window.innerWidth / 2; zoom.oy = window.innerHeight / 2;
+      }
+    }
+    framesEl.style.transformOrigin = zoom.ox + 'px ' + zoom.oy + 'px';
+    framesEl.style.transform = 'scale(' + zoom.s + ')';
+  }
+
+  /* ─── LAYOUT ────────────────────────────────────────── */
+  var retSize = 180;
+
+  function layout() {
+    if (!window.innerWidth || !window.innerHeight) return;
+    contain = (window.innerWidth / window.innerHeight) < 1.18;
+    body.classList.toggle('fit-contain', contain);
+
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    ensureAmbient();
+    var r = fitRect();
+    computeZoom();
+    retSize = Math.max(110, Math.min(r.h * 0.24 * zoom.s, 220));
+
+    ['red', 'blue'].forEach(function (side) {
+      var p = pillPoint(side);
+      var n = ret[side];
+      n.style.width = retSize + 'px';
+      n.style.height = retSize + 'px';
+      n.style.left = (p.x - retSize / 2) + 'px';
+      n.style.top = (p.y - retSize / 2) + 'px';
+
+      glow[side].style.left = p.x + 'px';
+      glow[side].style.top = p.y + 'px';
+
+      /* hit zones straddle each hand within the fitted image */
+      var z = zone[side];
+      if (contain) {
+        /* portrait letterboxes the frame down to a thin band that is already
+           hard to aim at — keep the generous full-column target there */
+        z.style.top = '0px';
+        z.style.height = window.innerHeight + 'px';
+        z.style.left = (side === 'red' ? Math.max(0, r.x) : r.x + r.w * 0.5) + 'px';
+        z.style.width = (side === 'red'
+          ? r.x + r.w * 0.5 - Math.max(0, r.x)
+          : Math.min(window.innerWidth, r.x + r.w) - (r.x + r.w * 0.5)) + 'px';
+      } else {
+        var b = HAND_ZONE[side];
+        var tl = project({ x: r.x + b.x0 * r.w, y: r.y + b.y0 * r.h });
+        var br = project({ x: r.x + b.x1 * r.w, y: r.y + b.y1 * r.h });
+        z.style.left = tl.x + 'px';
+        z.style.top = tl.y + 'px';
+        z.style.width = Math.max(0, br.x - tl.x) + 'px';
+        z.style.height = Math.max(0, br.y - tl.y) + 'px';
+      }
+    });
+
+    drawLeaders();
+  }
+
+  function drawLeaders() {
+    ['red', 'blue'].forEach(function (side) {
+      var box = call[side].getBoundingClientRect();
+      var p = pillPoint(side);
+      var half = retSize / 2;
+      var ax, ay, bx, by;
+      if (side === 'red') {
+        ax = p.x - half * 0.72; ay = p.y + half * 0.86;
+        bx = Math.min(box.right - 24, box.left + box.width * 0.45); by = box.top;
+      } else {
+        ax = p.x + half * 0.72; ay = p.y + half * 0.86;
+        bx = Math.max(box.left + 24, box.left + box.width * 0.55); by = box.top;
+      }
+      var midY = (ay + by) / 2;
+      lead[side].p.setAttribute('d',
+        'M ' + ax.toFixed(1) + ' ' + ay.toFixed(1) +
+        ' L ' + ax.toFixed(1) + ' ' + midY.toFixed(1) +
+        ' L ' + bx.toFixed(1) + ' ' + midY.toFixed(1) +
+        ' L ' + bx.toFixed(1) + ' ' + by.toFixed(1));
+      lead[side].c.setAttribute('cx', ax.toFixed(1));
+      lead[side].c.setAttribute('cy', ay.toFixed(1));
+    });
+  }
+
+  /* ─── FRAME SEQUENCER ───────────────────────────────── */
+  function showStill(name) {
+    for (var k in stills) stills[k].classList.toggle('on', k === name);
+  }
+
+  var STATUS = {
+    neutral: 'Awaiting input',
+    red: 'Red pill offered',
+    blue: 'Blue pill offered',
+    closed: 'Offer withdrawn'
+  };
+
+  /* ── transition machine ───────────────────────────────────────
+     Three source clips all run neutral -> somewhere, so a move is at most
+     two legs: undo the state we're in, then play into the one we want. */
+
+  function legsRemaining(from, to) {
+    return (from === 'neutral' ? 0 : 1) + (to === 'neutral' ? 0 : 1);
+  }
+
+  function nextLeg(from, to) {
+    if (from === to) return null;
+    if (from !== 'neutral') return { key: from, rev: true,  from: from, to: 'neutral' };
+    return { key: to, rev: false, from: 'neutral', to: to };
+  }
+
+  function clipEl(l) { return clips[(l.rev ? BACK : CLIP)[l.key]]; }
+
+  /* A pill hand withdrawing is a snap; everything else is a move. Only
+     applies to pointer-driven transitions — see startLeg for the monologue,
+     where every clip runs at its own pace. */
+  function legSeconds(l) {
+    return (l.rev && l.key !== 'closed') ? BACK_LEG : ONE_LEG;
+  }
+
+  function applyRate(v, l) {
+    if (l.natural) {
+      if (Math.abs(v.playbackRate - 1) > 0.02) v.playbackRate = 1;
+      return;
+    }
+    var d = v.duration || 4;
+    var r = l.baseRate * rateShape(v.currentTime / d);
+    r = Math.max(0.0625, Math.min(16, r));
+    /* only when it has actually moved — re-setting the rate every frame makes
+       the decoder resync for no visible gain */
+    if (Math.abs(v.playbackRate - r) > 0.02) v.playbackRate = r;
+  }
+
+  function stopClip(l) {
+    var v = clipEl(l);
+    v.pause();
+    v.onended = null;
+    v.onseeked = null;
+    return v;
+  }
+
+  /* Exactly one clip may be lit. Anything else that was showing fades out
+     underneath it rather than being cut. */
+  function lightClip(v) {
+    for (var k in clips) {
+      var c = clips[k];
+      if (c === v) c.classList.add('on');
+      else c.classList.remove('on');
+    }
+  }
+
+  function goTo(target) {
+    if (locked || desired === target) return;
+    if (target === 'neutral' || target === 'closed') lastHoverSide = null;
+    desired = target;
+    armIdle();
+
+    /* retire the outgoing side's motes so no ghost bloom lingers */
+    for (var mi = 0; mi < motes.length; mi++) {
+      motes[mi].max = Math.min(motes[mi].max, motes[mi].life + 12);
+    }
+
+    if (active) hideHud(active);
+    body.classList.toggle('armed', target === 'red' || target === 'blue');
+    setStatus(STATUS[target] || STATUS.neutral);
+    if (lastPointer) moveCursor(lastPointer.x, lastPointer.y);
+
+    if (RM) { settleInto(target); return; }
+
+    if (!leg) { advance(); return; }
+
+    /* Mid-flight. If we're already heading where we want, ride it out; if we
+       want to be back where this leg started, flip it in place from the
+       mirrored timestamp so the hand simply changes direction. */
+    if (leg.to === target) return;
+    if (leg.from === target || legsRemaining(leg.to, target) > legsRemaining(leg.from, target)) flipLeg();
+  }
+
+  function flipLeg() {
+    var old = leg;
+    var oldEl = stopClip(old);
+    var flipped = { key: old.key, rev: !old.rev, from: old.to, to: old.from };
+    /* mirror by proportion, not by seconds — forward and retreat clips are
+       different lengths, so the hand must resume from the same pose */
+    var p = (oldEl.currentTime || 0) / (oldEl.duration || 4);
+    var newEl = clipEl(flipped);
+    startLeg(flipped, (newEl.duration || 4) * (1 - Math.min(1, p)), oldEl);
+  }
+
+  /* Give up on video and land directly on the state we were heading for.
+     Used when playback is refused or stalls: settling normally would start
+     the next leg, that leg would be refused too, and the retries would spin
+     as fast as promises resolve — starving timers and freezing the page. */
+  function snapTo(st) {
+    if (leg) stopClip(leg);
+    leg = null;
+    state = st;
+    desired = st;
+    for (var k in clips) clips[k].classList.remove('on');
+    showStill(st);
+    syncActive();
+    layout();
+    if (st === 'red' || st === 'blue') showHud(st);
+    armIdle();
+    handsUp(st);
+  }
+
+  function advance() {
+    var l = nextLeg(state, desired);
+    if (!l) { settleInto(state); return; }
+    startLeg(l, 0, null);
+  }
+
+  function startLeg(l, at, outgoing) {
+    leg = l;
+    syncActive();
+    var v = clipEl(l);
+    /* Answering the pointer, speed is everything: the clips are compressed
+       to a target and eased into their stop. Under the monologue there is no
+       pointer to answer — the hands are illustrating a speech, so they run
+       at the pace they were filmed at, with no compression and no ramp. */
+    l.natural = scripted;
+    l.baseRate = l.natural ? 1 : (v.duration || 4) / legSeconds(l) * RATE_K;
+    applyRate(v, l);
+
+    var show = function () {
+      /* a faster pointer may have superseded this leg while we were seeking */
+      if (leg !== l) return;
+      lightClip(v);
+      var pl = v.play();
+      if (pl && pl.catch) pl.catch(function () { if (leg === l) snapTo(desired); });
+    };
+
+    v.onended = function () { if (leg === l) settleInto(l.to); };
+
+    if (Math.abs(v.currentTime - at) < 0.02) { show(); }
+    else {
+      v.onseeked = function () { v.onseeked = null; show(); };
+      v.currentTime = at;
+    }
+  }
+
+  /* Land on a state: light its still, fade the clip out over it, then either
+     rest or start the next leg. */
+  function settleInto(st) {
+    var finishing = leg;
+    var handover = (st !== desired);   /* another leg follows immediately */
+    leg = null;
+    state = st;
+    showStill(st);
+    syncActive();
+
+    if (finishing) {
+      stopClip(finishing);
+      /* On a handover the outgoing clip stays lit, paused on its last frame,
+         until the next one fades in over it. Dropping to the still here is
+         what put a ghost frame in the middle of red -> blue. */
+      if (!handover) for (var k in clips) clips[k].classList.remove('on');
+    }
+
+    layout();
+
+    if (handover) { advance(); return; }
+
+    if (st === 'red' || st === 'blue') {
+      showHud(st);
+      burst(st, 34);
+    }
+    armIdle();
+    handsUp(st);
+  }
+
+  /* The pitch is cued by the hands reaching the offer, whichever way they
+     got there — settling normally, or snapping there because playback was
+     refused. Missing the snap path meant the monologue never ran at all when
+     video could not play. */
+  function handsUp(st) {
+    if (st === 'neutral' && !monologueDone && !body.classList.contains('prelude')) {
+      runMonologue();
+    }
+  }
+
+  /* ─── HUD ───────────────────────────────────────────── */
+  var typeTimer = null;
+
+  function showHud(side) {
+    ret[side].classList.add('show');
+    call[side].classList.add('show');
+    lead[side].g.classList.add('show');
+    glow[side].style.opacity = '1';
+    typeMessage(side);
+  }
+
+  function hideHud(side) {
+    if (!side) return;
+    ret[side].classList.remove('show');
+    call[side].classList.remove('show');
+    lead[side].g.classList.remove('show');
+    glow[side].style.opacity = '0';
+    clearTimeout(typeTimer);
+  }
+
+  function typeMessage(side) {
+    clearTimeout(typeTimer);
+    var target = MSG[side], node = msgEl[side], i = 0;
+    node.classList.remove('done');
+    if (RM) {
+      node.innerHTML = esc(target) + '<span class="co-caret"></span>';
+      node.classList.add('done');
+      return;
+    }
+    node.innerHTML = '<span class="co-caret"></span>';
+    (function step() {
+      if (active !== side) return;
+      i += 1;
+      node.innerHTML = esc(target.slice(0, i)) + '<span class="co-caret"></span>';
+      if (i < target.length) {
+        var ch = target.charAt(i - 1);
+        var d = ch === ' ' ? 12 : (ch === '.' || ch === ',') ? 120 : 15 + Math.random() * 22;
+        typeTimer = setTimeout(step, d);
+      } else {
+        node.classList.add('done');
+      }
+    })();
+  }
+
+  function esc(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function setStatus(t) { el('status-text').textContent = t; }
+
+  /* ─── PILL GLOW: random staggered flicker ───────────── */
+  function flicker() {
+    if (!locked && active && settled) {
+      var g = glow[active];
+      var base = 0.55 + Math.random() * 0.45;
+      g.style.transition = 'opacity ' + (0.09 + Math.random() * 0.3).toFixed(2) + 's ease, transform 0.5s ease';
+      g.style.opacity = base.toFixed(3);
+      g.style.transform = 'scale(' + (0.86 + Math.random() * 0.36).toFixed(3) + ')';
+      /* rare double-blink, like something breathing under the shell */
+      if (Math.random() < 0.14) {
+        setTimeout(function () {
+          if (active && settled && !locked) glow[active].style.opacity = '0.25';
+        }, 60);
+        setTimeout(function () {
+          if (active && settled && !locked) glow[active].style.opacity = '1';
+        }, 130);
+      }
+      if (Math.random() < 0.1) burst(active, 12);
+    }
+    setTimeout(flicker, 90 + Math.random() * 420);
+  }
+  if (!RM) flicker();
+
+  /* ─── AMBIENT ───────────────────────────────────────────
+     A still frame reads as a freeze-frame, so the air in front of it never
+     stops moving: slow dust drifting up through the light, a few very faint
+     smoke wisps, and a long breath on the vignette. None of it depends on
+     which pill is forward, so every rest state stays alive. */
+  var dust = [], wisps = [], plume = [], sweep = [];
+  var dustSprite = null, softSprite = null;
+
+  function makeDustSprite() {
+    var c = document.createElement('canvas');
+    c.width = c.height = 32;
+    var g = c.getContext('2d');
+    var gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+    gr.addColorStop(0,    'rgba(255,251,242,1)');
+    gr.addColorStop(0.16, 'rgba(255,246,229,0.82)');
+    gr.addColorStop(0.42, 'rgba(255,238,214,0.22)');
+    gr.addColorStop(1,    'rgba(255,232,205,0)');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, 32, 32);
+    return c;
+  }
+
+  function makeSoftSprite() {
+    var c = document.createElement('canvas');
+    c.width = c.height = 64;
+    var g = c.getContext('2d');
+    var gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0,   'rgba(212,208,200,1)');
+    gr.addColorStop(0.5, 'rgba(204,200,192,0.34)');
+    gr.addColorStop(1,   'rgba(198,194,186,0)');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, 64, 64);
+    return c;
+  }
+
+  function newDust(anywhere) {
+    var d = 0.35 + Math.random() * 0.65;          /* depth: far motes are
+                                                     smaller, dimmer, slower */
+    var bvx = (Math.random() - 0.5) * 0.09;
+    var bvy = -(0.04 + Math.random() * 0.15) * d;
+    return {
+      x: Math.random() * window.innerWidth,
+      y: anywhere ? Math.random() * window.innerHeight : window.innerHeight + 12,
+      vx: bvx, vy: bvy,
+      bvx: bvx, bvy: bvy,                          /* drift it returns to once
+                                                      a disturbance passes */
+      r: (2.2 + Math.random() * 4.6) * d,
+      a: (0.22 + Math.random() * 0.38) * d,
+      ph: Math.random() * 6.283,
+      sw: 0.12 + Math.random() * 0.5,
+      d: d
+    };
+  }
+
+  /* ── breath, and speech ──────────────────────────────────
+     Someone stands just above the frame. At rest he breathes through his
+     nose — two jets, never a matched pair. While a pill is being offered he
+     is talking, so the air switches to the mouth: bursty at syllable rate,
+     wider, more turbulent, with a sharp intake between phrases.
+
+     When the spoken audio is ready, hand it over and the real waveform
+     drives it instead of the synthetic envelope:
+
+         window.choiceBreath.attach(document.querySelector('audio'));
+
+     Returns true if it took. Call it once per element, after a user gesture
+     (a hover counts) so the AudioContext is allowed to start. */
+
+  var HEAD_X = 0.507;              /* he is not dead centre */
+  var PLUME_TILT = 0.055;          /* nor square to the camera */
+
+  /* Each nostril gets its own character rather than a mirrored one: the left
+     runs straighter and tighter, the right splays wide and slow. */
+  var NOSTRIL = [
+    { dx: -0.0165, out: -0.55, down: 1.14, r0: 4.0, grow: 0.48, wander: 0.85, rate: 1.00 },
+    { dx:  0.0205, out:  1.18, down: 0.84, r0: 6.4, grow: 0.88, wander: 1.40, rate: 0.68 }
+  ];
+  var MOUTH = { spread: 0.026, out: 0.35, down: 1.0, r0: 9, grow: 1.15, wander: 1.7 };
+
+  var lean = 0.34;                 /* >0 right nostril leads */
+
+  var breath = {
+    level: 0,
+    mode: 'nasal',                 /* 'nasal' | 'speech' */
+    ctx: null,
+    taps: {},                      /* kind -> { an, data } */
+    /* kind is 'voice' (spoken clips) or 'nasal' (the breathing bed) */
+    attach: function (mediaEl, kind) {
+      kind = kind || 'voice';
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC || !mediaEl || breath.taps[kind]) return false;
+        if (!breath.ctx) {
+          /* the host page's typewriter clicks use this same context, so
+             create it once here and hand it over rather than each making
+             their own — a second context started outside a gesture stays
+             suspended and plays nothing */
+          if (!window._audioCtx) window._audioCtx = new AC();
+          breath.ctx = window._audioCtx;
+        }
+        if (breath.ctx.state === 'suspended') breath.ctx.resume();
+        var src = breath.ctx.createMediaElementSource(mediaEl);
+        var an = breath.ctx.createAnalyser();
+        an.fftSize = 512;
+        an.smoothingTimeConstant = kind === 'voice' ? 0.55 : 0.8;
+        src.connect(an);
+        an.connect(breath.ctx.destination);   /* keep it audible */
+        breath.taps[kind] = { an: an, data: new Uint8Array(an.fftSize) };
+        return true;
+      } catch (e) { return false; }
+    }
+  };
+  window.choiceBreath = breath;
+
+  function tapRms(kind, gain) {
+    var t = breath.taps[kind];
+    if (!t) return -1;
+    t.an.getByteTimeDomainData(t.data);
+    var sum = 0, n = t.data.length;
+    for (var i = 0; i < n; i++) { var d = (t.data[i] - 128) / 128; sum += d * d; }
+    return Math.min(1, Math.sqrt(sum / n) * gain);
+  }
+
+  /* ── head ────────────────────────────────────────────
+     Nobody holds their head still while speaking. It drifts and bobs in
+     step with the energy of what is being said, and the jets ride along
+     with it — which is most of why the air stops looking like a nozzle. */
+  var head = { x: 0, y: 0, sm: 0, t: 0, gx: 0, gy: 0, next: 0 };
+
+  function stepHead(dt, level, speaking) {
+    head.t += dt;
+    head.sm += ((speaking ? level : 0) - head.sm) * 0.10;
+    var t = head.t;
+
+    /* Smooth sines alone read as a metronome. On top of them the head picks
+       a fresh place to be at irregular intervals and moves toward it, the
+       way someone shifts while making a point. */
+    if (t >= head.next) {
+      head.next = t + (speaking ? 0.35 + Math.random() * 1.15
+                                : 2.0 + Math.random() * 3.0);
+      head.gx = (Math.random() - 0.5) * (speaking ? 0.022 : 0.004);
+      head.gy = (Math.random() - 0.5) * (speaking ? 22 : 4);
+    }
+
+    var tx = head.gx + (speaking
+      ? (Math.sin(t * 0.85) * 0.010 + Math.sin(t * 1.9 + 1.1) * 0.006) * (0.4 + head.sm)
+      : Math.sin(t * 0.21) * 0.0028);
+    var ty = head.gy * (speaking ? (0.35 + head.sm) : 0.4) + (speaking
+      ? (Math.sin(t * 1.35 + 0.6) * 8 + Math.sin(t * 2.7) * 4) * head.sm
+      : Math.sin(t * 0.25) * 2.2);
+
+    head.x += (tx - head.x) * (speaking ? 0.09 : 0.05);
+    head.y += (ty - head.y) * (speaking ? 0.11 : 0.06);
+  }
+
+  /* ── nasal timing ──────────────────────────────────────
+     On an accumulator, not a modulo, so every breath runs its own length and
+     leads with its own side. A fixed period reads as a machine. */
+  var NASAL_PERIOD = 4.6;
+  var nasalT = 0, nasalLen = NASAL_PERIOD;
+
+  function stepNasal(dt) {
+    nasalT += dt;
+    if (nasalT >= nasalLen) {
+      nasalT -= nasalLen;
+      nasalLen = NASAL_PERIOD * (0.74 + Math.random() * 0.58);
+      lean = (Math.random() * 0.9 - 0.45) + (lean > 0 ? -0.18 : 0.18);
+    }
+  }
+
+  function nasalLevel() {
+    var p = nasalT / nasalLen;
+    if (p >= 0.46) return 0;
+    /* fast attack, long decay — a symmetric sine was what read as a bellows */
+    var u = p / 0.46;
+    return Math.pow(u, 0.35) * Math.pow(1 - u, 1.6) * 2.503;
+  }
+
+  /* ── speech timing ─────────────────────────────────────
+     Phrases of syllables separated by gaps, with the intake breath sitting
+     in the gap where it belongs. */
+  var spT = 0, spGap = false, spLen = 2.4, spRate = 4.6, spAmps = [];
+
+  function rollPhrase() {
+    spGap = false; spT = 0;
+    spLen = 1.5 + Math.random() * 1.9;
+    spRate = 3.9 + Math.random() * 1.9;
+    spAmps = [];
+    for (var i = 0; i < 16; i++) spAmps.push(0.45 + Math.random() * 0.55);
+  }
+  function rollGap() {
+    spGap = true; spT = 0;
+    spLen = 0.32 + Math.random() * 0.62;
+  }
+  rollPhrase();
+
+  function stepSpeech(dt) {
+    spT += dt;
+    if (spT >= spLen) { if (spGap) rollPhrase(); else rollGap(); }
+  }
+
+  function speechLevel() {
+    if (spGap) {
+      /* the intake: sharp, brief, at the top of the gap */
+      var g = spT / spLen;
+      return g < 0.4 ? Math.pow(1 - g / 0.4, 1.5) * 0.42 : 0.015;
+    }
+    var u = spT * spRate;
+    var k = Math.floor(u);
+    var amp = spAmps[k % spAmps.length];
+    var shape = Math.pow(Math.sin(Math.PI * (u - k)), 0.55);
+    var contour = 0.5 + 0.5 * Math.sin(Math.PI * Math.min(1, spT / spLen));
+    return shape * amp * contour;
+  }
+
+  var prevLevel = 0;
+  function voiceLevel(now) {
+    var dt = voiceLevel.last < 0 ? 0.016 : Math.min(0.1, (now - voiceLevel.last) / 1000);
+    voiceLevel.last = now;
+
+    var vr = tapRms('voice', 3.4);
+    var nr = tapRms('nasal', 3.0);
+    var lvl;
+
+    if (vr > 0.025) {
+      /* he is actually saying something — the waveform drives everything */
+      breath.mode = 'speech';
+      stepSpeech(dt);                    /* keep phrasing state warm */
+      lvl = vr;
+    } else if (nr > 0.012) {
+      /* the breathing bed underneath */
+      breath.mode = 'nasal';
+      lvl = nr;
+    } else {
+      /* no audio yet (before the gate) — synthesise it */
+      breath.mode = (desired === 'red' || desired === 'blue') ? 'speech' : 'nasal';
+      if (breath.mode === 'speech') { stepSpeech(dt); lvl = speechLevel(); }
+      else { stepNasal(dt); lvl = nasalLevel(); }
+    }
+
+    stepHead(dt, lvl, breath.mode === 'speech');
+    prevLevel = lvl;
+    return lvl;
+  }
+  voiceLevel.last = -1;
+
+  /* ── vapour ────────────────────────────────────────────
+     Gives the moving air a source you can see, not only its effect on dust. */
+  var PLUME_CAP = 120;
+  var plumeGate = 0;
+
+  function pushPuff(W, srcX, jitterX, j, gain, level, y0) {
+    plume.push({
+      x: W * srcX + (Math.random() - 0.5) * W * jitterX,
+      y: y0,
+      vx: j.out * (0.14 + Math.random() * 0.34) * gain
+          + (Math.random() - 0.5) * 0.18 + PLUME_TILT,
+      vy: (0.80 + Math.random() * 1.1) * (0.5 + level) * j.down,
+      r: j.r0 + Math.random() * j.r0 * 1.1,
+      grow: j.grow * (0.75 + Math.random() * 0.6),
+      drift: j.out * 0.0038,
+      curl: Math.random() * 6.283,
+      wander: j.wander * (0.7 + Math.random() * 0.7),
+      life: 0,
+      max: 110 + Math.random() * 110,
+      a: (0.030 + Math.random() * 0.045) * level * gain
+    });
+  }
+
+  var SPEECH_FLOOR = 0.17;   /* below this he is between words — no air */
+  function emitPlume(level, W) {
+    if (locked || plume.length >= PLUME_CAP) return;
+    if (level < (breath.mode === 'speech' ? SPEECH_FLOOR : 0.06)) return;
+    plumeGate += level;
+    if (plumeGate < 0.3) return;
+    plumeGate = 0;
+
+    if (breath.mode === 'speech') {
+      /* a consonant lands as a sudden jump in level — throw a wider, faster
+         scatter for those rather than another puff on the stream */
+      var plosive = level - prevLevel > 0.22;
+      /* volume of air tracks how loud the syllable is, so quiet stretches
+         thin out and stressed ones burst — a constant rate is what made it
+         look like a vent rather than a voice */
+      var n = plosive ? 4 : Math.max(1, Math.round(level * 3.2));
+      if (!plosive && level < 0.32 && Math.random() < 0.45) return;
+      for (var m = 0; m < n; m++) {
+        pushPuff(W, HEAD_X + head.x + 0.002, MOUTH.spread * (plosive ? 2.1 : 1),
+                 { out: (Math.random() - 0.5) * 2 * MOUTH.out * (plosive ? 2.4 : 1),
+                   down: MOUTH.down * (plosive ? 1.5 : 1),
+                   r0: MOUTH.r0, grow: MOUTH.grow * (plosive ? 1.4 : 1),
+                   wander: MOUTH.wander * (plosive ? 1.6 : 1) },
+                 1, level, -8 + head.y);
+      }
+      return;
+    }
+
+    for (var i = 0; i < 2; i++) {
+      var j = NOSTRIL[i];
+      var gain = (i === 0 ? 1 - lean * 0.55 : 1 + lean * 0.55) * j.rate;
+      if (gain <= 0.05 || Math.random() > gain * 0.85) continue;
+      pushPuff(W, HEAD_X + head.x + j.dx, 0.007, j, gain, level, -14 + head.y);
+    }
+  }
+
+
+  function emitSweep(w) {
+    var n = Math.round(w.s * 6);
+    for (var i = 0; i < n; i++) {
+      var ang = Math.random() * 6.283;
+      var rad = retSize * (0.30 + Math.random() * 0.95);
+      var ox = Math.cos(ang), oy = Math.sin(ang) * 0.68;
+      sweep.push({
+        x: w.p.x + ox * rad,
+        y: w.p.y + oy * rad * 0.9,
+        vx: ox * w.sign * (1.0 + Math.random() * 2.6) * w.s,
+        vy: oy * w.sign * (1.0 + Math.random() * 2.0) * w.s + 0.22,
+        r: 1.6 + Math.random() * 3.6,
+        a: 0.28 + Math.random() * 0.42,
+        life: 0,
+        max: 38 + Math.random() * 52
+      });
+    }
+  }
+
+  function drawSweep() {
+    for (var i = sweep.length - 1; i >= 0; i--) {
+      var q = sweep[i];
+      q.life++;
+      if (q.life > q.max) { sweep.splice(i, 1); continue; }
+      q.x += q.vx; q.y += q.vy;
+      q.vx *= 0.945; q.vy *= 0.945;      /* air resistance settles them */
+      q.vy += 0.006;
+      var lp = q.life / q.max;
+      var a = q.a * (lp < 0.12 ? lp / 0.12 : 1 - (lp - 0.12) / 0.88);
+      if (a <= 0.002) continue;
+      ctx.globalAlpha = a;
+      ctx.drawImage(dustSprite, q.x - q.r, q.y - q.r, q.r * 2, q.r * 2);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawPlume() {
+    for (var i = plume.length - 1; i >= 0; i--) {
+      var q = plume[i];
+      q.life++;
+      if (q.life > q.max) { plume.splice(i, 1); continue; }
+      /* each puff meanders on its own phase, so the two streams never stay
+         parallel long enough to read as a mirrored pair */
+      q.vx += Math.sin(q.life * 0.055 + q.curl) * q.wander * 0.013;
+      q.x += q.vx;
+      q.y += q.vy;
+      q.vy *= 0.992;
+      q.vx = q.vx * 0.994 + q.drift;
+      q.r += q.grow;
+      var lp = q.life / q.max;
+      var a = q.a * (lp < 0.18 ? lp / 0.18 : 1 - (lp - 0.18) / 0.82);
+      if (a <= 0.0008) continue;
+      ctx.globalAlpha = a;
+      ctx.drawImage(softSprite, q.x - q.r, q.y - q.r, q.r * 2, q.r * 2);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* ── hand wake ───────────────────────────────────────────
+     A palm advancing shoves the air in front of it outward; withdrawing, the
+     air falls back in behind it. Strongest mid-move, nothing at either end. */
+  function handWake() {
+    if (!leg) return null;
+    var v = clipEl(leg);
+    var p = Math.min(1, Math.max(0, (v.currentTime || 0) / (v.duration || 4)));
+    var speed = Math.sin(Math.PI * p);
+    if (speed < 0.03) return null;
+    var sign = leg.rev ? -1 : 1;                 /* -1 = air rushing back in */
+
+    if (leg.key === 'closed') {
+      return [
+        { p: project(toScreen(PILL.red.rest)),  s: speed, sign: sign },
+        { p: project(toScreen(PILL.blue.rest)), s: speed, sign: sign }
+      ];
+    }
+    var P = PILL[leg.key];
+    var a = project(toScreen(P.rest)), b = project(toScreen(P.fwd));
+    var t = leg.rev ? 1 - p : p;
+    return [{ p: { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t },
+              s: speed, sign: sign }];
+  }
+
+  /* Seeding depends on the viewport, so a page that starts hidden or
+     zero-sized would otherwise pile every mote in the top-left corner and
+     never recover. Re-seed once real dimensions show up. */
+  var seededW = 0, seededH = 0;
+  function ensureAmbient() {
+    var W = window.innerWidth, H = window.innerHeight;
+    if (!W || !H) return;
+    if (!seededW || Math.abs(W - seededW) / seededW > 0.5
+                 || Math.abs(H - seededH) / seededH > 0.5) {
+      seedAmbient();
+      seededW = W; seededH = H;
+    }
+  }
+
+  function seedAmbient() {
+    dustSprite = makeDustSprite();
+    softSprite = makeSoftSprite();
+    dust.length = 0; wisps.length = 0; plume.length = 0; sweep.length = 0;
+    var n = Math.round(Math.max(44, Math.min(104, window.innerWidth / 15)));
+    for (var i = 0; i < n; i++) dust.push(newDust(true));
+    for (var j = 0; j < 5; j++) wisps.push({
+      x: Math.random() * window.innerWidth,
+      y: window.innerHeight * (0.1 + Math.random() * 0.5),
+      r: 100 + Math.random() * 170,
+      vx: (Math.random() - 0.5) * 0.08,
+      vy: -0.015 - Math.random() * 0.04,
+      a: 0.022 + Math.random() * 0.040,
+      ph: Math.random() * 6.283
+    });
+  }
+
+  function drawAmbient(now) {
+    var W = window.innerWidth, H = window.innerHeight, i;
+    var t = now / 1000;
+
+    breath.level = voiceLevel(now);
+    var flow = breath.level * 0.075 - 0.008;
+    emitPlume(breath.level, W);
+
+    for (i = 0; i < wisps.length; i++) {
+      var s = wisps[i];
+      s.x += s.vx; s.y += s.vy;
+      if (s.y + s.r < 0) { s.y = H + s.r; s.x = Math.random() * W; }
+      if (s.x - s.r > W) s.x = -s.r;
+      if (s.x + s.r < 0) s.x = W + s.r;
+      var puff = 0.65 + 0.35 * Math.sin(t * 0.28 + s.ph);
+      var rr = s.r * puff;
+      ctx.globalAlpha = s.a * puff;
+      ctx.drawImage(softSprite, s.x - rr, s.y - rr, rr * 2, rr * 2);
+    }
+    ctx.globalAlpha = 1;
+
+    drawPlume();
+
+    /* light from a forward pill catches the dust drifting past it */
+    var lit = (!leg && (state === 'red' || state === 'blue')) ? pillPoint(state) : null;
+    var litC = lit ? PILL[state].rgb : null;
+
+    var wake = handWake();
+    var wakeR = retSize * 3.2, wakeR2 = wakeR * wakeR;
+    if (wake) for (var wi = 0; wi < wake.length; wi++) emitSweep(wake[wi]);
+
+    for (i = dust.length - 1; i >= 0; i--) {
+      var m = dust[i];
+      m.ph += 0.011;
+
+      /* breath: a column down the middle, fading toward the sides and the
+         floor, spreading outward as it descends. Between breaths the flow
+         goes slightly negative so the air is drawn back up. */
+      var depth = Math.exp(-(m.y / (H * 0.85)));
+      var col = 0, spread = 0;
+      if (breath.mode === 'speech') {
+        /* one broad mouth stream instead of two thin nasal ones */
+        var mx2 = (m.x - W * (HEAD_X + head.x + 0.002)) / (W * 0.34);
+        col = Math.exp(-mx2 * mx2 * 1.5);
+        spread = mx2 >= 0 ? 1 : -1;
+      } else {
+        for (var q2 = 0; q2 < 2; q2++) {
+          var j2 = NOSTRIL[q2];
+          var nx = (m.x - W * (HEAD_X + head.x + j2.dx)) / (W * 0.26);
+          var lobe = Math.exp(-nx * nx * 2.4)
+                   * ((q2 === 0 ? 1 - lean * 0.55 : 1 + lean * 0.55) * j2.rate);
+          col += lobe;
+          spread += lobe * j2.out;
+        }
+      }
+      col *= depth * 0.62;
+      m.vy += flow * col;
+      m.vx += flow * col * spread * 0.9;
+
+      /* wake: radial displacement around the moving palm */
+      if (wake) {
+        for (var q = 0; q < wake.length; q++) {
+          var wx = m.x - wake[q].p.x, wy = m.y - wake[q].p.y;
+          var d2 = wx * wx + wy * wy;
+          if (d2 > wakeR2 || d2 < 1) continue;
+          var dist = Math.sqrt(d2);
+          var fall = 1 - dist / wakeR;
+          var f = fall * fall * wake[q].s * wake[q].sign * 0.9;
+          m.vx += (wx / dist) * f;
+          m.vy += (wy / dist) * f * 0.75 + f * 0.22;   /* a little downward bias */
+        }
+      }
+
+      /* settle back toward the mote's own drift */
+      m.vx += (m.bvx - m.vx) * 0.035;
+      m.vy += (m.bvy - m.vy) * 0.035;
+
+      m.x += m.vx + Math.sin(m.ph) * m.sw * 0.25;
+      m.y += m.vy;
+      if (m.y < -14 || m.y > H + 40 || m.x < -14 || m.x > W + 14) { dust[i] = newDust(false); continue; }
+
+      var a = m.a * (0.78 + 0.22 * Math.sin(m.ph * 1.7));
+      if (lit) {
+        var dx = m.x - lit.x, dy = m.y - lit.y;
+        var near = 1 - Math.min(1, Math.sqrt(dx * dx + dy * dy) / (retSize * 1.9));
+        if (near > 0) {
+          var k = near * near * 0.9;
+          ctx.globalAlpha = Math.min(1, a + k * 0.5);
+          ctx.fillStyle = 'rgba(' + litC[0] + ',' + litC[1] + ',' + litC[2] + ',1)';
+          ctx.beginPath();
+          ctx.arc(m.x, m.y, m.r * 0.42, 0, 6.283);
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = a;
+      ctx.drawImage(dustSprite, m.x - m.r, m.y - m.r, m.r * 2, m.r * 2);
+    }
+    ctx.globalAlpha = 1;
+    drawSweep();
+  }
+
+  /* ─── PARTICLES ─────────────────────────────────────── */
+  var motes = [], rings = [];
+
+  function spawn(side, boost) {
+    var p = pillPoint(side);
+    var c = PILL[side].rgb;
+    var a = Math.random() * Math.PI * 2;
+    var rad = Math.pow(Math.random(), 0.6) * (retSize * 0.075);
+    var speed = 0.16 + Math.random() * 0.5;
+    motes.push({
+      x: p.x + Math.cos(a) * rad * 1.9,
+      y: p.y + Math.sin(a) * rad * 0.8,
+      vx: (Math.random() - 0.5) * 0.34,
+      vy: -(0.22 + Math.random() * 0.72) * (boost ? 1.7 : 1),
+      sw: (Math.random() - 0.5) * 0.05,
+      ph: Math.random() * Math.PI * 2,
+      r: 0.7 + Math.random() * 2.1,
+      life: 0,
+      max: 62 + Math.random() * 96,
+      c: c,
+      sp: speed
+    });
+  }
+
+  function burst(side, n) {
+    for (var i = 0; i < n; i++) spawn(side, true);
+    var p = pillPoint(side);
+    rings.push({ x: p.x, y: p.y, r: 6, max: retSize * 0.62, c: PILL[side].rgb, life: 0, dur: 46 });
+  }
+
+  var last = 0;
+  function tick(now) {
+    requestAnimationFrame(tick);
+    if (now - last < 16) return;
+    last = now;
+    if (!window.innerWidth || !window.innerHeight) return;
+    ensureAmbient();
+
+    watchdog(now);
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+    if (!RM) {
+      drawAmbient(now);
+      /* a long, shallow breath on the vignette — throttled, it only needs to
+         read as drift, not animation */
+      if ((breathTick = (breathTick + 1) % 5) === 0) {
+        vignetteEl.style.opacity =
+          (0.88 + 0.12 * (0.5 + 0.5 * Math.sin(now / 5200))).toFixed(3);
+      }
+    }
+
+    if (!RM && active && settled && !locked) {
+      var n = 2 + (Math.random() < 0.5 ? 1 : 0);
+      for (var s = 0; s < n; s++) spawn(active, false);
+
+      /* orbiting core sparks — the pill "coming alive" */
+      var p = pillPoint(active), c = PILL[active].rgb;
+      var t = now / 1000;
+      for (var k = 0; k < 4; k++) {
+        var ang = t * (0.7 + k * 0.23) + k * 1.57;
+        var rx = retSize * (0.055 + 0.022 * Math.sin(t * 1.3 + k));
+        var ox = p.x + Math.cos(ang) * rx * 2.0;
+        var oy = p.y + Math.sin(ang) * rx * 0.62;
+        var oa = 0.35 + 0.35 * Math.sin(t * 2.1 + k * 2);
+        dot(ox, oy, 1.6, c, oa);
+      }
+    }
+
+    var i;
+    for (i = motes.length - 1; i >= 0; i--) {
+      var m = motes[i];
+      m.life++;
+      if (m.life > m.max) { motes.splice(i, 1); continue; }
+      m.ph += 0.06;
+      m.x += m.vx + Math.sin(m.ph) * 0.32;
+      m.y += m.vy;
+      m.vy *= 0.992;
+      m.vy -= 0.0035;
+      m.vx += m.sw * 0.1;
+      var lp = m.life / m.max;
+      var alpha = lp < 0.14 ? lp / 0.14 : (1 - (lp - 0.14) / 0.86);
+      dot(m.x, m.y, m.r, m.c, alpha * 0.85);
+    }
+
+    for (i = rings.length - 1; i >= 0; i--) {
+      var g = rings[i];
+      g.life++;
+      if (g.life > g.dur) { rings.splice(i, 1); continue; }
+      var gp = g.life / g.dur;
+      var rr = g.r + (g.max - g.r) * (1 - Math.pow(1 - gp, 3));
+      ctx.beginPath();
+      ctx.ellipse(g.x, g.y, rr, rr * 0.42, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(' + g.c[0] + ',' + g.c[1] + ',' + g.c[2] + ',' + (0.42 * (1 - gp)).toFixed(3) + ')';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
+
+  function dot(x, y, r, c, a) {
+    if (a <= 0) return;
+    var gr = ctx.createRadialGradient(x, y, 0, x, y, r * 3.4);
+    gr.addColorStop(0, 'rgba(255,255,255,' + (a * 0.85).toFixed(3) + ')');
+    gr.addColorStop(0.28, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (a * 0.7).toFixed(3) + ')');
+    gr.addColorStop(1, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0)');
+    ctx.fillStyle = gr;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 3.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  requestAnimationFrame(tick);
+
+  /* ─── SELECTION ─────────────────────────────────────── */
+  /* He stops existing the moment a pill is taken: no breathing bed, no line
+     half-spoken, nothing queued. */
+  function silenceHim() {
+    audioOn = false;
+    sayToken++;                 /* invalidates any pending say() */
+    voPending = false;
+    clearTimeout(idleVoTimer);
+    try { elVoice.pause(); } catch (e) {}
+    try { elBreath.pause(); } catch (e) {}
+  }
+
+  function choose(side) {
+    if (locked || scripted) return;
+    if (active !== side || !settled) { goTo(side); return; }
+    clearTimeout(idleTimer);
+    silenceHim();
+    locked = true;
+    body.classList.add('taken');
+    refreshCursor();
+    clearTimeout(typeTimer);
+    setStatus(side === 'red' ? 'Rabbit hole // open' : 'Returning to normal');
+    hideHud(side);
+    body.classList.remove('armed');
+    body.classList.add(side === 'red' ? 'exit-red' : 'exit-blue');
+    for (var i = 0; i < 90; i++) spawn(side, true);
+
+    if (side === 'red' && window._pillTaken) {
+      /* hand the page back: the site takes it from here */
+      setTimeout(function () { window._pillTaken('red'); }, 1400);
+      return;
+    }
+    /* Blue has nowhere to go yet — say so, and point them back. */
+    setTimeout(function () {
+      el('oc-head').textContent = '// signal lost';
+      el('oc-pill').textContent = 'Coming soon';
+      el('oc-msg').textContent =
+        "There's nothing on the other side of the blue pill yet — that world is "
+        + "still being built. Go back and take the red pill for now.";
+      el('outcome').classList.add('show');
+      el('oc-reset').focus();
+    }, RM ? 220 : 1500);
+  }
+
+  el('oc-reset').addEventListener('click', function (e) {
+    e.preventDefault();
+    el('outcome').classList.remove('show');
+    body.classList.remove('exit-red', 'exit-blue', 'armed');
+    clearTimeout(typeTimer); clearTimeout(idleTimer);
+    motes.length = 0; rings.length = 0;
+    hideHud('red'); hideHud('blue');
+    for (var ck in clips) { clips[ck].pause(); clips[ck].onended = null; clips[ck].classList.remove('on'); }
+    leg = null; state = 'neutral'; desired = 'neutral';
+    syncActive();
+    showStill('neutral');
+    setStatus('Awaiting input');
+    layout();
+    /* stay locked through the fade, then re-arm from wherever the cursor
+       actually is — otherwise the state and the HUD disagree. */
+    setTimeout(function () {
+      locked = false;
+      body.classList.remove('taken');
+      /* he was silenced when the pill was taken — bring the breathing back,
+         but not the monologue: that pitch has already been made */
+      audioOn = true;
+      duckBreath(false);
+      var rb = elBreath.play();
+      if (rb && rb.catch) rb.catch(function () {});
+      refreshCursor();
+      if (hasHover && lastPointer) {
+        goTo(hitSide(lastPointer.x, lastPointer.y) || 'neutral');
+      }
+      armIdle();
+    }, 450);
+  });
+
+  /* ─── INPUT ─────────────────────────────────────────── */
+  var hasHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  var lastPointer = null;
+  var cursorEl = el('pill-cursor');
+  var wasChoosable = false;
+
+  /* The pointer's own state: struck through while he holds the floor, lit
+     the moment the choice is genuinely yours. */
+  /* Which hand, if either, the pointer is actually over. */
+  function hitSide(x, y) {
+    for (var i = 0; i < 2; i++) {
+      var side = i ? 'blue' : 'red';
+      var b = zone[side].getBoundingClientRect();
+      if (x >= b.left && x <= b.right && y >= b.top && y <= b.bottom) return side;
+    }
+    return null;
+  }
+
+  function refreshCursor() {
+    var open = audioOn && !scripted && !locked && !body.classList.contains('prelude');
+    body.classList.toggle('choosable', open);
+    if (open && !wasChoosable) {
+      /* it just opened — pulse once so the change is noticed */
+      body.classList.add('just-open');
+      setTimeout(function () { body.classList.remove('just-open'); }, 2300);
+    }
+    wasChoosable = open;
+  }
+
+  function moveCursor(x, y) {
+    if (!cursorEl) return;
+    cursorEl.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
+    var side = (desired === 'red' || desired === 'blue') ? desired : null;
+    cursorEl.classList.toggle('on-red', side === 'red');
+    cursorEl.classList.toggle('on-blue', side === 'blue');
+  }
+
+  ['red', 'blue'].forEach(function (side) {
+    var z = zone[side];
+    if (hasHover) {
+      z.addEventListener('focus', function () { if (scripted) return; goTo(side); onHoverVoice(side); });
+    }
+    z.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (scripted) return;
+      if (!hasHover && desired !== side) onHoverVoice(side);
+      choose(side);
+    });
+  });
+
+  if (hasHover) {
+    stage.addEventListener('mouseleave', function () { if (!scripted) goTo('neutral'); });
+    document.addEventListener('mousemove', function (e) {
+      lastPointer = { x: e.clientX, y: e.clientY };
+      moveCursor(e.clientX, e.clientY);
+      wake();
+      if (!scripted && !locked) {
+        var over = hitSide(e.clientX, e.clientY);
+        if (over) { goTo(over); onHoverVoice(over); }
+        else goTo('neutral');      /* off the hands — the offer withdraws */
+      }
+      if (!window.innerWidth || !window.innerHeight) return;
+      el('coords').textContent =
+        'X ' + (e.clientX / window.innerWidth * 100).toFixed(1).padStart(5, '0') +
+        '   Y ' + (e.clientY / window.innerHeight * 100).toFixed(1).padStart(5, '0');
+    });
+  } else {
+    el('hint').innerHTML = 'Tap a hand to offer &middot; tap again to choose';
+    document.querySelectorAll('.co-key').forEach(function (n) { n.textContent = 'Tap'; });
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (locked || scripted) return;
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); goTo('red'); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); goTo('blue'); }
+    if (e.key === 'Escape')     { goTo('neutral'); }
+    if ((e.key === 'Enter' || e.key === ' ') && active) { e.preventDefault(); choose(active); }
+  });
+
+  /* ─── IDLE: the hands withdraw, and open again on the next move ─── */
+  function armIdle() {
+    clearTimeout(idleTimer);
+    if (locked || RM || scripted || body.classList.contains('prelude')) return;
+    idleTimer = setTimeout(function () {
+      if (locked) return;
+      /* only when nothing is being offered — don't yank a callout someone
+         has stopped moving to read; keep counting instead */
+      if (desired === 'neutral') goTo('closed');
+      else armIdle();
+    }, IDLE_MS);
+  }
+
+  function wake() {
+    if (locked) return;
+    if (desired === 'closed') goTo('neutral');
+    armIdle();
+  }
+
+  document.addEventListener('keydown', wake);
+  window.addEventListener('focus', wake);
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { clearTimeout(idleTimer); return; }
+    armIdle();
+    if (leg) { var v = clipEl(leg); if (v.paused) { var q = v.play(); if (q && q.catch) q.catch(function(){}); } }
+  });
+
+  /* Watchdog: a clip that stops progressing — autoplay refused, a decode
+     stall, a backgrounded tab, or an 'ended' event that never lands — must
+     not strand the machine mid-transition. */
+  var wdTime = -1, wdSince = 0;
+  function watchdog(now) {
+    if (!leg) { wdTime = -1; return; }
+    var v = clipEl(leg);
+    if (!v.paused) applyRate(v, leg);
+    if (v.duration && v.currentTime >= v.duration - 0.06) { settleInto(leg.to); return; }
+    if (v.currentTime !== wdTime) { wdTime = v.currentTime; wdSince = now; return; }
+    if (document.hidden) { wdSince = now; return; }
+    if (now - wdSince > 1200) {
+      if (v.paused) {
+        var q = v.play();
+        if (q && q.catch) q.catch(function () { snapTo(desired); });
+        wdSince = now;
+      } else settleInto(leg.to);
+    }
+  }
+
+  window.addEventListener('resize', layout);
+  window.addEventListener('orientationchange', function () { setTimeout(layout, 120); });
+
+  /* ─── READY ─────────────────────────────────────────── */
+  /* Gate the loader on the stills plus the two clips a first hover needs;
+     both-back and the reverses keep buffering behind the page. */
+  var srcs = [stills.neutral, stills.red, stills.blue, stills.closed];
+  var gateClips = [clips['red-forward'], clips['blue-forward']];
+  var done = 0, total = srcs.length + gateClips.length;
+
+  function progress() {
+    done++;
+    if (done >= total) ready();
+  }
+
+  var readyCalled = false;
+  function ready() {
+    if (readyCalled) return;
+    readyCalled = true;
+    setTimeout(function () {
+      layout();
+      body.classList.remove('booting');
+      body.classList.add('booted');
+
+    }, 260);
+  }
+
+  srcs.forEach(function (img) {
+    if (img.complete && img.naturalWidth) progress();
+    else {
+      img.addEventListener('load', progress, { once: true });
+      img.addEventListener('error', progress, { once: true });
+    }
+  });
+  gateClips.forEach(function (v) {
+    if (v.readyState >= 3) progress();
+    else {
+      v.addEventListener('canplaythrough', progress, { once: true });
+      v.addEventListener('error', progress, { once: true });
+    }
+  });
+  /* never leave anyone stuck behind the loader */
+  setTimeout(ready, 9000);
+
+  layout();
+  /* fonts land after first paint; the callouts move when they do */
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
+
+  /* ─── AUDIO DIRECTOR ─────────────────────────────────
+     He breathes constantly, and talks over the top of it. Everything is
+     unlocked by the gate's Proceed click, which is the gesture browsers
+     require before any of this may start. */
+
+  var elScore = document.getElementById('bg-music');   /* the site's own score */
+  var elBreath = el('a-breath');
+  var elVoice = el('a-voice');
+  var audioOn = false;
+
+  /* ── the monologue ───────────────────────────────────
+     Once the hands are up he makes his pitch, and the hands act it out: the
+     blue pill comes forward while he describes it, then the red, then both
+     settle back. Hover is inert for the whole speech — you are being told
+     about the choice, not offered it yet.
+
+     Cue times are seconds into choosevisitor.mp3, and each one sits on a
+     pause in the recording where he changes subject. Nudge them here if a
+     beat lands early or late. */
+  var MONOLOGUE = '/audio/choosevisitor.mp3';
+  var HOVER_BUFFER_MS = 1500;   /* dead air after the last word before the
+                                   hands will answer to the pointer again */
+  var PITCH_GAP_MS = 2000;      /* beat between the opening line and the
+                                   pitch — running them together was abrupt */
+  var CUES = [
+    { t:  6.0, to: 'blue'    },
+    { t: 15.0, to: 'red'     },
+    { t: 21.0, to: 'neutral' }
+  ];
+
+  var VO = {
+    start:  '/audio/start.mp3',
+    red:    '/audio/redpill.mp3',
+    blue:   '/audio/bluepill.mp3'
+  };
+  /* returning to a hand you have already been offered */
+  var NUDGE = ['/audio/decisions.mp3', '/audio/hmm.mp3',
+               '/audio/struggletomakedecisions.mp3'];
+  /* nobody is doing anything */
+  var IDLE_VO = ['/audio/hmm.mp3', '/audio/donthaveallday.mp3',
+                 '/audio/sitaroundendlessly.mp3'];
+
+  var REOFFER_MS = 5 * 60 * 1000;   /* after this long, pitch the pill again */
+  var lastPitch = { red: 0, blue: 0 };
+  var idleVoTimer = null;
+  var lastIdleVo = 0;
+  var lastHoverSide = null;   /* the hand whose line we already played */
+  var scripted = false;       /* he is mid-monologue; the pointer is inert */
+
+  var voPending = false;   /* a line is loading but has not started yet */
+  var lastVoEnd = 0;
+
+  /* "He is mid-sentence" has to cover the gap between asking for a clip and
+     it actually starting: say() waits for canplay, and during that wait the
+     element reads as idle. That gap is exactly where the idle nag was
+     slipping in and talking over the line that was about to play. */
+  function talking() {
+    if (voPending) return true;
+    return audioOn && elVoice && !elVoice.paused && !elVoice.ended;
+  }
+
+  function pick(list, avoid) {
+    var opts = list.length > 1 && avoid ? list.filter(function (u) { return u !== avoid; }) : list;
+    return opts[Math.floor(Math.random() * opts.length)];
+  }
+
+  /* Last resort against hearing the same line twice running: if the chosen
+     clip is the one that just played, swap it for anything else. */
+  function noRepeat(src, pool) {
+    if (src && src !== lastVoSrc) return src;
+    var alt = pick(pool || NUDGE, lastVoSrc);
+    return alt || src;
+  }
+
+  var lastVoSrc = null;
+  var sayToken = 0;
+  /* Anything new cuts whatever is mid-sentence — a fresh trigger always
+     wins rather than stacking or being dropped. */
+  function say(src) {
+    if (!audioOn || !src) return;
+    lastVoSrc = src;
+    duckBreath(true);
+    voPending = true;
+    var token = ++sayToken;
+
+    /* Calling play() straight after assigning src races the load and the
+       browser aborts it — reliably so on a cold cache. Wait for the element
+       to actually be ready. */
+    var fail = function () {
+      if (token !== sayToken) return;
+      voPending = false;
+      lastVoEnd = Date.now();
+      duckBreath(false);
+      armIdleVo();
+    };
+    var go = function () {
+      elVoice.removeEventListener('canplay', go);
+      elVoice.removeEventListener('error', fail);
+      if (token !== sayToken) return;
+      try {
+        elVoice.currentTime = 0;
+        var q = elVoice.play();
+        voPending = false;          /* paused flips false synchronously */
+        if (q && q.catch) q.catch(fail);
+      } catch (e) { fail(); }
+    };
+
+    try {
+      elVoice.pause();
+      elVoice.src = src;
+      elVoice.load();
+      if (elVoice.readyState >= 2) go();
+      else {
+        elVoice.addEventListener('canplay', go);
+        elVoice.addEventListener('error', fail);
+        setTimeout(function () { if (token === sayToken && elVoice.paused) go(); }, 1500);
+      }
+    } catch (e) { fail(); }
+  }
+
+  /* the breathing bed steps back while he speaks rather than cutting out */
+  function duckBreath(down) {
+    if (!elBreath) return;
+    elBreath.volume = down ? 0.18 : 0.55;
+  }
+
+  elVoice.addEventListener('ended', function () {
+    voPending = false;
+    lastVoEnd = Date.now();
+    duckBreath(false);
+    armIdleVo();
+  });
+
+  function armIdleVo() {
+    clearTimeout(idleVoTimer);
+    if (!audioOn || scripted) return;
+    idleVoTimer = setTimeout(function () {
+      if (!audioOn || locked) return;
+      var now = Date.now();
+      /* The nag is the one voice that must never interrupt: it only speaks
+         into real silence, with a hand not being considered, and only once
+         the last line has had room to breathe. */
+      if (talking()
+          || body.classList.contains('prelude')
+          || desired === 'red' || desired === 'blue'
+          || now - lastVoEnd < 6000
+          || now - lastIdleVo < 12000) { armIdleVo(); return; }
+      lastIdleVo = now;
+      say(noRepeat(pick(IDLE_VO, lastVoSrc), IDLE_VO));
+    }, 9000 + Math.random() * 7000);
+  }
+
+  /* Hovering a hand: pitch that pill the first time and again after a long
+     wait; in between, he just needles you about deciding. */
+  function voiceForHover(side) {
+    var now = Date.now();
+    if (!lastPitch[side] || now - lastPitch[side] > REOFFER_MS) {
+      lastPitch[side] = now;
+      return noRepeat(VO[side], NUDGE);
+    }
+    return pick(NUDGE, lastVoSrc);
+  }
+
+  function onHoverVoice(side) {
+    if (!audioOn || locked || scripted) return;
+    /* Staying on a hand — or a layout reflow re-firing mouseenter under a
+       still cursor — must not restart the line. */
+    if (side === lastHoverSide) return;
+    lastHoverSide = side;
+    clearTimeout(idleVoTimer);
+    /* say() cuts whatever was mid-sentence: the visitor moving their mouse
+       is a deliberate act and takes priority over him finishing a thought */
+    say(voiceForHover(side));
+  }
+
+  /* Started by the site's access gate — that Proceed click is the gesture
+     that lets any of the audio play. */
+  window._pillStart = function () {
+    if (audioOn) return;
+    scene.classList.add('running');
+    /* Locked from the very first frame. There used to be a live window
+       between the hands opening and the monologue actually starting — long
+       enough to hover a hand, trigger its line, and then have the monologue
+       cut across it. Nothing is hoverable until he has finished speaking. */
+    scripted = true;
+    scene.classList.add('scripted');
+    startAudio();
+    refreshCursor();
+    setTimeout(prelude, 420);
+    /* absolute backstop: never leave the scene locked if the speech is
+       missing or never fires its events */
+    setTimeout(function () {
+      if (scripted && !monologueDone) forceRelease();
+    }, 60000);
+  };
+
+  function forceRelease() {
+    scripted = false;
+    scene.classList.remove('scripted');
+    refreshCursor();
+    armIdle();
+    armIdleVo();
+  }
+
+  function startAudio() {
+    audioOn = true;
+    /* the analysers must be built inside the click for the context to run.
+       The score is deliberately left off the graph — it is scenery, not him,
+       and routing it would only make it duck along with the breathing. */
+    breath.attach(elVoice, 'voice');
+    breath.attach(elBreath, 'nasal');
+    duckBreath(true);
+    var b = elBreath.play();
+    if (b && b.catch) b.catch(function () {});
+    if (elScore) {
+      elScore.volume = 0.35;
+      var m = elScore.play();
+      if (m && m.catch) m.catch(function () {});
+    }
+  }
+
+  /* ─── MONOLOGUE ──────────────────────────────────────
+     Driven off the audio clock rather than timers, so a slow load or a
+     stutter keeps the hands in step with the words. */
+  var cueAt = 0;
+  var monologueDone = false;
+
+  function runMonologue() {
+    if (monologueDone || !audioOn) return;
+    /* Starts the instant the opening line ends; the hands rise underneath
+       the first sentences. The earliest cue is seconds in, by which time
+       they have long since reached the offer — and goTo routes correctly
+       from whatever pose they happen to be in regardless. */
+    monologueDone = true;
+    scripted = true;              /* already true from _pillStart; kept for
+                                     the reset path, which replays this */
+    body.classList.add('scripted');
+    refreshCursor();
+    cueAt = 0;
+    clearTimeout(idleTimer);
+    clearTimeout(idleVoTimer);
+    body.classList.add('scripted');
+
+    var onTime = function () {
+      var t = elVoice.currentTime;
+      while (cueAt < CUES.length && t >= CUES[cueAt].t) {
+        goTo(CUES[cueAt].to);
+        cueAt++;
+      }
+    };
+    var release = function () {
+      elVoice.removeEventListener('timeupdate', onTime);
+      elVoice.removeEventListener('ended', release);
+      clearTimeout(failsafe);
+      goTo('neutral');          /* whatever happened, end on the offer */
+      /* Hold the lock past the last word: letting a hover land on the tail
+         of his sentence cuts him off mid-breath. */
+      setTimeout(function () {
+        scripted = false;
+        body.classList.remove('scripted');
+        refreshCursor();
+        armIdle();
+        armIdleVo();
+      }, HOVER_BUFFER_MS);
+    };
+    /* if the clip stalls or never loads, hand control back anyway */
+    var failsafe = setTimeout(release, 34000);
+
+    elVoice.addEventListener('timeupdate', onTime);
+    elVoice.addEventListener('ended', release);
+    say(MONOLOGUE);
+  }
+
+  /* ─── OPENING ────────────────────────────────────────
+     He speaks first, over darkness. Only when he has finished do the hands
+     come up out of the black. */
+  function prelude() {
+    say(VO.start);
+    var revealed = false;
+    var reveal = function () {
+      if (revealed) return;
+      revealed = true;
+      elVoice.removeEventListener('ended', reveal);
+      body.classList.remove('prelude');
+      refreshCursor();
+      /* He takes a beat after the opening line, then makes the pitch. The
+         hands begin rising during that pause. */
+      setTimeout(runMonologue, PITCH_GAP_MS);
+      /* Meanwhile the fists finish emerging out of the dark and hold for a
+         beat before they open — the reveal and the unfurl are two separate
+         moments, not one blurred into the other. #emerge runs 2.8s. */
+      setTimeout(function () { goTo('neutral'); armIdleVo(); }, 2900);
+    };
+    elVoice.addEventListener('ended', reveal);
+    /* never strand the page if the clip fails to load or play */
+    setTimeout(reveal, 11000);
+  }
+})();
 </script>
 </body>
 </html>

@@ -18,3 +18,14 @@ dist/
 # runs automatically at the end of scripts/gen-gallery.js), but ignored
 # here too so anything left in it never gets committed by accident.
 images/inbox/
+
+# Claude Code local dev config — points at a machine-specific scratchpad
+.claude/
+
+# Source renders for the choice scene. The site serves the web-encoded set in
+# video/web/; these 1080p masters stay local rather than in git history.
+/video/*.mp4
+
+# Superseded by images/choice/*.jpg, which are extracted from the clips so the
+# rest states match the video frame-for-frame.
+/images/morpheus-*.png
