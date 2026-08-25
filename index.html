@@ -6116,10 +6116,29 @@ const NAV_LABELS = {};  // key → display label
       const sc = document.getElementById('pill-scene');
       if (sc) { sc.classList.add('dismissed'); sc.classList.remove('running'); }
       document.body.classList.remove('pill-busy');
-      // He has one more thing to say once the world is actually here.
-      startTypedIntro(() => {
-        if (window._pillSay) window._pillSay('/audio/enterworld.mp3');
-      });
+
+      // He has one more thing to say, but only once the world is actually
+      // here: the bang expands for 6.2s and the HUD flourish settles after
+      // it, so wait for ui-ready and give that flourish room to finish.
+      const welcome = () => {
+        let waited = 0;
+        const tick = () => {
+          if (document.body.classList.contains('ui-ready')) {
+            setTimeout(() => {
+              if (window._pillSay) window._pillSay('/audio/enterworld.mp3');
+            }, 1800);
+            return;
+          }
+          if ((waited += 200) > 30000) return;
+          setTimeout(tick, 200);
+        };
+        tick();
+      };
+
+      // Don't start typing over him — his answer to the choice plays first.
+      const begin = () => startTypedIntro(welcome);
+      if (window._pillWhenQuiet) window._pillWhenQuiet(begin);
+      else begin();
     };
   })();
 
@@ -10034,6 +10053,22 @@ window.addEventListener('popstate', (e) => {
   window._pillSay = function (url) {
     audioOn = true;
     say(url);
+  };
+
+  /* Runs cb once he has finished the line he is on — the site waits for this
+     before starting its intro, so the typing never talks over him. */
+  window._pillWhenQuiet = function (cb) {
+    var fired = false;
+    var go = function () {
+      if (fired) return;
+      fired = true;
+      elVoice.removeEventListener('ended', go);
+      cb();
+    };
+    if (!elVoice || elVoice.paused || elVoice.ended) { go(); return; }
+    elVoice.addEventListener('ended', go);
+    /* never strand the site behind a line that never ends */
+    setTimeout(go, 15000);
   };
 
   function choose(side) {
