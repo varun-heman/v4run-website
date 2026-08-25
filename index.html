@@ -1163,9 +1163,11 @@ body.pill-busy #bg-canvas { pointer-events: none; }
 #pill-scene #emerge {
   position: absolute; inset: 0;
   transform-origin: 50% 46%;
-  transition: opacity 2.0s ease,
-              transform 2.8s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 2.4s ease;
+  /* Was 2.0/2.8/2.4s — most of the silence between his opening line and the
+     pitch was this transition running its course. */
+  transition: opacity 1.1s ease,
+              transform 1.7s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 1.3s ease;
 }
 #pill-scene.prelude #emerge {
   opacity: 0;
@@ -9303,10 +9305,14 @@ window.addEventListener('popstate', (e) => {
   var typeTimer = null;
 
   function showHud(side) {
+    /* the pill still lights — that is him presenting it */
+    glow[side].style.opacity = '1';
+    /* but the reticle, leader line and transmission panel belong to the
+       moment the choice is yours, not to him describing it */
+    if (scripted) return;
     ret[side].classList.add('show');
     call[side].classList.add('show');
     lead[side].g.classList.add('show');
-    glow[side].style.opacity = '1';
     typeMessage(side);
   }
 
@@ -10364,14 +10370,12 @@ window.addEventListener('popstate', (e) => {
   var MONOLOGUE = '/audio/choosevisitor.mp3';
   var HOVER_BUFFER_MS = 1500;   /* dead air after the last word before the
                                    hands will answer to the pointer again */
-  var PITCH_GAP_MS = 1500;      /* beat after the hands have opened, before
+  var PITCH_GAP_MS = 600;       /* beat after the hands have opened, before
                                    he starts the pitch */
-  var UNFURL_AT_MS = 2800;      /* into the emerge, when the fists unfurl.
-                                   #emerge fades over 2.0s and settles its
-                                   push at 2.8s — starting the unfurl before
-                                   that meant the hands were still at a third
-                                   of their opacity while already opening, so
-                                   nobody ever saw a closed pair of fists. */
+  var UNFURL_AT_MS = 1500;      /* into the emerge, when the fists unfurl —
+                                   after they have fully materialised, so a
+                                   closed pair is actually seen, but without
+                                   leaving dead air before he speaks */
   var MONOLOGUE_RATE = 1.5;     /* how the clips run under the monologue:
                                    filmed pace was too slow, the pointer-
                                    driven compression far too fast */
