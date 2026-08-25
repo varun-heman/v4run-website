@@ -32,6 +32,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css">
+<link rel="stylesheet" href="/scripts/pill-button.css">
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -4255,7 +4256,11 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 </div>
 
 <div class="corner corner-tr">
-  <div style="color:rgba(232,232,226,0.45);"><i id="heart" class="fa-solid fa-heart"></i>Bengaluru</div>
+  <button class="pill-swap pill-swap--blue" id="take-blue"
+          aria-label="Go back and take the blue pill instead">
+    <span class="pill-swap__label">Take the blue pill</span>
+    <span class="pill-swap__pill" aria-hidden="true"></span>
+  </button>
 </div>
 
 <!-- ── MOBILE LOGO EXPAND PANEL ──────────────────────── -->
@@ -5959,6 +5964,28 @@ const NAV_LABELS = {};  // key → display label
 
     function runGateLogic() {
 
+    // Coming back from the blue world. He has already said his piece over the
+    // black on the way here, so there is no gate, no choice and no typing —
+    // just the bang, and the site arriving.
+    let cameFromBlue = false;
+    try {
+      cameFromBlue = /[?&]enter=bang\b/.test(location.search);
+      if (cameFromBlue) history.replaceState(null, '', location.pathname);
+    } catch (e) {}
+    if (cameFromBlue) {
+      gate.style.display = 'none';
+      window._isFirstVisit = false;
+      setVisited();
+      const blueMusic = document.getElementById('bg-music');
+      if (blueMusic) { blueMusic.volume = 0.35; blueMusic.play().catch(() => {}); }
+      document.body.classList.remove('pill-busy');
+      const psc = document.getElementById('pill-scene');
+      if (psc) { psc.classList.add('dismissed'); psc.classList.remove('running', 'loading'); }
+      if (window._triggerBigBang) window._triggerBigBang();
+      setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9200);
+      return;
+    }
+
     // Return visitors skip the gate entirely
     if (hasVisited()) {
       gate.style.display = 'none';
@@ -6109,6 +6136,15 @@ const NAV_LABELS = {};  // key → display label
         });
       }, 2000);
     }
+
+    // The corner offers the road not taken: he talks you across, over black.
+    const takeBlue = document.getElementById('take-blue');
+    if (takeBlue) takeBlue.addEventListener('click', () => {
+      const music = document.getElementById('bg-music');
+      if (music) music.pause();
+      if (window.plumeTransition) window.plumeTransition('/audio/backtoblue.mp3', '/bluepill/');
+      else location.href = '/bluepill/';
+    });
 
     // Handed control back by the pill scene once the red pill is taken. Blue
     // resolves inside the scene for now — there is nothing behind it yet.
@@ -10753,5 +10789,6 @@ window.addEventListener('popstate', (e) => {
   }
 })();
 </script>
+<script src="/scripts/plume-transition.js"></script>
 </body>
 </html>
