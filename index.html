@@ -10215,6 +10215,20 @@ window.addEventListener('popstate', (e) => {
     body.classList.add(side === 'red' ? 'exit-red' : 'exit-blue');
     for (var i = 0; i < 90; i++) spawn(side, true);
 
+    /* The exit tears the frame away and leaves black. He is still talking
+       into it, so the air keeps moving over the dark — the same plume the
+       transitions between the two worlds use, riding the voice analyser
+       that is already on this element. Held back so the exit animation
+       plays first rather than being covered by it. */
+    setTimeout(function () {
+      var tap = breath.taps && breath.taps.voice;
+      if (!window.plumeTransition || !tap) return;
+      var overlay = window.plumeTransition(null, null,
+        { analyser: tap.an, fadeIn: 700, maxMs: 25000 });
+      /* clears when he stops speaking — the page moves on at the same moment */
+      window._pillWhenQuiet(function () { overlay.leave(); });
+    }, 900);
+
     if (side === 'red' && window._pillTaken) {
       /* hand the page back: the site takes it from here */
       setTimeout(function () { window._pillTaken('red'); }, 1400);

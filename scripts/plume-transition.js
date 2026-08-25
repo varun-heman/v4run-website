@@ -8,7 +8,15 @@
        plumeTransition('/audio/backtoblue.mp3', '/bluepill/');
 
    The audio drives the plume through an AnalyserNode, so the vapour tracks
-   what is actually being said rather than a synthetic envelope. */
+   what is actually being said rather than a synthetic envelope.
+
+   It can also ride audio someone else is already playing — the choice scene
+   speaks his answer on its own element, and a second MediaElementSource on
+   the same element would throw. Hand over that analyser instead, and it
+   renders without owning the audio or moving the page:
+
+       plumeTransition(null, null, { analyser: tap, fadeIn: 600 });
+       ... later: handle.leave(); */
 (function (global) {
   'use strict';
 
@@ -39,11 +47,13 @@
 
   global.plumeTransition = function (audioUrl, nextUrl, opts) {
     opts = opts || {};
+    var borrowed = !!opts.analyser;
+    var fadeIn = opts.fadeIn || 500;
     var root = document.createElement('div');
     root.className = 'plume-transition';
     root.setAttribute('aria-hidden', 'true');
     root.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#050505;' +
-      'opacity:0;transition:opacity .5s ease;cursor:none;';
+      'opacity:0;transition:opacity ' + (fadeIn / 1000) + 's ease;pointer-events:none;';
     var cv = document.createElement('canvas');
     cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;mix-blend-mode:screen;';
     root.appendChild(cv);
@@ -68,10 +78,16 @@
     window.addEventListener('resize', size);
 
     /* ── audio ── */
-    var el = new Audio();
+    var el = null;
+    var analyser = null, data = null;
+    if (borrowed) {
+      analyser = opts.analyser;
+      data = new Uint8Array(analyser.fftSize);
+    }
+    if (!borrowed) {
+    el = new Audio();
     el.preload = 'auto';
     el.src = (opts.blobFor && opts.blobFor[audioUrl]) || audioUrl;
-    var analyser = null, data = null;
     try {
       var AC = window.AudioContext || window.webkitAudioContext;
       if (AC) {
@@ -87,6 +103,7 @@
         data = new Uint8Array(analyser.fftSize);
       }
     } catch (e) { analyser = null; }
+    }
 
     function level() {
       if (!analyser) return 0;
@@ -211,12 +228,17 @@
       }, 480);
     }
 
-    el.addEventListener('ended', leave);
-    el.addEventListener('error', function () { setTimeout(leave, 1200); });
-    var p = el.play();
-    if (p && p.catch) p.catch(function () { setTimeout(leave, 1400); });
-    /* never strand anyone on a black screen */
-    setTimeout(leave, 30000);
+    if (!borrowed) {
+      el.addEventListener('ended', leave);
+      el.addEventListener('error', function () { setTimeout(leave, 1200); });
+      var p = el.play();
+      if (p && p.catch) p.catch(function () { setTimeout(leave, 1400); });
+      /* never strand anyone on a black screen */
+      setTimeout(leave, 30000);
+    } else {
+      /* the caller owns the audio and says when this ends, but not forever */
+      setTimeout(leave, opts.maxMs || 30000);
+    }
 
     return { leave: leave };
   };
