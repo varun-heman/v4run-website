@@ -4282,10 +4282,10 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 <div id="stage">
   <div id="emerge">
   <div id="frames">
-    <img class="frame on" id="s-neutral" data-src="/images/choice/neutral.jpg" alt="Two open hands, one offering a red pill and the other a blue pill.">
+    <img class="frame" id="s-neutral" data-src="/images/choice/neutral.jpg" alt="Two open hands, one offering a red pill and the other a blue pill.">
     <img class="frame" id="s-red"    data-src="/images/choice/red.jpg"    alt="" aria-hidden="true">
     <img class="frame" id="s-blue"   data-src="/images/choice/blue.jpg"   alt="" aria-hidden="true">
-    <img class="frame" id="s-closed" data-src="/images/choice/closed.jpg" alt="" aria-hidden="true">
+    <img class="frame on" id="s-closed" data-src="/images/choice/closed.jpg" alt="" aria-hidden="true">
 
     <video class="clip" id="v-red-forward"   data-src="/video/web/red-forward.mp4"   muted playsinline preload="auto" aria-hidden="true"></video>
     <video class="clip" id="v-red-back"      data-src="/video/web/red-back.mp4"      muted playsinline preload="auto" aria-hidden="true"></video>
@@ -8956,8 +8956,8 @@ window.addEventListener('popstate', (e) => {
      transform, or the HUD drifts off the pill as the push happens. */
   var zoom = { s: 1, ox: 0, oy: 0 };
 
-  var state = 'neutral';  /* settled state: neutral | red | blue | closed */
-  var desired = 'neutral';/* where the pointer says we should be */
+  var state = 'closed';   /* settled state: neutral | red | blue | closed */
+  var desired = 'closed'; /* where the pointer says we should be */
   var leg = null;         /* clip currently playing, or null when at rest */
   var locked = false;     /* a pill has been chosen; ignore everything */
   var contain = false;
@@ -9295,13 +9295,7 @@ window.addEventListener('popstate', (e) => {
      video could not play. */
   function handsUp(st) {
     if (body.classList.contains('prelude')) return;
-    /* arrived as fists — hold a beat, then open */
-    if (openingPhase && st === 'closed') {
-      setTimeout(function () { goTo('neutral'); }, FIST_HOLD_MS);
-      return;
-    }
     if (st === 'neutral' && !monologueDone && !monologueCued) {
-      openingPhase = false;
       monologueCued = true;
       setTimeout(runMonologue, PITCH_GAP_MS);
     }
@@ -9457,11 +9451,14 @@ window.addEventListener('popstate', (e) => {
 
   /* Each nostril gets its own character rather than a mirrored one: the left
      runs straighter and tighter, the right splays wide and slow. */
+  /* Resting breath is softer than speech, not smaller: wider, slower puffs
+     that open out as they fall, rather than the thin fast jets it had before.
+     `a` lifts their opacity so a quiet breath still reads. */
   var NOSTRIL = [
-    { dx: -0.0165, out: -0.55, down: 1.14, r0: 4.0, grow: 0.48, wander: 0.85, rate: 1.00 },
-    { dx:  0.0205, out:  1.18, down: 0.84, r0: 6.4, grow: 0.88, wander: 1.40, rate: 0.68 }
+    { dx: -0.0165, out: -0.55, down: 0.80, r0: 7.2, grow: 0.88, wander: 0.95, rate: 1.00, a: 1.4 },
+    { dx:  0.0205, out:  1.18, down: 0.64, r0: 9.4, grow: 1.06, wander: 1.45, rate: 0.68, a: 1.4 }
   ];
-  var MOUTH = { spread: 0.026, out: 0.35, down: 1.0, r0: 9, grow: 1.15, wander: 1.7 };
+  var MOUTH = { spread: 0.026, out: 0.35, down: 1.0, r0: 9, grow: 1.15, wander: 1.7, a: 1 };
 
   var lean = 0.34;                 /* >0 right nostril leads */
 
@@ -9648,17 +9645,18 @@ window.addEventListener('popstate', (e) => {
       curl: Math.random() * 6.283,
       wander: j.wander * (0.7 + Math.random() * 0.7),
       life: 0,
-      max: 110 + Math.random() * 110,
-      a: (0.030 + Math.random() * 0.045) * level * gain
+      /* longer-lived than speech puffs, so a slow breath lingers */
+      max: 130 + Math.random() * 130,
+      a: (0.030 + Math.random() * 0.045) * level * gain * (j.a || 1)
     });
   }
 
   var SPEECH_FLOOR = 0.17;   /* below this he is between words — no air */
   function emitPlume(level, W) {
     if (locked || plume.length >= PLUME_CAP) return;
-    if (level < (breath.mode === 'speech' ? SPEECH_FLOOR : 0.06)) return;
+    if (level < (breath.mode === 'speech' ? SPEECH_FLOOR : 0.04)) return;
     plumeGate += level;
-    if (plumeGate < 0.3) return;
+    if (plumeGate < (breath.mode === 'speech' ? 0.3 : 0.22)) return;
     plumeGate = 0;
 
     if (breath.mode === 'speech') {
@@ -10397,10 +10395,11 @@ window.addEventListener('popstate', (e) => {
                                    hands will answer to the pointer again */
   var PITCH_GAP_MS = 600;       /* beat after the hands have opened, before
                                    he starts the pitch */
-  /* The run-up is two clips, not a still and a clip: the hands close as they
-     fade up out of the black, hold as fists for a beat, then open into the
-     offer. Nothing in it is a frozen frame. */
-  var FIST_HOLD_MS = 300;       /* beat as fists before they unfurl */
+  var UNFURL_AT_MS = 1500;      /* into the emerge, when the fists unfurl.
+                                   The scene opens already closed and fades
+                                   up on the fists; #emerge takes 1.1s, so
+                                   this lets a closed pair actually register
+                                   before they open. */
   var MONOLOGUE_RATE = 1.5;     /* how the clips run under the monologue:
                                    filmed pace was too slow, the pointer-
                                    driven compression far too fast */
@@ -10620,7 +10619,6 @@ window.addEventListener('popstate', (e) => {
   var cueAt = 0;
   var monologueDone = false;
   var monologueCued = false;
-  var openingPhase = false;   /* the two-clip arrival, before he speaks */
 
   function runMonologue() {
     if (monologueDone || !audioOn) return;
@@ -10680,13 +10678,11 @@ window.addEventListener('popstate', (e) => {
       elVoice.removeEventListener('ended', reveal);
       body.classList.remove('prelude');
       refreshCursor();
-      openingPhase = true;
-      /* The hands close as the frame fades up — the fade and the motion are
-         the same beat — then unfurl once they have arrived. Both halves are
-         cued by the hands actually landing (see handsUp) rather than by
-         timers racing the clips. */
-      goTo('closed');
-      armIdleVo();
+      /* The fists fade up out of the black, register as fists, then unfurl
+         into the offer. Only once they are open does he start the pitch —
+         the monologue is cued by the hands arriving (see handsUp), not by a
+         timer racing the clip. */
+      setTimeout(function () { goTo('neutral'); armIdleVo(); }, UNFURL_AT_MS);
     };
     elVoice.addEventListener('ended', reveal);
     /* never strand the page if the clip fails to load or play */
