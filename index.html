@@ -6092,7 +6092,7 @@ const NAV_LABELS = {};  // key → display label
 
     // The typed opening, factored out so both the gate and the pill scene
     // can trigger it.
-    function startTypedIntro() {
+    function startTypedIntro(onArrived) {
       lbl.innerHTML = '';
       lbl.classList.add('quote-mode', 'intro-mode', 'visible');
       const preCursor = document.createElement('span');
@@ -6102,7 +6102,9 @@ const NAV_LABELS = {};  // key → display label
         lbl.innerHTML = '';
         lbl.classList.remove('visible');
         runIntro(() => {
+          // the site has arrived
           if (window._triggerBigBang) window._triggerBigBang();
+          if (onArrived) onArrived();
           setTimeout(() => { if (!isNavHover) showNextQuote(); }, 11800);
         });
       }, 2000);
@@ -6114,7 +6116,10 @@ const NAV_LABELS = {};  // key → display label
       const sc = document.getElementById('pill-scene');
       if (sc) { sc.classList.add('dismissed'); sc.classList.remove('running'); }
       document.body.classList.remove('pill-busy');
-      startTypedIntro();
+      // He has one more thing to say once the world is actually here.
+      startTypedIntro(() => {
+        if (window._pillSay) window._pillSay('/audio/enterworld.mp3');
+      });
     };
   })();
 
@@ -10014,16 +10019,22 @@ window.addEventListener('popstate', (e) => {
   requestAnimationFrame(tick);
 
   /* ─── SELECTION ─────────────────────────────────────── */
-  /* He stops existing the moment a pill is taken: no breathing bed, no line
-     half-spoken, nothing queued. */
+  /* Taking a pill ends him: the breathing bed stops, any half-spoken line is
+     cut, and nothing further is queued. He gets one last word — the line for
+     the pill that was chosen — which choose() plays straight after. */
   function silenceHim() {
-    audioOn = false;
     sayToken++;                 /* invalidates any pending say() */
     voPending = false;
     clearTimeout(idleVoTimer);
     try { elVoice.pause(); } catch (e) {}
     try { elBreath.pause(); } catch (e) {}
   }
+
+  /* Used by the site once it has finished arriving, after the red pill. */
+  window._pillSay = function (url) {
+    audioOn = true;
+    say(url);
+  };
 
   function choose(side) {
     if (locked || scripted) return;
@@ -10033,6 +10044,8 @@ window.addEventListener('popstate', (e) => {
     locked = true;
     body.classList.add('taken');
     refreshCursor();
+    /* his answer to the choice, over the exit */
+    say(side === 'red' ? VO.redChoice : VO.blueChoice);
     clearTimeout(typeTimer);
     setStatus(side === 'red' ? 'Rabbit hole // open' : 'Returning to normal');
     hideHud(side);
@@ -10251,6 +10264,8 @@ window.addEventListener('popstate', (e) => {
   var blobFor = {};
   var VOICE_FILES = [
     '/audio/start.mp3', '/audio/choosevisitor.mp3',
+    '/audio/redpillchoice.mp3', '/audio/bluepillchoice.mp3',
+    '/audio/enterworld.mp3',
     '/audio/redpill.mp3', '/audio/bluepill.mp3',
     '/audio/hmm.mp3', '/audio/decisions.mp3',
     '/audio/struggletomakedecisions.mp3', '/audio/donthaveallday.mp3',
@@ -10419,9 +10434,12 @@ window.addEventListener('popstate', (e) => {
   ];
 
   var VO = {
-    start:  '/audio/start.mp3',
-    red:    '/audio/redpill.mp3',
-    blue:   '/audio/bluepill.mp3'
+    start:      '/audio/start.mp3',
+    red:        '/audio/redpill.mp3',
+    blue:       '/audio/bluepill.mp3',
+    redChoice:  '/audio/redpillchoice.mp3',   /* on taking the red pill */
+    blueChoice: '/audio/bluepillchoice.mp3',  /* on taking the blue pill */
+    enterWorld: '/audio/enterworld.mp3'       /* once the site has arrived */
   };
   /* returning to a hand you have already been offered */
   var NUDGE = ['/audio/decisions.mp3', '/audio/hmm.mp3',
