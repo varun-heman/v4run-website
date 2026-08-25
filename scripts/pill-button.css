@@ -56,21 +56,29 @@
   transition: opacity 0.5s ease;
 }
 
-/* ── what is alive inside it ─────────────────────────── */
+/* ── what is alive inside it ───────────────────────────
+   Same build as the motes around the pills in the scene: a white-hot centre
+   falling away through the pill's own colour, rather than a white dot with a
+   coloured halo. --mote is that colour, lifted off the shell tint the way
+   PILL.rgb is lifted off the pill in the frame. */
 .pill-swap__mote {
   position: absolute;
-  width: 3px; height: 3px;
+  width: 4px; height: 4px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.95);
-  box-shadow: 0 0 4px rgba(var(--pill), 0.95), 0 0 8px rgba(var(--pill), 0.6);
+  background: radial-gradient(circle,
+    rgba(255,255,255,0.92) 0%,
+    rgba(var(--mote), 0.98) 30%,
+    rgba(var(--mote), 0.45) 55%,
+    rgba(var(--mote), 0) 75%);
+  box-shadow: 0 0 5px rgba(var(--mote), 0.9), 0 0 11px rgba(var(--mote), 0.5);
   opacity: 0.25;
   z-index: 2;
   animation: pill-mote 3.4s ease-in-out infinite;
 }
-.pill-swap__mote:nth-child(1) { left: 5px;  top: 5px; animation-duration: 3.1s; animation-delay: -0.2s; }
+.pill-swap__mote:nth-child(1) { left: 5px;  top: 4px; animation-duration: 3.1s; animation-delay: -0.2s; }
 .pill-swap__mote:nth-child(2) { left: 14px; top: 8px; animation-duration: 4.3s; animation-delay: -1.4s; }
-.pill-swap__mote:nth-child(3) { left: 22px; top: 4px; animation-duration: 3.7s; animation-delay: -2.6s; }
-.pill-swap__mote:nth-child(4) { left: 28px; top: 8px; animation-duration: 4.9s; animation-delay: -0.9s; }
+.pill-swap__mote:nth-child(3) { left: 21px; top: 3px; animation-duration: 3.7s; animation-delay: -2.6s; }
+.pill-swap__mote:nth-child(4) { left: 27px; top: 8px; animation-duration: 4.9s; animation-delay: -0.9s; }
 @keyframes pill-mote {
   0%   { transform: translate(0, 0)      scale(0.7); opacity: 0.16; }
   25%  { transform: translate(-3px, 3px) scale(1);   opacity: 0.62; }
@@ -133,8 +141,10 @@
   transform: translateY(0);
 }
 
-.pill-swap--blue { --pill: 58, 178, 255; }
-.pill-swap--red  { --pill: 226, 44, 52; }
+/* --pill tints the glass and the bloom; --mote is what burns inside it, and
+   matches PILL.rgb in the scene exactly. */
+.pill-swap--blue { --pill: 58, 178, 255; --mote: 128, 216, 255; }
+.pill-swap--red  { --pill: 226, 44, 52;  --mote: 255, 78, 66; }
 
 @media (prefers-reduced-motion: reduce) {
   .pill-swap__mote { animation: none; opacity: 0.5; }
