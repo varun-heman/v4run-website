@@ -9063,7 +9063,10 @@ window.addEventListener('popstate', (e) => {
     for (var i = 0; i < n; i++) sum += 1 / rateShape((i + 0.5) / n);
     return sum / n;
   })();
-  var IDLE_MS = 2000;        /* pointer still this long and the hands close */
+  var IDLE_MS = 10000;       /* pointer still this long and the hands close.
+                                Short values make the withdrawal feel touchy —
+                                a pause to read the callouts is not the same
+                                as walking away. */
   var glow = { red: el('glow-red'), blue: el('glow-blue') };
   var ret  = { red: el('ret-red'),  blue: el('ret-blue') };
   var call = { red: el('call-red'), blue: el('call-blue') };
