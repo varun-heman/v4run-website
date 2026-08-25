@@ -1256,81 +1256,6 @@ body.pill-busy #bg-canvas { pointer-events: none; }
 #pill-scene.scripted,
 #pill-scene.taken { cursor: not-allowed; }
 
-/* ─── OUTCOME ────────────────────────────────────────── */
-#pill-scene #outcome {
-  position: fixed; inset: 0; z-index: 95;
-  display: flex; align-items: center; justify-content: center;
-  pointer-events: none; opacity: 0;
-  transition: opacity 0.5s ease;
-}
-#pill-scene #outcome.show { opacity: 1; pointer-events: auto; }
-#pill-scene .oc-panel {
-  position: relative;
-  width: min(520px, 88vw);
-  padding: 34px 38px 30px;
-  background: rgba(4, 8, 5, 0.96);
-  border: 1px solid rgba(var(--green), 0.22);
-  box-shadow: 0 0 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(var(--green), 0.06),
-              inset 0 0 40px rgba(0,0,0,0.5);
-  transform: translateY(10px);
-  transition: transform 0.55s cubic-bezier(0.16,1,0.3,1);
-}
-#pill-scene #outcome.show .oc-panel { transform: translateY(0); }
-#pill-scene .oc-panel::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: repeating-linear-gradient(0deg,
-    transparent, transparent 3px,
-    rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px);
-  pointer-events: none;
-}
-#pill-scene .oc-panel::after {
-  content: '';
-  position: absolute; inset: 8px;
-  border: 1px solid rgba(var(--green), 0.06);
-  pointer-events: none;
-}
-#pill-scene .oc-head {
-  position: relative; z-index: 1;
-  font-family: var(--mono); font-size: 9px;
-  letter-spacing: 0.22em; text-transform: uppercase;
-  color: rgba(var(--green), 0.5);
-  margin-bottom: 22px;
-}
-#pill-scene .oc-pill {
-  position: relative; z-index: 1;
-  font-family: var(--mono);
-  font-size: clamp(24px, 3.4vw, 38px);
-  letter-spacing: 0.12em; text-transform: uppercase;
-  margin-bottom: 16px;
-}
-#pill-scene.exit-red  .oc-pill { color: rgba(255,120,110,0.95); text-shadow: 0 0 34px rgba(var(--red), 0.45); }
-#pill-scene.exit-blue .oc-pill { color: rgba(150,215,255,0.95); text-shadow: 0 0 34px rgba(var(--blue), 0.4); }
-#pill-scene .oc-msg {
-  position: relative; z-index: 1;
-  font-family: var(--mono); font-size: 12px; line-height: 1.75;
-  letter-spacing: 0.02em;
-  color: rgba(232,232,226,0.55);
-  margin-bottom: 26px;
-}
-#pill-scene .oc-btn {
-  position: relative; z-index: 1;
-  display: inline-flex; align-items: center; gap: 9px;
-  font-family: var(--mono); font-size: 10px;
-  letter-spacing: 0.18em; text-transform: uppercase;
-  padding: 9px 22px; border-radius: 2px; cursor: pointer;
-  border: 1px solid rgba(var(--green), 0.35);
-  background: rgba(var(--green), 0.06);
-  color: rgba(var(--green), 0.9);
-  transition: all 0.15s ease;
-}
-#pill-scene .oc-btn:hover {
-  background: rgba(var(--green), 0.13);
-  border-color: rgba(var(--green), 0.6);
-  box-shadow: 0 0 16px rgba(var(--green), 0.12);
-  color: rgb(var(--green));
-}
-
 /* ─── RESPONSIVE ─────────────────────────────────────── */
 @media (max-width: 900px) {
   #pill-scene .corner-tl { top: 18px; left: 18px; }
@@ -4393,16 +4318,6 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 
 <div id="flash"></div>
 
-<div id="outcome" aria-live="polite">
-  <div class="oc-panel">
-    <div class="co-corner co-corner--tl"></div><div class="co-corner co-corner--tr"></div>
-    <div class="co-corner co-corner--bl"></div><div class="co-corner co-corner--br"></div>
-    <div class="oc-head" id="oc-head">// signal lost</div>
-    <div class="oc-pill" id="oc-pill">Coming soon</div>
-    <p class="oc-msg" id="oc-msg"></p>
-    <button class="oc-btn" id="oc-reset"><i class="fa-solid fa-arrow-left"></i> Back to the choice</button>
-  </div>
-</div>
 </div>
 
 <div id="access-gate">
@@ -10136,49 +10051,11 @@ window.addEventListener('popstate', (e) => {
       setTimeout(function () { window._pillTaken('red'); }, 1400);
       return;
     }
-    /* Blue has nowhere to go yet — say so, and point them back. */
-    setTimeout(function () {
-      el('oc-head').textContent = '// signal lost';
-      el('oc-pill').textContent = 'Coming soon';
-      el('oc-msg').textContent =
-        "There's nothing on the other side of the blue pill yet — that world is "
-        + "still being built. Go back and take the red pill for now.";
-      el('outcome').classList.add('show');
-      el('oc-reset').focus();
-    }, RM ? 220 : 1500);
+    /* Blue leads to its own room. He finishes his line over the exit, and the
+       page turns when he stops talking — same courtesy the red path gets. */
+    window._pillWhenQuiet(function () { window.location.href = '/bluepill/'; });
   }
 
-  el('oc-reset').addEventListener('click', function (e) {
-    e.preventDefault();
-    el('outcome').classList.remove('show');
-    body.classList.remove('exit-red', 'exit-blue', 'armed');
-    clearTimeout(typeTimer); clearTimeout(idleTimer);
-    motes.length = 0; rings.length = 0;
-    hideHud('red'); hideHud('blue');
-    for (var ck in clips) { clips[ck].pause(); clips[ck].onended = null; clips[ck].classList.remove('on'); }
-    leg = null; state = 'neutral'; desired = 'neutral';
-    syncActive();
-    showStill('neutral');
-    setStatus('Awaiting input');
-    layout();
-    /* stay locked through the fade, then re-arm from wherever the cursor
-       actually is — otherwise the state and the HUD disagree. */
-    setTimeout(function () {
-      locked = false;
-      body.classList.remove('taken');
-      /* he was silenced when the pill was taken — bring the breathing back,
-         but not the monologue: that pitch has already been made */
-      audioOn = true;
-      duckBreath(false);
-      var rb = elBreath.play();
-      if (rb && rb.catch) rb.catch(function () {});
-      refreshCursor();
-      if (hasHover && lastPointer) {
-        goTo(hitSide(lastPointer.x, lastPointer.y) || 'neutral');
-      }
-      armIdle();
-    }, 450);
-  });
 
   /* ─── INPUT ─────────────────────────────────────────── */
   var hasHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
