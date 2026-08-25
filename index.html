@@ -1344,6 +1344,53 @@ body.pill-busy #bg-canvas { pointer-events: none; }
 #pill-scene.scripted,
 #pill-scene.taken { cursor: not-allowed; }
 
+/* ─── SKIP ────────────────────────────────────────────
+   Only up while he is talking, and takes .corner-br's place — that hint is
+   hidden for exactly the same stretch, so the two never share the corner.
+   Built on the gate's button, then pulled back: this is a way out, not
+   something to be drawn towards. */
+#pill-scene .skip-intro {
+  position: fixed; bottom: 28px; right: 32px; z-index: 21;
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 8px 14px;
+  background: rgba(4, 8, 5, 0.55);
+  border: 1px solid rgba(var(--green), 0.16);
+  border-radius: 2px;
+  backdrop-filter: blur(4px);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(232, 232, 226, 0.42);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease, color 0.25s ease,
+              border-color 0.25s ease, background 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+#pill-scene.scripted .skip-intro { opacity: 1; pointer-events: auto; }
+#pill-scene .skip-intro:hover,
+#pill-scene .skip-intro:focus-visible {
+  color: rgba(var(--green), 0.95);
+  border-color: rgba(var(--green), 0.45);
+  background: rgba(var(--green), 0.06);
+}
+#pill-scene .skip-intro:focus { outline: none; }
+/* chevron drawn rather than borrowed, to match the HUD's line weight */
+#pill-scene .skip-intro__chev {
+  width: 9px; height: 9px;
+  border-right: 1px solid currentColor;
+  border-top: 1px solid currentColor;
+  transform: rotate(45deg);
+  opacity: 0.75;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#pill-scene .skip-intro:hover .skip-intro__chev { transform: rotate(45deg) translate(2px, -2px); }
+@media (max-width: 640px) {
+  #pill-scene .skip-intro { bottom: 18px; right: 18px; font-size: 8px; padding: 7px 11px; }
+}
+
 /* ─── RESPONSIVE ─────────────────────────────────────── */
 @media (max-width: 900px) {
   #pill-scene .corner-tl { top: 18px; left: 18px; }
@@ -4397,6 +4444,11 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
   <div class="c-meta">SYS // 02 offered &nbsp;&middot;&nbsp; 01 taken</div>
 </div>
 
+<button class="skip-intro" id="skip-intro" aria-label="Skip the introduction">
+  <span class="skip-intro__label">Skip intro</span>
+  <span class="skip-intro__chev" aria-hidden="true"></span>
+</button>
+
 <div class="corner corner-br">
   <div class="c-hint" id="hint">Hover a hand &middot; <b>&larr; &rarr;</b> to aim &middot; <b>Enter</b> to choose</div>
 </div>
@@ -6176,23 +6228,18 @@ const NAV_LABELS = {};  // key → display label
       if (sc) { sc.classList.add('dismissed'); sc.classList.remove('running'); }
       document.body.classList.remove('pill-busy');
 
-      // Two lines over the entrance, in order. orderfromchaos rides the bang
-      // itself — it is about a world assembling, so it starts as the world
-      // starts. The welcome follows when he finishes it, which at 19.5s is
-      // well past the bang settling: waiting on his voice already puts it
-      // later than watching for ui-ready did. They share one audio element,
-      // so overlapping them would simply cut him off.
-      const welcome = () => {
-        if (window._pillSay) window._pillSay('/audio/orderfromchaos.mp3');
-        if (window._pillWhenQuiet) {
-          window._pillWhenQuiet(() => {
-            if (window._pillSay) window._pillSay('/audio/enterworld.mp3');
-          });
-        }
+      // One line over the entrance. It lands a beat after the bang rather
+      // than on top of it — starting together, his voice and the boom were
+      // fighting each other for the same moment.
+      const ORDER_AFTER_BANG_MS = 2000;
+      const overTheBang = () => {
+        setTimeout(() => {
+          if (window._pillSay) window._pillSay('/audio/orderfromchaos.mp3');
+        }, ORDER_AFTER_BANG_MS);
       };
 
       // Don't start typing over him — his answer to the choice plays first.
-      const begin = () => startTypedIntro(welcome);
+      const begin = () => startTypedIntro(overTheBang);
       if (window._pillWhenQuiet) window._pillWhenQuiet(begin);
       else begin();
     };
@@ -10400,7 +10447,7 @@ window.addEventListener('popstate', (e) => {
   var VOICE_FILES = [
     '/audio/start.mp3', '/audio/choosevisitor.mp3',
     '/audio/redpillchoice.mp3', '/audio/bluepillchoice.mp3',
-    '/audio/orderfromchaos.mp3', '/audio/enterworld.mp3',
+    '/audio/orderfromchaos.mp3',
     '/audio/redpill.mp3', '/audio/bluepill.mp3',
     '/audio/hmm.mp3', '/audio/decisions.mp3',
     '/audio/struggletomakedecisions.mp3', '/audio/donthaveallday.mp3',
@@ -10573,8 +10620,7 @@ window.addEventListener('popstate', (e) => {
     red:        '/audio/redpill.mp3',
     blue:       '/audio/bluepill.mp3',
     redChoice:  '/audio/redpillchoice.mp3',   /* on taking the red pill */
-    blueChoice: '/audio/bluepillchoice.mp3',  /* on taking the blue pill */
-    enterWorld: '/audio/enterworld.mp3'       /* once the site has arrived */
+    blueChoice: '/audio/bluepillchoice.mp3'   /* on taking the blue pill */
   };
   /* returning to a hand you have already been offered */
   var NUDGE = ['/audio/decisions.mp3', '/audio/hmm.mp3',
@@ -10781,6 +10827,7 @@ window.addEventListener('popstate', (e) => {
   var cueAt = 0;
   var monologueDone = false;
   var monologueCued = false;
+  var releaseMonologue = null;   /* set while the pitch is running */
 
   function runMonologue() {
     if (monologueDone || !audioOn) return;
@@ -10805,9 +10852,11 @@ window.addEventListener('popstate', (e) => {
         cueAt++;
       }
     };
-    var release = function () {
+    var onEnded = function () { release(false); };
+    var release = function (immediate) {
       elVoice.removeEventListener('timeupdate', onTime);
-      elVoice.removeEventListener('ended', release);
+      elVoice.removeEventListener('ended', onEnded);
+      releaseMonologue = null;
       clearTimeout(failsafe);
       goTo('neutral');          /* whatever happened, end on the offer */
       /* Hold the lock past the last word: letting a hover land on the tail
@@ -10819,15 +10868,55 @@ window.addEventListener('popstate', (e) => {
         refreshHints();
         armIdle();
         armIdleVo();
-      }, HOVER_BUFFER_MS);
+      }, immediate ? 0 : HOVER_BUFFER_MS);
     };
+    releaseMonologue = release;
     /* if the clip stalls or never loads, hand control back anyway */
-    var failsafe = setTimeout(release, 34000);
+    var failsafe = setTimeout(function () { release(false); }, 34000);
 
     elVoice.addEventListener('timeupdate', onTime);
-    elVoice.addEventListener('ended', release);
+    elVoice.addEventListener('ended', onEnded);
     say(MONOLOGUE);
   }
+
+  /* Straight to the choice: stop him mid-sentence, tear down the pitch and
+     hand the hands over. Works from anywhere in the opening — the spoken
+     intro, the arrival, or the middle of the monologue. */
+  function skipIntro() {
+    if (locked || !audioOn) return;
+    sayToken++;                 /* invalidate any line still loading */
+    voPending = false;
+    clearTimeout(idleVoTimer);
+    try { elVoice.pause(); } catch (e) {}
+
+    monologueDone = true;
+    monologueCued = true;
+    body.classList.remove('prelude');
+
+    if (releaseMonologue) {
+      releaseMonologue(true);   /* it knows how to put everything back */
+    } else {
+      /* skipped before the pitch started — unwind it here instead */
+      scripted = false;
+      body.classList.remove('scripted');
+      goTo('neutral');
+      refreshCursor();
+      refreshHints();
+      armIdle();
+      armIdleVo();
+    }
+
+    /* he stops talking, but he is still there */
+    duckBreath(false);
+    var b = elBreath.play();
+    if (b && b.catch) b.catch(function () {});
+  }
+
+  var skipBtn = el('skip-intro');
+  if (skipBtn) skipBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    skipIntro();
+  });
 
   /* ─── OPENING ────────────────────────────────────────
      He speaks first, over darkness. Only when he has finished do the hands
