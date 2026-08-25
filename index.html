@@ -5479,18 +5479,20 @@ window.addEventListener('pageshow', (e) => {
   window._fireHudBoot = fireHudBoot;
 
   // Called by intro sequence (or immediately for return visitors)
-  window._triggerBigBang = function () {
+  // opts.full asks for the whole thing — the slow expansion synced to the
+  // music, with the sound. It defaults to whether this is a first visit, but
+  // arriving from the blue world is a deliberate entrance too and asks for it
+  // outright: without that it took the silent return-visitor path.
+  window._triggerBigBang = function (opts) {
     if (bangStartT !== null) return; // already fired
-    // Slower, more deliberate expansion on first visit only (synced to the
-    // intro music) — return visitors with the cookie already set get the
-    // original, snappier speed.
-    bangDuration = window._isFirstVisit ? 6.2 : 2.2;
+    const full = (opts && opts.full !== undefined) ? opts.full : !!window._isFirstVisit;
+    bangDuration = full ? 6.2 : 2.2;
     // Fade canvas in first, then fire bang after 1s so the dot is visible before expanding
     document.body.classList.add('bang-ready');
     setTimeout(() => {
       bangStartT = clock.getElapsedTime();
 
-      if (window._isFirstVisit) {
+      if (full) {
         // Play big bang sound effect
         const bangSfx = document.getElementById('bang-sound');
         if (bangSfx && !window._audioMuted) { bangSfx.volume = 0.7; bangSfx.play().catch(() => {}); }
@@ -5502,7 +5504,7 @@ window.addEventListener('pageshow', (e) => {
         // HUD boot flourish — plays once per page load, right as the UI
         // settles in, for both first-time and return visitors.
         fireHudBoot();
-      }, window._isFirstVisit ? 6700 : 2700);
+      }, full ? 6700 : 2700);
     }, 1000);
   };
 
@@ -5985,8 +5987,9 @@ const NAV_LABELS = {};  // key → display label
       document.body.classList.remove('pill-busy');
       const psc = document.getElementById('pill-scene');
       if (psc) { psc.classList.add('dismissed'); psc.classList.remove('running', 'loading'); }
-      if (window._triggerBigBang) window._triggerBigBang();
-      setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9200);
+      // the full bang, with its sound — this is an arrival, not a revisit
+      if (window._triggerBigBang) window._triggerBigBang({ full: true });
+      setTimeout(() => { if (!isNavHover) showNextQuote(); }, 11800);
       return;
     }
 
