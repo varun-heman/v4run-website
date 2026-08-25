@@ -707,7 +707,15 @@ body.moments-closing .corner {
   background: var(--bg);
   cursor: default;
 }
-#pill-scene.running { display: block; }
+#pill-scene.running, #pill-scene.loading { display: block; }
+
+/* The loader, the gate and the scene each cover the page, but covering it is
+   not the same as disabling it: nav items underneath were still taking
+   mouseenter and firing their hover chime while the loader was up. Nothing
+   below responds until a pill has been taken. */
+body.pill-busy .nav-item,
+body.pill-busy #sphere,
+body.pill-busy #bg-canvas { pointer-events: none; }
 #pill-scene.dismissed { display: none; }
 
 /* ─── STAGE / FRAMES ─────────────────────────────────── */
@@ -1062,15 +1070,32 @@ body.moments-closing .corner {
   font-variant-numeric: tabular-nums;
 }
 
-/* ─── BOOT ───────────────────────────────────────────── */
+/* ─── LOADER ──────────────────────────────────────────
+   Everything is fetched behind the gate, so most visitors never see this.
+   It only surfaces if Proceed is clicked before the clips have buffered —
+   better a held beat here than a stall partway through his monologue. */
 #pill-scene #boot {
   position: fixed; inset: 0; z-index: 80;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 16px;
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center; gap: 18px;
   background: var(--bg);
-  transition: opacity 0.7s ease;
+  transition: opacity 0.6s ease;
 }
-#pill-scene.booted #boot { opacity: 0; pointer-events: none; }
+#pill-scene.loading #boot { display: flex; }
+#pill-scene .boot-frame {
+  position: relative;
+  padding: 26px 34px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 14px;
+}
+#pill-scene .boot-frame .co-corner { border-color: rgba(var(--green), 0.45); }
+#pill-scene .boot-label::after {
+  content: '';
+  display: inline-block; width: 5px; height: 8px;
+  margin-left: 6px; vertical-align: -1px;
+  background: rgba(var(--green), 0.8);
+  animation: co-caret 0.85s steps(1, end) infinite;
+}
 #pill-scene .boot-label {
   font-family: var(--mono); font-size: 9px;
   letter-spacing: 0.34em; text-transform: uppercase;
@@ -1092,6 +1117,11 @@ body.moments-closing .corner {
   letter-spacing: 0.2em;
   color: rgba(232,232,226,0.28);
   font-variant-numeric: tabular-nums;
+}
+#pill-scene .boot-sub {
+  font-family: var(--mono); font-size: 8px;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(232,232,226,0.2);
 }
 
 /* ─── EXIT FLASH ─────────────────────────────────────── */
@@ -1332,6 +1362,11 @@ body.moments-closing .corner {
   background: rgba(0,0,0,0.92);
   backdrop-filter: blur(6px);
   opacity: 0;
+  /* Invisible is not the same as absent: at z-index 200 this sits above the
+     choice's loader, and without this its Exit/Proceed buttons still took
+     mouseenter — which is where the stray hover chime during loading came
+     from. The .visible rule below turns interaction back on. */
+  pointer-events: none;
   transition: opacity 0.62s ease;
 }
 #access-gate.visible { opacity: 1; pointer-events: auto; }
@@ -4242,17 +4277,17 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 <div id="stage">
   <div id="emerge">
   <div id="frames">
-    <img class="frame" id="s-neutral" src="/images/choice/neutral.jpg" alt="Two open hands, one offering a red pill and the other a blue pill.">
-    <img class="frame" id="s-red"    src="/images/choice/red.jpg"    alt="" aria-hidden="true">
-    <img class="frame" id="s-blue"   src="/images/choice/blue.jpg"   alt="" aria-hidden="true">
-    <img class="frame on" id="s-closed" src="/images/choice/closed.jpg" alt="" aria-hidden="true">
+    <img class="frame" id="s-neutral" data-src="/images/choice/neutral.jpg" alt="Two open hands, one offering a red pill and the other a blue pill.">
+    <img class="frame" id="s-red"    data-src="/images/choice/red.jpg"    alt="" aria-hidden="true">
+    <img class="frame" id="s-blue"   data-src="/images/choice/blue.jpg"   alt="" aria-hidden="true">
+    <img class="frame on" id="s-closed" data-src="/images/choice/closed.jpg" alt="" aria-hidden="true">
 
-    <video class="clip" id="v-red-forward"   src="/video/web/red-forward.mp4"   muted playsinline preload="auto" aria-hidden="true"></video>
-    <video class="clip" id="v-red-back"      src="/video/web/red-back.mp4"      muted playsinline preload="auto" aria-hidden="true"></video>
-    <video class="clip" id="v-blue-forward"  src="/video/web/blue-forward.mp4"  muted playsinline preload="auto" aria-hidden="true"></video>
-    <video class="clip" id="v-blue-back"     src="/video/web/blue-back.mp4"     muted playsinline preload="auto" aria-hidden="true"></video>
-    <video class="clip" id="v-both-back"     src="/video/web/both-back.mp4"     muted playsinline preload="auto" aria-hidden="true"></video>
-    <video class="clip" id="v-both-back-rev" src="/video/web/both-back-rev.mp4" muted playsinline preload="auto" aria-hidden="true"></video>
+    <video class="clip" id="v-red-forward"   data-src="/video/web/red-forward.mp4"   muted playsinline preload="auto" aria-hidden="true"></video>
+    <video class="clip" id="v-red-back"      data-src="/video/web/red-back.mp4"      muted playsinline preload="auto" aria-hidden="true"></video>
+    <video class="clip" id="v-blue-forward"  data-src="/video/web/blue-forward.mp4"  muted playsinline preload="auto" aria-hidden="true"></video>
+    <video class="clip" id="v-blue-back"     data-src="/video/web/blue-back.mp4"     muted playsinline preload="auto" aria-hidden="true"></video>
+    <video class="clip" id="v-both-back"     data-src="/video/web/both-back.mp4"     muted playsinline preload="auto" aria-hidden="true"></video>
+    <video class="clip" id="v-both-back-rev" data-src="/video/web/both-back-rev.mp4" muted playsinline preload="auto" aria-hidden="true"></video>
   </div>
   </div>
 
@@ -4326,6 +4361,17 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 
 <audio id="a-breath" src="/audio/slowbreathing.mp3" loop preload="auto"></audio>
 <audio id="a-voice" preload="auto"></audio>
+
+<div id="boot">
+  <div class="boot-frame">
+    <div class="co-corner co-corner--tl"></div><div class="co-corner co-corner--tr"></div>
+    <div class="co-corner co-corner--bl"></div><div class="co-corner co-corner--br"></div>
+    <div class="boot-label" id="boot-label">Decrypting transmission</div>
+    <div class="boot-bar"><div class="boot-fill" id="boot-fill"></div></div>
+    <div class="boot-pct" id="boot-pct">0%</div>
+    <div class="boot-sub" id="boot-sub">0.0 / 0.0 MB</div>
+  </div>
+</div>
 
 <div id="pill-cursor"><i></i></div>
 
@@ -5531,6 +5577,8 @@ const NAV_LABELS = {};  // key → display label
   window._wireNavHoverListeners = () => {
     document.querySelectorAll('.nav-item[data-modal]').forEach(el => {
       el.addEventListener('mouseenter', () => {
+        // the choice owns the screen — no labels, no chime from underneath it
+        if (document.body.classList.contains('pill-busy')) return;
         showLabel(el.dataset.modal);
         if (navHoverSfx && !window._audioMuted) { navHoverSfx.currentTime = 0; navHoverSfx.volume = 0.4; navHoverSfx.play().catch(() => {}); }
       });
@@ -5868,6 +5916,8 @@ const NAV_LABELS = {};  // key → display label
     [btnExit, btnProceed].forEach(b => {
       if (!b) return;
       b.addEventListener('mouseenter', () => {
+        // only once the gate is actually up for the visitor to answer
+        if (!gate.classList.contains('visible')) return;
         if (gateHoverSfx && !window._audioMuted) { gateHoverSfx.currentTime = 0; gateHoverSfx.volume = 0.4; gateHoverSfx.play().catch(() => {}); }
       });
     });
@@ -5924,8 +5974,18 @@ const NAV_LABELS = {};  // key → display label
       return;
     }
 
-    // First visit on root — show gate
-    requestAnimationFrame(() => gate.classList.add('visible'));
+    // First visit on root — the gate waits behind the choice's loader, so
+    // Proceed is never clickable before the scene can play without stalling.
+    const showGate = () => requestAnimationFrame(() => gate.classList.add('visible'));
+    if (window._pillAssetsDone || !document.getElementById('pill-scene')) {
+      showGate();
+    } else {
+      window._onPillAssets = showGate;
+      // never trap anyone behind a loader that failed to finish
+      setTimeout(() => {
+        if (window._onPillAssets) { window._onPillAssets = null; showGate(); }
+      }, 30000);
+    }
 
     // ── Name glitch cycle: VARUN → v4run → v4.run → loop ──
     const NAME_CYCLE = ['VARUN', 'v4run', 'v4.run'];
@@ -6044,6 +6104,7 @@ const NAV_LABELS = {};  // key → display label
     window._pillTaken = function () {
       const sc = document.getElementById('pill-scene');
       if (sc) { sc.classList.add('dismissed'); sc.classList.remove('running'); }
+      document.body.classList.remove('pill-busy');
       startTypedIntro();
     };
   })();
@@ -9067,7 +9128,7 @@ window.addEventListener('popstate', (e) => {
 
   function applyRate(v, l) {
     if (l.natural) {
-      if (Math.abs(v.playbackRate - 1) > 0.02) v.playbackRate = 1;
+      if (Math.abs(v.playbackRate - MONOLOGUE_RATE) > 0.02) v.playbackRate = MONOLOGUE_RATE;
       return;
     }
     var d = v.duration || 4;
@@ -9165,9 +9226,11 @@ window.addEventListener('popstate', (e) => {
     /* Answering the pointer, speed is everything: the clips are compressed
        to a target and eased into their stop. Under the monologue there is no
        pointer to answer — the hands are illustrating a speech, so they run
-       at the pace they were filmed at, with no compression and no ramp. */
+       close to the pace they were filmed at, lifted a little, and with no
+       compression or ramp. */
     l.natural = scripted;
-    l.baseRate = l.natural ? 1 : (v.duration || 4) / legSeconds(l) * RATE_K;
+    l.baseRate = l.natural ? MONOLOGUE_RATE
+                           : (v.duration || 4) / legSeconds(l) * RATE_K;
     applyRate(v, l);
 
     var show = function () {
@@ -9222,8 +9285,10 @@ window.addEventListener('popstate', (e) => {
      refused. Missing the snap path meant the monologue never ran at all when
      video could not play. */
   function handsUp(st) {
-    if (st === 'neutral' && !monologueDone && !body.classList.contains('prelude')) {
-      runMonologue();
+    if (st === 'neutral' && !monologueDone && !monologueCued
+        && !body.classList.contains('prelude')) {
+      monologueCued = true;
+      setTimeout(runMonologue, PITCH_GAP_MS);
     }
   }
 
@@ -10136,46 +10201,134 @@ window.addEventListener('popstate', (e) => {
   window.addEventListener('resize', layout);
   window.addEventListener('orientationchange', function () { setTimeout(layout, 120); });
 
-  /* ─── READY ─────────────────────────────────────────── */
-  /* Gate the loader on the stills plus the two clips a first hover needs;
-     both-back and the reverses keep buffering behind the page. */
-  var srcs = [stills.neutral, stills.red, stills.blue, stills.closed];
-  var gateClips = [clips['red-forward'], clips['blue-forward']];
-  var done = 0, total = srcs.length + gateClips.length;
+  /* ─── LOADER ──────────────────────────────────────────
+     The scene downloads its own media rather than leaving it to the elements.
+     Inferring progress from a <video> is not honest: readyState hits
+     HAVE_ENOUGH_DATA once the browser merely predicts it can play through,
+     which reported 100% while megabytes were still in flight. Streaming the
+     responses ourselves gives exact byte counts, and the clips end up fully
+     in memory as blobs, so nothing can stall mid-scene.
 
-  function progress() {
-    done++;
-    if (done >= total) ready();
+     The elements carry data-src rather than src so this is the only fetch. */
+  var ASSETS = [];
+  [stills.neutral, stills.red, stills.blue, stills.closed,
+   clips['both-back-rev'], clips['red-forward'], clips['blue-forward'],
+   clips['red-back'], clips['blue-back'], clips['both-back']]
+    .forEach(function (n) {
+      var u = n.getAttribute('data-src');
+      if (u) ASSETS.push({ el: n, url: u });
+    });
+
+  var gotBytes = {}, expectBytes = {};
+  var assetsReady = false;
+  var startQueued = false;
+
+  function mb(b) { return (b / 1048576).toFixed(1); }
+
+  function sum(o) {
+    var t = 0;
+    for (var k in o) t += o[k];
+    return t;
   }
 
-  var readyCalled = false;
+  var shownBytes = 0;
+  function progress() {
+    /* once the loader has handed over, nothing may repaint it — a late
+       callback landing after ready() would otherwise drag the readout back
+       below 100% on its way out */
+    if (assetsReady) return;
+    var got = sum(gotBytes);
+    /* monotonic: a stream reporting less than we have already shown would
+       make the bar slide backwards, which reads as a fault */
+    if (got < shownBytes) got = shownBytes; else shownBytes = got;
+    var expect = sum(expectBytes);
+    /* until every Content-Length is known, scale the target by how many
+       headers are in — otherwise the bar races ahead early and crawls later */
+    var known = Object.keys(expectBytes).length;
+    if (known && known < ASSETS.length) expect = expect / known * ASSETS.length;
+    var f = expect ? Math.min(1, got / expect) : 0;
+    var fill = el('boot-fill'), pctEl = el('boot-pct'), sub = el('boot-sub');
+    if (fill) fill.style.right = (100 - Math.round(f * 100)) + '%';
+    if (pctEl) pctEl.textContent = Math.round(f * 100) + '%';
+    if (sub) sub.textContent = mb(got) + ' / ' + mb(expect) + ' MB';
+  }
+
+  function fetchAsset(a) {
+    return fetch(a.url).then(function (res) {
+      if (!res.ok || !res.body) throw new Error('no stream');
+      expectBytes[a.url] = +res.headers.get('Content-Length') || 0;
+      var reader = res.body.getReader(), chunks = [], got = 0;
+      return (function pump() {
+        return reader.read().then(function (r) {
+          if (r.done) return new Blob(chunks);
+          chunks.push(r.value);
+          got += r.value.length;
+          gotBytes[a.url] = got;
+          progress();
+          return pump();
+        });
+      })();
+    }).then(function (blob) {
+      a.el.src = URL.createObjectURL(blob);
+      if (expectBytes[a.url]) gotBytes[a.url] = expectBytes[a.url];
+      progress();
+    }).catch(function () {
+      /* no streams, or the fetch failed — fall back to letting the element
+         load it the ordinary way rather than showing nothing at all */
+      a.el.src = a.url;
+      expectBytes[a.url] = expectBytes[a.url] || 1;
+      gotBytes[a.url] = expectBytes[a.url];
+      progress();
+    });
+  }
+
   function ready() {
-    if (readyCalled) return;
-    readyCalled = true;
+    if (assetsReady) return;
+    assetsReady = true;
+    window._pillAssetsDone = true;
+    var fill = el('boot-fill'), pctEl = el('boot-pct'),
+        lbl = el('boot-label'), sub = el('boot-sub');
+    var got = sum(gotBytes), expect = sum(expectBytes);
+    var complete = expect && got >= expect - 1024;
+    /* Only claim a full download when there was one. If the ceiling forced
+       this — a genuinely slow link — say what actually arrived rather than
+       rounding it up to 100%, which would make the readout a lie at exactly
+       the moment it matters. */
+    if (fill) fill.style.right = (complete ? 0 : Math.round(100 - (expect ? got / expect * 100 : 0))) + '%';
+    if (pctEl) pctEl.textContent = (complete ? 100 : Math.round(expect ? got / expect * 100 : 0)) + '%';
+    if (sub) sub.textContent = mb(got) + ' / ' + mb(expect || got) + ' MB';
+    if (lbl) lbl.textContent = complete ? 'Link established' : 'Proceeding on partial link';
     setTimeout(function () {
       layout();
       body.classList.remove('booting');
       body.classList.add('booted');
-
+      /* hand the screen to the gate; the scene goes dark again until Proceed */
+      if (!scene.classList.contains('running')) scene.classList.remove('loading');
+      if (window._onPillAssets) { var f = window._onPillAssets; window._onPillAssets = null; f(); }
+      if (startQueued) { startQueued = false; beginScene(); }
     }, 260);
   }
 
-  srcs.forEach(function (img) {
-    if (img.complete && img.naturalWidth) progress();
-    else {
-      img.addEventListener('load', progress, { once: true });
-      img.addEventListener('error', progress, { once: true });
+  /* The loader is the first thing on screen — the gate waits behind it, so
+     by the time anyone can click Proceed the whole scene is already in
+     memory and nothing can stall once he starts speaking. */
+  scene.classList.add('loading');
+  document.body.classList.add('pill-busy');
+  progress();
+  if (window.fetch && ASSETS.length) {
+    Promise.all(ASSETS.map(fetchAsset)).then(ready);
+  } else {
+    ASSETS.forEach(function (a) { a.el.src = a.url; });
+    ready();
+  }
+
+  /* Hard ceiling: a hung request must not strand anyone behind the loader. */
+  setTimeout(function () {
+    if (!assetsReady) {
+      ASSETS.forEach(function (a) { if (!a.el.src) a.el.src = a.url; });
+      ready();
     }
-  });
-  gateClips.forEach(function (v) {
-    if (v.readyState >= 3) progress();
-    else {
-      v.addEventListener('canplaythrough', progress, { once: true });
-      v.addEventListener('error', progress, { once: true });
-    }
-  });
-  /* never leave anyone stuck behind the loader */
-  setTimeout(ready, 9000);
+  }, 30000);
 
   layout();
   /* fonts land after first paint; the callouts move when they do */
@@ -10203,8 +10356,13 @@ window.addEventListener('popstate', (e) => {
   var MONOLOGUE = '/audio/choosevisitor.mp3';
   var HOVER_BUFFER_MS = 1500;   /* dead air after the last word before the
                                    hands will answer to the pointer again */
-  var PITCH_GAP_MS = 2000;      /* beat between the opening line and the
-                                   pitch — running them together was abrupt */
+  var PITCH_GAP_MS = 1500;      /* beat after the hands have opened, before
+                                   he starts the pitch */
+  var UNFURL_AT_MS = 600;       /* into the emerge, when the fists unfurl —
+                                   long enough to register as fists first */
+  var MONOLOGUE_RATE = 1.5;     /* how the clips run under the monologue:
+                                   filmed pace was too slow, the pointer-
+                                   driven compression far too fast */
   var CUES = [
     { t:  6.0, to: 'blue'    },
     { t: 15.0, to: 'red'     },
@@ -10367,15 +10525,26 @@ window.addEventListener('popstate', (e) => {
        cut across it. Nothing is hoverable until he has finished speaking. */
     scripted = true;
     scene.classList.add('scripted');
-    startAudio();
     refreshCursor();
+    /* Nothing starts until the media is actually in hand — a stall halfway
+       through the monologue would put the hands out of step with the words. */
+    if (assetsReady) beginScene();
+    else { startQueued = true; scene.classList.add('loading'); }
+  };
+
+  function beginScene() {
+    scene.classList.remove('loading');
+    startAudio();
     setTimeout(prelude, 420);
+    /* if the opening stalls entirely, start the pitch anyway rather than
+       sitting on closed fists in silence */
+    setTimeout(function () { if (!monologueDone) runMonologue(); }, 20000);
     /* absolute backstop: never leave the scene locked if the speech is
        missing or never fires its events */
     setTimeout(function () {
       if (scripted && !monologueDone) forceRelease();
     }, 60000);
-  };
+  }
 
   function forceRelease() {
     scripted = false;
@@ -10407,6 +10576,7 @@ window.addEventListener('popstate', (e) => {
      stutter keeps the hands in step with the words. */
   var cueAt = 0;
   var monologueDone = false;
+  var monologueCued = false;
 
   function runMonologue() {
     if (monologueDone || !audioOn) return;
@@ -10466,13 +10636,12 @@ window.addEventListener('popstate', (e) => {
       elVoice.removeEventListener('ended', reveal);
       body.classList.remove('prelude');
       refreshCursor();
-      /* He takes a beat after the opening line, then makes the pitch. The
-         hands begin rising during that pause. */
-      setTimeout(runMonologue, PITCH_GAP_MS);
-      /* Meanwhile the fists finish emerging out of the dark and hold for a
-         beat before they open — the reveal and the unfurl are two separate
-         moments, not one blurred into the other. #emerge runs 2.8s. */
-      setTimeout(function () { goTo('neutral'); armIdleVo(); }, 2900);
+      /* The fists register out of the dark, then unfurl into the offer —
+         and only once they are open does he start the pitch. The unfurl
+         belongs to the run-up, not underneath his first sentence, so the
+         monologue is cued by the hands arriving (see handsUp) rather than
+         by a timer racing them. */
+      setTimeout(function () { goTo('neutral'); armIdleVo(); }, UNFURL_AT_MS);
     };
     elVoice.addEventListener('ended', reveal);
     /* never strand the page if the clip fails to load or play */
