@@ -6176,22 +6176,19 @@ const NAV_LABELS = {};  // key → display label
       if (sc) { sc.classList.add('dismissed'); sc.classList.remove('running'); }
       document.body.classList.remove('pill-busy');
 
-      // He has one more thing to say, but only once the world is actually
-      // here: the bang expands for 6.2s and the HUD flourish settles after
-      // it, so wait for ui-ready and give that flourish room to finish.
+      // Two lines over the entrance, in order. orderfromchaos rides the bang
+      // itself — it is about a world assembling, so it starts as the world
+      // starts. The welcome follows when he finishes it, which at 19.5s is
+      // well past the bang settling: waiting on his voice already puts it
+      // later than watching for ui-ready did. They share one audio element,
+      // so overlapping them would simply cut him off.
       const welcome = () => {
-        let waited = 0;
-        const tick = () => {
-          if (document.body.classList.contains('ui-ready')) {
-            setTimeout(() => {
-              if (window._pillSay) window._pillSay('/audio/enterworld.mp3');
-            }, 1800);
-            return;
-          }
-          if ((waited += 200) > 30000) return;
-          setTimeout(tick, 200);
-        };
-        tick();
+        if (window._pillSay) window._pillSay('/audio/orderfromchaos.mp3');
+        if (window._pillWhenQuiet) {
+          window._pillWhenQuiet(() => {
+            if (window._pillSay) window._pillSay('/audio/enterworld.mp3');
+          });
+        }
       };
 
       // Don't start typing over him — his answer to the choice plays first.
@@ -10403,7 +10400,7 @@ window.addEventListener('popstate', (e) => {
   var VOICE_FILES = [
     '/audio/start.mp3', '/audio/choosevisitor.mp3',
     '/audio/redpillchoice.mp3', '/audio/bluepillchoice.mp3',
-    '/audio/enterworld.mp3',
+    '/audio/orderfromchaos.mp3', '/audio/enterworld.mp3',
     '/audio/redpill.mp3', '/audio/bluepill.mp3',
     '/audio/hmm.mp3', '/audio/decisions.mp3',
     '/audio/struggletomakedecisions.mp3', '/audio/donthaveallday.mp3',
