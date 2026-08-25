@@ -852,20 +852,52 @@ body.pill-busy #bg-canvas { pointer-events: none; }
 #pill-scene #hint-red  { --hue: 255, 96, 86; }
 #pill-scene #hint-blue { --hue: 120, 205, 255; }
 
+/* Built like a transmission panel — same plate, brackets, scanline and
+   header dot — then pulled back at every step: thinner border, lighter
+   ground, dimmer type. It should read as the same instrument at low volume,
+   not as a second thing competing with the panel that appears on hover. */
 #pill-scene .pill-hint {
   position: absolute; z-index: 7;
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 11px;
+  white-space: nowrap;
+  background: rgba(4, 6, 9, 0.6);
+  border: 1px solid rgba(var(--hue), 0.13);
+  backdrop-filter: blur(3px);
+  box-shadow: 0 0 26px rgba(0, 0, 0, 0.7),
+              inset 0 0 20px rgba(0, 0, 0, 0.45);
   font-family: var(--mono);
   font-size: 9px;
-  letter-spacing: 0.24em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  white-space: nowrap;
-  color: rgba(var(--hue), 0.62);
+  color: rgba(var(--hue), 0.6);
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
   opacity: 0;
   transform: translateY(3px);
   pointer-events: none;
   transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
+#pill-scene .pill-hint::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg,
+    transparent, transparent 3px,
+    rgba(0, 0, 0, 0.07) 3px, rgba(0, 0, 0, 0.07) 4px);
+  pointer-events: none;
+}
+/* the brackets are the panel's, shrunk and dimmed */
+#pill-scene .pill-hint .co-corner {
+  width: 7px; height: 7px;
+  border-color: rgba(var(--hue), 0.3);
+}
+#pill-scene .pill-hint__dot {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(var(--hue), 0.7);
+  box-shadow: 0 0 6px rgba(var(--hue), 0.5);
+  flex-shrink: 0;
+  animation: co-dot 2.8s ease-in-out infinite;
+}
+#pill-scene .pill-hint__text { position: relative; z-index: 1; }
 #pill-scene .pill-hint.show { opacity: 1; transform: translateY(0); }
 #pill-scene #hint-red-label  { --hue: 255, 96, 86; }
 #pill-scene #hint-blue-label { --hue: 120, 205, 255; }
@@ -4300,8 +4332,16 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
     <g class="hint-lead" id="hint-blue"><path id="hint-blue-p"></path><circle id="hint-blue-c" r="1.7"></circle></g>
   </svg>
 
-  <div class="pill-hint" id="hint-red-label" aria-hidden="true">For play</div>
-  <div class="pill-hint" id="hint-blue-label" aria-hidden="true">For work</div>
+  <div class="pill-hint" id="hint-red-label" aria-hidden="true">
+    <span class="co-corner co-corner--tl"></span><span class="co-corner co-corner--tr"></span>
+    <span class="co-corner co-corner--bl"></span><span class="co-corner co-corner--br"></span>
+    <span class="pill-hint__dot"></span><span class="pill-hint__text">For play</span>
+  </div>
+  <div class="pill-hint" id="hint-blue-label" aria-hidden="true">
+    <span class="co-corner co-corner--tl"></span><span class="co-corner co-corner--tr"></span>
+    <span class="co-corner co-corner--bl"></span><span class="co-corner co-corner--br"></span>
+    <span class="pill-hint__dot"></span><span class="pill-hint__text">For work</span>
+  </div>
 
   <div class="reticle" id="ret-red" aria-hidden="true">
     <div class="ret-box"><div class="ret-scan"></div></div>
@@ -9149,7 +9189,9 @@ window.addEventListener('popstate', (e) => {
       h.c.setAttribute('cy', p.y.toFixed(1));
 
       var lb = h.label;
-      lb.style.top = (kneeY + 9) + 'px';
+      /* flush to the line, so it terminates on the panel's top corner the
+         way the hover callout's leader does */
+      lb.style.top = kneeY + 'px';
       if (side === 'red') {
         lb.style.left = endX + 'px'; lb.style.right = 'auto';
       } else {
