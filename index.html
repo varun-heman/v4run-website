@@ -9351,6 +9351,7 @@ window.addEventListener('popstate', (e) => {
 
   function goTo(target) {
     if (locked || desired === target) return;
+    if (target === 'closed') { clearTimeout(wakeTimer); wakeTimer = null; }
     if (target === 'neutral' || target === 'closed') lastHoverSide = null;
     desired = target;
     armIdle();
@@ -10344,7 +10345,10 @@ window.addEventListener('popstate', (e) => {
       lastPointer = { x: e.clientX, y: e.clientY };
       moveCursor(e.clientX, e.clientY);
       wake();
-      if (interactive()) {
+      /* While the fists are closed, nothing here may move them — wake() owns
+         that transition and holds it for a beat. This ran first and called
+         goTo('neutral') outright, which is why the delay had no effect. */
+      if (interactive() && desired !== 'closed') {
         var over = hitSide(e.clientX, e.clientY);
         if (over) { goTo(over); onHoverVoice(over); }
         else goTo('neutral');      /* off the hands — the offer withdraws */
@@ -10387,9 +10391,25 @@ window.addEventListener('popstate', (e) => {
         && !body.classList.contains('prelude');
   }
 
+  /* He does not snap awake the instant the mouse twitches. Once the fists are
+     closed, movement has to persist for a beat before they open again —
+     otherwise a cursor crossing the window on its way somewhere else drags
+     the whole offer back up. Deliberately not reset by further movement: it
+     is a pause before answering, not a wait for stillness. */
+  var WAKE_DELAY_MS = 1000;
+  var wakeTimer = null;
+
   function wake() {
     if (!interactive()) return;
-    if (desired === 'closed') goTo('neutral');
+    if (desired === 'closed') {
+      if (!wakeTimer) {
+        wakeTimer = setTimeout(function () {
+          wakeTimer = null;
+          if (interactive() && desired === 'closed') goTo('neutral');
+        }, WAKE_DELAY_MS);
+      }
+      return;   /* the idle countdown restarts when he is actually up */
+    }
     armIdle();
   }
 
