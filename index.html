@@ -10014,19 +10014,31 @@ window.addEventListener('popstate', (e) => {
   };
 
   /* Runs cb once he has finished the line he is on — the site waits for this
-     before starting its intro, so the typing never talks over him. */
+     before starting its intro, and the blue pill waits for it before turning
+     the page, so neither ever talks over him.
+
+     voPending matters here: say() pauses the element to swap sources and only
+     plays once it can, so for those few frames a line that is about to start
+     looks exactly like silence. Checking `paused` alone fired this callback
+     at 1ms and cut the line off before a note of it played. */
   window._pillWhenQuiet = function (cb) {
-    var fired = false;
+    var fired = false, watch = null;
+    var idle = function () {
+      return !voPending && (!elVoice || elVoice.paused || elVoice.ended);
+    };
     var go = function () {
       if (fired) return;
       fired = true;
-      elVoice.removeEventListener('ended', go);
+      if (watch) clearInterval(watch);
+      if (elVoice) elVoice.removeEventListener('ended', go);
       cb();
     };
-    if (!elVoice || elVoice.paused || elVoice.ended) { go(); return; }
+    if (idle()) { go(); return; }
     elVoice.addEventListener('ended', go);
-    /* never strand the site behind a line that never ends */
-    setTimeout(go, 15000);
+    /* a line that fails to load never fires 'ended' — catch it going quiet */
+    watch = setInterval(function () { if (idle()) go(); }, 250);
+    /* and never strand the page behind one that neither plays nor fails */
+    setTimeout(go, 20000);
   };
 
   function choose(side) {
