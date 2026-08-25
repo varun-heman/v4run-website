@@ -826,6 +826,53 @@ body.pill-busy #bg-canvas { pointer-events: none; }
 }
 #pill-scene #hud-lines .lead.show { opacity: 1; }
 
+/* ─── RESTING HINTS ───────────────────────────────────
+   While both pills are just sitting there, each one gets a quiet label on a
+   long line. Deliberately fainter than the transmission panels — this is
+   labelling, not him talking. */
+#pill-scene #hud-lines .hint-lead path {
+  stroke: rgba(var(--hue), 0.5);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  /* its first leg crosses a brightly lit palm, where a faint dashed line
+     simply disappears — the shadow keeps it readable across both */
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.95));
+}
+#pill-scene #hud-lines .hint-lead circle {
+  fill: rgba(var(--hue), 0.95);
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.9));
+}
+#pill-scene #hud-lines .hint-lead path,
+#pill-scene #hud-lines .hint-lead circle {
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+#pill-scene #hud-lines .hint-lead.show path,
+#pill-scene #hud-lines .hint-lead.show circle { opacity: 1; }
+#pill-scene #hint-red  { --hue: 255, 96, 86; }
+#pill-scene #hint-blue { --hue: 120, 205, 255; }
+
+#pill-scene .pill-hint {
+  position: absolute; z-index: 7;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(var(--hue), 0.62);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transform: translateY(3px);
+  pointer-events: none;
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#pill-scene .pill-hint.show { opacity: 1; transform: translateY(0); }
+#pill-scene #hint-red-label  { --hue: 255, 96, 86; }
+#pill-scene #hint-blue-label { --hue: 120, 205, 255; }
+@media (max-width: 640px) {
+  #pill-scene .pill-hint { font-size: 8px; letter-spacing: 0.18em; }
+}
+
 /* ─── RETICLE ────────────────────────────────────────── */
 #pill-scene .reticle {
   position: absolute; z-index: 7;
@@ -4249,7 +4296,12 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
   <svg id="hud-lines" aria-hidden="true">
     <g class="lead" id="lead-red"><path id="lead-red-p"></path><circle id="lead-red-c" r="2.2"></circle></g>
     <g class="lead" id="lead-blue"><path id="lead-blue-p"></path><circle id="lead-blue-c" r="2.2"></circle></g>
+    <g class="hint-lead" id="hint-red"><path id="hint-red-p"></path><circle id="hint-red-c" r="1.7"></circle></g>
+    <g class="hint-lead" id="hint-blue"><path id="hint-blue-p"></path><circle id="hint-blue-c" r="1.7"></circle></g>
   </svg>
+
+  <div class="pill-hint" id="hint-red-label" aria-hidden="true">For play</div>
+  <div class="pill-hint" id="hint-blue-label" aria-hidden="true">For work</div>
 
   <div class="reticle" id="ret-red" aria-hidden="true">
     <div class="ret-box"><div class="ret-scan"></div></div>
@@ -8937,6 +8989,12 @@ window.addEventListener('popstate', (e) => {
     red:  { g: el('lead-red'),  p: el('lead-red-p'),  c: el('lead-red-c') },
     blue: { g: el('lead-blue'), p: el('lead-blue-p'), c: el('lead-blue-c') }
   };
+  var hint = {
+    red:  { g: el('hint-red'),  p: el('hint-red-p'),  c: el('hint-red-c'),
+            label: el('hint-red-label') },
+    blue: { g: el('hint-blue'), p: el('hint-blue-p'), c: el('hint-blue-c'),
+            label: el('hint-blue-label') }
+  };
   var framesEl = el('frames');
   var canvas = el('fx'), ctx = canvas.getContext('2d');
   var vignetteEl = el('vignette');
@@ -9065,6 +9123,51 @@ window.addEventListener('popstate', (e) => {
     });
 
     drawLeaders();
+    drawHints();
+  }
+
+  /* Each resting pill labelled on a long line, run out to the side and clear
+     of the hands so the line has room to read as a line. Anchored on the
+     pill's rest position, which is where they sit whenever these are up. */
+  function drawHints() {
+    var r = fitRect();
+    ['red', 'blue'].forEach(function (side) {
+      var h = hint[side];
+      if (!h.g) return;
+      var p = project(toScreen(PILL[side].rest));
+      var out = side === 'red' ? -1 : 1;
+      var kneeX = p.x + out * Math.max(120, r.w * 0.11);
+      var kneeY = p.y + Math.max(90, r.h * 0.17);
+      var endX = side === 'red'
+        ? Math.max(r.x + r.w * 0.035, 34)
+        : Math.min(r.x + r.w * 0.965, window.innerWidth - 34);
+      h.p.setAttribute('d',
+        'M ' + p.x.toFixed(1) + ' ' + p.y.toFixed(1) +
+        ' L ' + kneeX.toFixed(1) + ' ' + kneeY.toFixed(1) +
+        ' L ' + endX.toFixed(1) + ' ' + kneeY.toFixed(1));
+      h.c.setAttribute('cx', p.x.toFixed(1));
+      h.c.setAttribute('cy', p.y.toFixed(1));
+
+      var lb = h.label;
+      lb.style.top = (kneeY + 9) + 'px';
+      if (side === 'red') {
+        lb.style.left = endX + 'px'; lb.style.right = 'auto';
+      } else {
+        lb.style.left = 'auto'; lb.style.right = (window.innerWidth - endX) + 'px';
+      }
+    });
+  }
+
+  /* Only while both pills are simply on offer: not mid-move, not while one is
+     forward and wearing its own panel, and not while he is still talking. */
+  function refreshHints() {
+    var open = state === 'neutral' && !leg && !scripted && !locked
+            && !body.classList.contains('prelude');
+    ['red', 'blue'].forEach(function (side) {
+      if (!hint[side].g) return;
+      hint[side].g.classList.toggle('show', open);
+      hint[side].label.classList.toggle('show', open);
+    });
   }
 
   function drawLeaders() {
@@ -9169,6 +9272,7 @@ window.addEventListener('popstate', (e) => {
     }
 
     if (active) hideHud(active);
+    refreshHints();
     body.classList.toggle('armed', target === 'red' || target === 'blue');
     setStatus(STATUS[target] || STATUS.neutral);
     if (lastPointer) moveCursor(lastPointer.x, lastPointer.y);
@@ -9210,6 +9314,7 @@ window.addEventListener('popstate', (e) => {
     layout();
     if (st === 'red' || st === 'blue') showHud(st);
     armIdle();
+    refreshHints();
     handsUp(st);
   }
 
@@ -9277,6 +9382,7 @@ window.addEventListener('popstate', (e) => {
       burst(st, 34);
     }
     armIdle();
+    refreshHints();
     handsUp(st);
   }
 
@@ -10657,6 +10763,7 @@ window.addEventListener('popstate', (e) => {
         scripted = false;
         body.classList.remove('scripted');
         refreshCursor();
+        refreshHints();
         armIdle();
         armIdleVo();
       }, HOVER_BUFFER_MS);
