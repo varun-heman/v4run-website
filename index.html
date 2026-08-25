@@ -10146,7 +10146,7 @@ window.addEventListener('popstate', (e) => {
       lastPointer = { x: e.clientX, y: e.clientY };
       moveCursor(e.clientX, e.clientY);
       wake();
-      if (!scripted && !locked) {
+      if (interactive()) {
         var over = hitSide(e.clientX, e.clientY);
         if (over) { goTo(over); onHoverVoice(over); }
         else goTo('neutral');      /* off the hands — the offer withdraws */
@@ -10182,8 +10182,15 @@ window.addEventListener('popstate', (e) => {
     }, IDLE_MS);
   }
 
+  /* Is the scene actually taking input? Before Proceed it is mounted but
+     dormant behind the gate, and during the opening he holds the floor. */
+  function interactive() {
+    return audioOn && !scripted && !locked
+        && !body.classList.contains('prelude');
+  }
+
   function wake() {
-    if (locked) return;
+    if (!interactive()) return;
     if (desired === 'closed') goTo('neutral');
     armIdle();
   }
