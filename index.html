@@ -4282,10 +4282,10 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 <div id="stage">
   <div id="emerge">
   <div id="frames">
-    <img class="frame" id="s-neutral" data-src="/images/choice/neutral.jpg" alt="Two open hands, one offering a red pill and the other a blue pill.">
+    <img class="frame on" id="s-neutral" data-src="/images/choice/neutral.jpg" alt="Two open hands, one offering a red pill and the other a blue pill.">
     <img class="frame" id="s-red"    data-src="/images/choice/red.jpg"    alt="" aria-hidden="true">
     <img class="frame" id="s-blue"   data-src="/images/choice/blue.jpg"   alt="" aria-hidden="true">
-    <img class="frame on" id="s-closed" data-src="/images/choice/closed.jpg" alt="" aria-hidden="true">
+    <img class="frame" id="s-closed" data-src="/images/choice/closed.jpg" alt="" aria-hidden="true">
 
     <video class="clip" id="v-red-forward"   data-src="/video/web/red-forward.mp4"   muted playsinline preload="auto" aria-hidden="true"></video>
     <video class="clip" id="v-red-back"      data-src="/video/web/red-back.mp4"      muted playsinline preload="auto" aria-hidden="true"></video>
@@ -8956,8 +8956,8 @@ window.addEventListener('popstate', (e) => {
      transform, or the HUD drifts off the pill as the push happens. */
   var zoom = { s: 1, ox: 0, oy: 0 };
 
-  var state = 'closed';   /* settled state: neutral | red | blue | closed */
-  var desired = 'closed'; /* where the pointer says we should be */
+  var state = 'neutral';  /* settled state: neutral | red | blue | closed */
+  var desired = 'neutral';/* where the pointer says we should be */
   var leg = null;         /* clip currently playing, or null when at rest */
   var locked = false;     /* a pill has been chosen; ignore everything */
   var contain = false;
@@ -9294,8 +9294,14 @@ window.addEventListener('popstate', (e) => {
      refused. Missing the snap path meant the monologue never ran at all when
      video could not play. */
   function handsUp(st) {
-    if (st === 'neutral' && !monologueDone && !monologueCued
-        && !body.classList.contains('prelude')) {
+    if (body.classList.contains('prelude')) return;
+    /* arrived as fists — hold a beat, then open */
+    if (openingPhase && st === 'closed') {
+      setTimeout(function () { goTo('neutral'); }, FIST_HOLD_MS);
+      return;
+    }
+    if (st === 'neutral' && !monologueDone && !monologueCued) {
+      openingPhase = false;
       monologueCued = true;
       setTimeout(runMonologue, PITCH_GAP_MS);
     }
@@ -10233,6 +10239,24 @@ window.addEventListener('popstate', (e) => {
       if (u) ASSETS.push({ el: n, url: u });
     });
 
+  /* Every spoken line is fetched up front too. The voice element shares one
+     tag and swaps src, so these have no element of their own — they land in
+     blobFor and say() plays them from memory. Without this the monologue was
+     still being downloaded at the moment it was due to start. */
+  var blobFor = {};
+  var VOICE_FILES = [
+    '/audio/start.mp3', '/audio/choosevisitor.mp3',
+    '/audio/redpill.mp3', '/audio/bluepill.mp3',
+    '/audio/hmm.mp3', '/audio/decisions.mp3',
+    '/audio/struggletomakedecisions.mp3', '/audio/donthaveallday.mp3',
+    '/audio/sitaroundendlessly.mp3'
+  ];
+  VOICE_FILES.forEach(function (u) { ASSETS.push({ url: u }); });
+  /* looked up directly: the audio director further down owns elBreath, and
+     its var has not been assigned yet at this point in the script */
+  var breathEl = el('a-breath');
+  if (breathEl) ASSETS.push({ el: breathEl, url: breathEl.getAttribute('src') });
+
   var gotBytes = {}, expectBytes = {};
   var assetsReady = false;
   var startQueued = false;
@@ -10283,13 +10307,14 @@ window.addEventListener('popstate', (e) => {
         });
       })();
     }).then(function (blob) {
-      a.el.src = URL.createObjectURL(blob);
+      blobFor[a.url] = URL.createObjectURL(blob);
+      if (a.el) a.el.src = blobFor[a.url];
       if (expectBytes[a.url]) gotBytes[a.url] = expectBytes[a.url];
       progress();
     }).catch(function () {
-      /* no streams, or the fetch failed — fall back to letting the element
-         load it the ordinary way rather than showing nothing at all */
-      a.el.src = a.url;
+      /* no streams, or the fetch failed — fall back to loading it the
+         ordinary way rather than showing nothing at all */
+      if (a.el) a.el.src = a.url;
       expectBytes[a.url] = expectBytes[a.url] || 1;
       gotBytes[a.url] = expectBytes[a.url];
       progress();
@@ -10332,14 +10357,14 @@ window.addEventListener('popstate', (e) => {
   if (window.fetch && ASSETS.length) {
     Promise.all(ASSETS.map(fetchAsset)).then(ready);
   } else {
-    ASSETS.forEach(function (a) { a.el.src = a.url; });
+    ASSETS.forEach(function (a) { if (a.el) a.el.src = a.url; });
     ready();
   }
 
   /* Hard ceiling: a hung request must not strand anyone behind the loader. */
   setTimeout(function () {
     if (!assetsReady) {
-      ASSETS.forEach(function (a) { if (!a.el.src) a.el.src = a.url; });
+      ASSETS.forEach(function (a) { if (a.el && !a.el.src) a.el.src = a.url; });
       ready();
     }
   }, 30000);
@@ -10372,10 +10397,10 @@ window.addEventListener('popstate', (e) => {
                                    hands will answer to the pointer again */
   var PITCH_GAP_MS = 600;       /* beat after the hands have opened, before
                                    he starts the pitch */
-  var UNFURL_AT_MS = 1500;      /* into the emerge, when the fists unfurl —
-                                   after they have fully materialised, so a
-                                   closed pair is actually seen, but without
-                                   leaving dead air before he speaks */
+  /* The run-up is two clips, not a still and a clip: the hands close as they
+     fade up out of the black, hold as fists for a beat, then open into the
+     offer. Nothing in it is a frozen frame. */
+  var FIST_HOLD_MS = 300;       /* beat as fists before they unfurl */
   var MONOLOGUE_RATE = 1.5;     /* how the clips run under the monologue:
                                    filmed pace was too slow, the pointer-
                                    driven compression far too fast */
@@ -10464,7 +10489,9 @@ window.addEventListener('popstate', (e) => {
 
     try {
       elVoice.pause();
-      elVoice.src = src;
+      /* prefer the preloaded copy — swapping in a network URL here is what
+         made the monologue hesitate before it began */
+      elVoice.src = blobFor[src] || src;
       elVoice.load();
       if (elVoice.readyState >= 2) go();
       else {
@@ -10593,6 +10620,7 @@ window.addEventListener('popstate', (e) => {
   var cueAt = 0;
   var monologueDone = false;
   var monologueCued = false;
+  var openingPhase = false;   /* the two-clip arrival, before he speaks */
 
   function runMonologue() {
     if (monologueDone || !audioOn) return;
@@ -10652,12 +10680,13 @@ window.addEventListener('popstate', (e) => {
       elVoice.removeEventListener('ended', reveal);
       body.classList.remove('prelude');
       refreshCursor();
-      /* The fists register out of the dark, then unfurl into the offer —
-         and only once they are open does he start the pitch. The unfurl
-         belongs to the run-up, not underneath his first sentence, so the
-         monologue is cued by the hands arriving (see handsUp) rather than
-         by a timer racing them. */
-      setTimeout(function () { goTo('neutral'); armIdleVo(); }, UNFURL_AT_MS);
+      openingPhase = true;
+      /* The hands close as the frame fades up — the fade and the motion are
+         the same beat — then unfurl once they have arrived. Both halves are
+         cued by the hands actually landing (see handsUp) rather than by
+         timers racing the clips. */
+      goTo('closed');
+      armIdleVo();
     };
     elVoice.addEventListener('ended', reveal);
     /* never strand the page if the clip fails to load or play */
