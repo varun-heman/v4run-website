@@ -1226,7 +1226,10 @@ body.pill-busy #bg-canvas { pointer-events: none; }
 #pill-scene #pill-cursor.on-red  { --hue: 255, 96, 86; }
 #pill-scene #pill-cursor.on-blue { --hue: 120, 205, 255; }
 
-#pill-scene.choosable #pill-cursor { opacity: 1; }
+/* `.tracked` is set on the first mouse move. Without it the glow renders at
+   its untranslated origin — a green half-disc pinned in the top-left corner
+   until the pointer is first located. */
+#pill-scene.choosable #pill-cursor.tracked { opacity: 1; }
 #pill-scene.choosable #pill-cursor i { animation: pc-breathe 2.4s ease-in-out infinite; }
 @keyframes pc-breathe {
   0%, 100% { transform: scale(0.86); opacity: 0.75; }
@@ -4342,7 +4345,9 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 </div>
 
 <div class="corner corner-tl">
-  <div class="c-title">v4run</div>
+  <div class="logo">
+    <span class="logo-ghost" data-text="v4run">v4run</span>
+  </div>
   <div class="c-sub">// choice.protocol</div>
 </div>
 
@@ -5028,13 +5033,13 @@ window.addEventListener('pageshow', (e) => {
   })();
 
   // ── JS glitch on logo
-  const logoEl   = document.querySelector('.logo-ghost');
+  const logoEls  = Array.from(document.querySelectorAll('.logo-ghost'));
+  const logoEl   = logoEls[0];   // the one read from for current text/width
   const origText = 'v4run';
   const gChars   = '!<>-_\\/[]{};=+*^?#@0123456789ABCDEFGHIJKL';
 
   function setLogo(text) {
-    logoEl.textContent = text;
-    logoEl.dataset.text = text;
+    logoEls.forEach(e => { e.textContent = text; e.dataset.text = text; });
   }
 
   function scramble(src) {
@@ -5045,10 +5050,12 @@ window.addEventListener('pageshow', (e) => {
 
   // Force an immediate vivid RGB burst
   function rgbBurst() {
-    logoEl.classList.remove('rgb-burst');
-    void logoEl.offsetWidth; // reflow to restart animation
-    logoEl.classList.add('rgb-burst');
-    setTimeout(() => logoEl.classList.remove('rgb-burst'), 300);
+    logoEls.forEach(e => {
+      e.classList.remove('rgb-burst');
+      void e.offsetWidth; // reflow to restart animation
+      e.classList.add('rgb-burst');
+      setTimeout(() => e.classList.remove('rgb-burst'), 300);
+    });
   }
 
   // Glitch transition: scramble → target text, with RGB burst
@@ -10104,6 +10111,7 @@ window.addEventListener('popstate', (e) => {
   function moveCursor(x, y) {
     if (!cursorEl) return;
     cursorEl.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
+    cursorEl.classList.add('tracked');
     var side = (desired === 'red' || desired === 'blue') ? desired : null;
     cursorEl.classList.toggle('on-red', side === 'red');
     cursorEl.classList.toggle('on-blue', side === 'blue');
@@ -10358,8 +10366,12 @@ window.addEventListener('popstate', (e) => {
                                    hands will answer to the pointer again */
   var PITCH_GAP_MS = 1500;      /* beat after the hands have opened, before
                                    he starts the pitch */
-  var UNFURL_AT_MS = 600;       /* into the emerge, when the fists unfurl —
-                                   long enough to register as fists first */
+  var UNFURL_AT_MS = 2800;      /* into the emerge, when the fists unfurl.
+                                   #emerge fades over 2.0s and settles its
+                                   push at 2.8s — starting the unfurl before
+                                   that meant the hands were still at a third
+                                   of their opacity while already opening, so
+                                   nobody ever saw a closed pair of fists. */
   var MONOLOGUE_RATE = 1.5;     /* how the clips run under the monologue:
                                    filmed pace was too slow, the pointer-
                                    driven compression far too fast */
