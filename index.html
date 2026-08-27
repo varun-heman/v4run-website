@@ -723,16 +723,22 @@ body.moments-closing .corner {
    own, well behind the dissolve — the first thing to surface out of the
    dark, rather than something switched on in it.
 
-   Both layers are black, so they cannot simply cross at equal rates: two
-   half-opaque blacks over the site total less than either at full, and the
-   site would ghost back through the middle of the handover. The scene comes
-   up faster than the gate goes down — 420ms against 620ms, front-loaded —
-   so the screen never gets lighter than the gate had it.
+   Nothing is cross-faded to do it. The scene is an opaque #080808 panel and
+   the gate's own backdrop is 92% black, so simply putting the scene up
+   underneath is invisible either way — and fading it instead cost a 311ms
+   paint stall in the middle of the dissolve, because animating opacity over
+   a subtree of full-screen video and imagery forces the whole thing onto its
+   own layer and re-rasters it. The gate fades; the scene just arrives behind
+   it. What the visitor sees is the same and the compositor does nothing.
+
+   It is raised on the click rather than on the dismissal for the same
+   reason: laying out and rasterising the scene costs what it costs, so it is
+   spent during the second the panel holds still, where a stall cannot be
+   seen, instead of against a running animation.
 
    The .corner-tl rules carry the extra class only to outrank
    `#pill-scene.booted .corner`, which is declared later in this sheet. */
-#pill-scene.arriving { display: block; opacity: 0; }
-#pill-scene.arriving.settling { opacity: 1; transition: opacity 0.42s ease-out; }
+#pill-scene.arriving { display: block; }
 #pill-scene.arriving .corner.corner-tl { opacity: 0; }
 #pill-scene.arriving.settling .corner.corner-tl {
   opacity: 1;
@@ -6370,28 +6376,35 @@ const NAV_LABELS = {};  // key → display label
         }, 140);
       };
       // Spaced wider than the 140ms animation so no jolt cuts the one before
-      // it short, and widening as they go so the panel settles rather than stops.
-      [0, 160, 330, 500].forEach(t => setTimeout(jolt, t));
+      // it short, and widening as they go so the panel settles rather than
+      // stops. Three, not four: the clip's body is spent by ~350ms, so a
+      // fourth at 500 was convulsing to nothing — and ending at 470 leaves a
+      // wider still window for the scene to be raised in (see below).
+      [0, 160, 330].forEach(t => setTimeout(jolt, t));
+
+      // Put the scene up behind the gate before the panel goes, so the site is
+      // never uncovered — and, just as much, so the cost of laying out and
+      // rasterising a full-screen scene of video and imagery is spent
+      // somewhere it cannot be seen. It measures ~250ms of dropped frames on
+      // this machine wherever it lands, so it is aimed at the one window in
+      // this second that has nothing moving in it: after the last jolt ends
+      // at 470ms and before the panel starts to implode at 1000ms. The stall
+      // begins ~75ms after this class lands and runs anywhere from 225ms to
+      // 335ms depending on the machine, so it is started early enough that
+      // even the long end of that finishes before the dissolve does. First
+      // visit only — a return visitor is going back to the lit site, which
+      // is already there.
+      const psc = window._isFirstVisit ? document.getElementById('pill-scene') : null;
+      const SCENE_RAISE_MS = 500;
+      if (psc) setTimeout(() => psc.classList.add('arriving'), SCENE_RAISE_MS);
 
       setTimeout(() => {
         // Dismiss gate — panel shrinks toward centre while glitching, corners
         // implode back to the centre point they started from (see CSS)
         gate.classList.add('dismissing');
         gate.classList.remove('visible');
-
-        // Raise the scene under the panel as it goes, so the two are one
-        // dissolve rather than a fade followed by a slam. First visit only:
-        // a return visitor is going back to the lit site, which is already
-        // behind the gate and needs nothing brought up under it.
-        const psc = window._isFirstVisit ? document.getElementById('pill-scene') : null;
-        if (psc) {
-          psc.classList.add('arriving');
-          // Two frames: one for the browser to take `display: block` and the
-          // start opacity, the next to have something to transition from.
-          requestAnimationFrame(() => requestAnimationFrame(() => {
-            psc.classList.add('settling');
-          }));
-        }
+        // Only the logo's slow surfacing hangs off this now.
+        if (psc) psc.classList.add('settling');
 
         setTimeout(() => {
           gate.style.display = 'none';
@@ -10865,11 +10878,27 @@ window.addEventListener('popstate', (e) => {
     }, 20);
   }
 
+  /* The stills are in the DOM for the whole load but never actually painted —
+     #emerge sits at zero opacity behind a brightness filter until he stops
+     talking — so nothing obliges the browser to decode them until the scene
+     is first shown. That put the entire decode of four full-screen images in
+     one frame at exactly the wrong moment: the handover out of the gate.
+     Decoding them here spends it against the loader, which is already a wait
+     and has nothing to stutter. Failures are ignored on purpose; this is a
+     warm-up, and the scene renders the same either way. */
+  function warmFrames() {
+    var imgs = scene.querySelectorAll('.frame');
+    for (var i = 0; i < imgs.length; i++) {
+      if (imgs[i].decode) { try { imgs[i].decode().catch(function () {}); } catch (e) {} }
+    }
+  }
+
   function ready() {
     if (assetsReady) return;
     assetsReady = true;
     window._pillAssetsDone = true;
     stopLoadingBed(260);
+    warmFrames();
     var fill = el('boot-fill'), pctEl = el('boot-pct'),
         lbl = el('boot-label'), sub = el('boot-sub');
     var got = sum(gotBytes), expect = sum(expectBytes);
