@@ -3,201 +3,1485 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>v4run | The Blue Pill</title>
-<meta name="description" content="You took the blue pill.">
-<meta name="theme-color" content="#080808">
+<title>Varun Hemachandran — Senior Curator</title>
+<meta name="description" content="You took the blue pill. Varun Hemachandran — Senior Curator at PUCAR, working on India's dispute resolution experience.">
+<meta name="theme-color" content="#000000">
 <meta name="robots" content="noindex">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.6.0/css/all.min.css">
 <link rel="stylesheet" href="/scripts/pill-button.css">
 <style>
+/* ─────────────────────────────────────────────────────────────
+   The blue pill. The story ends, you wake up in your bed, and
+   the page is just a page: one centred column, ruled like graph
+   paper, no sphere behind it.
+   ───────────────────────────────────────────────────────────── */
+
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --bg: #080808;
-  --fg: #e8e8e2;
-  --fg-dim: rgba(232, 232, 226, 0.38);
-  --accent: #b8f0d2;
-  --green: 100, 255, 160;
-  --blue: 58, 178, 255;
+  --bg: #000000;
+  --fg: #ffffff;
+  --rule: 255, 255, 255;         /* grey at rest, green as the page gives */
+  --hair: rgba(var(--rule), 0.22);
+  --dim: rgba(255, 255, 255, 0.6);
+  --dimmer: rgba(255, 255, 255, 0.4);
   --mono: 'Space Mono', 'Courier New', monospace;
   --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --gut: 16px;          /* every cell's inner gutter */
+  --col: 640px;
 }
 
-html, body {
-  width: 100%; min-height: 100%;
-  background: var(--bg);
+html { background: var(--bg); }
+body {
+  background: transparent;
   color: var(--fg);
   font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -0.03em;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
-body { overflow-x: hidden; }
+a { color: inherit; }
 
-/* the same scanline the rest of the site wears */
-body::after {
-  content: '';
-  position: fixed; inset: 0;
-  background: repeating-linear-gradient(0deg,
-    transparent, transparent 2px,
-    rgba(0,0,0,0.035) 2px, rgba(0,0,0,0.035) 4px);
-  pointer-events: none; z-index: 60;
+/* ── the room ──────────────────────────────────────────────────
+   Fixed behind everything and never scrolls: faint graph paper,
+   a slow breath of light across it, and a layer of static that
+   keeps the black from ever being properly still. */
+.bg {
+  position: fixed; inset: 0; z-index: -1;
+  pointer-events: none; overflow: hidden;
+}
+.bg-glow {
+  position: absolute; inset: -25%;
+  background:
+    radial-gradient(45% 40% at 30% 28%, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0) 70%),
+    radial-gradient(40% 45% at 72% 74%, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0) 70%);
+  animation: bg-breathe 34s ease-in-out infinite alternate;
+}
+@keyframes bg-breathe {
+  from { transform: translate3d(-1.5%, -1%, 0) scale(1);    opacity: 0.75; }
+  to   { transform: translate3d(1.5%, 1.5%, 0) scale(1.12); opacity: 1; }
 }
 
-/* a very quiet blue wash, so the room you chose has a colour */
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  background: radial-gradient(ellipse 70% 55% at 50% 45%,
-    rgba(var(--blue), 0.07) 0%, rgba(var(--blue), 0.02) 45%, transparent 75%);
-  pointer-events: none; z-index: 0;
+/* Grain, jumped between ten offsets rather than interpolated — smooth movement
+   reads as a drifting texture, snapping reads as noise. Two plates at different
+   scales and speeds, because a single one reads as a static screen door. */
+.bg-grain, .bg-grain-2 {
+  position: absolute; top: -100%; left: -100%; width: 300%; height: 300%;
+}
+.bg-grain {
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: bg-static 1.3s steps(1, end) infinite;
+}
+.bg-grain-2 {
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.32' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23m)'/%3E%3C/svg%3E");
+  animation: bg-static 3.1s steps(1, end) infinite reverse;
+}
+@keyframes bg-static {
+  0%   { transform: translate3d(0, 0, 0); }
+  10%  { transform: translate3d(-2%, -3%, 0); }
+  20%  { transform: translate3d(-4%, 2%, 0); }
+  30%  { transform: translate3d(2%, -4%, 0); }
+  40%  { transform: translate3d(-1%, 3%, 0); }
+  50%  { transform: translate3d(-3%, 1%, 0); }
+  60%  { transform: translate3d(3%, 2%, 0); }
+  70%  { transform: translate3d(1%, -2%, 0); }
+  80%  { transform: translate3d(-2%, -1%, 0); }
+  90%  { transform: translate3d(2%, 3%, 0); }
 }
 
-.corner {
-  position: fixed; z-index: 20;
-  font-family: var(--mono);
-  font-size: 10px; letter-spacing: 0.08em; line-height: 1.7;
-  opacity: 0;
-  animation: bp-fade 1.4s ease 0.5s forwards;
+@media (prefers-reduced-motion: reduce) {
+  .bg-glow, .bg-grain, .bg-grain-2 { animation: none; }
 }
-.corner-tl { top: 28px; left: 32px; }
-.corner-tr { top: 28px; right: 32px; }
-.corner-bl { bottom: 28px; left: 32px; }
-@keyframes bp-fade { to { opacity: 1; } }
 
-.logo {
-  font-family: var(--mono); font-size: 17px; font-weight: 700;
-  color: var(--fg); letter-spacing: -0.01em;
+/* ── the world behind ──────────────────────────────────────────
+   The blue pill is a facade. When it fails to hold, the grid turns
+   the colour it always was underneath and the tear canvas comes up
+   over everything. */
+.tear-canvas {
+  position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+  z-index: 90; pointer-events: none; opacity: 0;
 }
-.c-sub {
-  font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
-  color: rgba(var(--blue), 0.55);
-  margin-top: 5px;
+html.tear .tear-canvas { opacity: 1; }
+html.tear .bg-glow { opacity: 0; }
+html.tear .avatar { filter: grayscale(1) contrast(1.4) brightness(0.7) sepia(1) hue-rotate(75deg) saturate(3); }
+html.tear .col { will-change: transform; }
+
+/* ── the grid ──────────────────────────────────────────────────
+   One centred column with a rule down each edge, running the
+   whole height of the page. Every block inside it is a cell,
+   closed off by a rule underneath. The empty space between
+   sections is grid too — bounded by the side rules, nothing in it. */
+.col {
+  position: relative;
+  width: 100%;
+  max-width: var(--col);
+  min-height: 100vh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--hair);
+  border-right: 1px solid var(--hair);
 }
-.back-link, .back-link:link, .back-link:visited {
-  display: inline-flex; align-items: center; gap: 7px;
+.cell { padding-left: var(--gut); padding-right: var(--gut); }
+.rule { border-bottom: 1px solid var(--hair); }
+.gap { height: 48px; flex-shrink: 0; }   /* ruled emptiness */
+
+/* ── glass ─────────────────────────────────────────────────────
+   From the reference: a lit top edge, a shaded bottom one, and a
+   diagonal sheen laid over the top. Reads on black too. */
+.glass-band {
+  background: linear-gradient(rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 100%);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+  box-shadow: inset 0 1px rgba(255,255,255,0.25), inset 0 -1px rgba(0,0,0,0.15);
+}
+.glass-band::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 3;
+  background: linear-gradient(rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,0.08) 100%);
+}
+.pill {
+  display: inline-block; flex-shrink: 0; white-space: nowrap;
+  padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--hair);
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim);
+}
+
+/* ── header ───────────────────────────────────────────────── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding-top: 24px; padding-bottom: 24px;
+}
+.who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.avatar {
+  width: 48px; height: 48px; border-radius: 4px; flex-shrink: 0;
+  object-fit: cover; filter: grayscale(1) contrast(1.05);
+  border: 1px solid var(--hair);
+}
+.name { font-size: 14px; font-weight: 600; }
+.role { font-size: 12px; color: var(--dim); margin-top: 2px; }
+.where { text-align: right; flex-shrink: 0; }
+.where .place {
   font-family: var(--mono); font-size: 10px;
   letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--fg-dim); text-decoration: none;
-  transition: color 0.2s;
 }
-.back-link:hover { color: var(--accent); }
+.where .clock {
+  font-family: var(--mono); font-size: 11px; color: var(--dim);
+  margin-top: 3px; letter-spacing: 0.1em; font-variant-numeric: tabular-nums;
+}
 
-main {
-  position: relative; z-index: 1;
-  min-height: 100vh;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 120px 24px;
-  text-align: center;
+/* ── seismograph ───────────────────────────────────────────────
+   A roll of paper drifting left under a fixed pen. The pen only ever
+   draws behind itself; the strip to its right is blank paper that
+   hasn't happened yet. The height here is load-bearing — the canvas
+   sizes itself from this box, so leaving it out lets the two grow
+   into each other. */
+.seismo {
+  position: relative; width: 100%; height: 54px;
+  border-bottom: 1px solid var(--hair);
 }
-.bp-panel {
-  position: relative;
-  width: min(560px, 100%);
-  padding: 44px 44px 40px;
-  background: rgba(4, 6, 9, 0.9);
-  border: 1px solid rgba(var(--blue), 0.18);
-  box-shadow: 0 0 80px rgba(0,0,0,0.9),
-              0 0 0 1px rgba(var(--blue), 0.05),
-              inset 0 0 40px rgba(0,0,0,0.5);
-  opacity: 0;
-  animation: bp-panel-in 0.9s cubic-bezier(0.16,1,0.3,1) 0.25s forwards;
+/* The inner box is what actually travels. The row it leaves behind keeps its
+   height, so nothing below it jumps when the instrument docks. */
+.seismo-inner {
+  position: absolute; inset: 0; overflow: hidden;
+  transition: opacity 0.11s linear, transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
 }
-@keyframes bp-panel-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: none; }
+.seismo-inner canvas { display: block; width: 100%; height: 100%; }
+.seismo-inner.docked {
+  position: fixed; z-index: 95;
+  top: 14px; right: 14px; left: auto; bottom: auto;
+  width: 184px; height: 34px;
+  border: 1px solid var(--hair); border-radius: 3px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.75);
 }
-.bp-panel::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: repeating-linear-gradient(0deg,
-    transparent, transparent 3px,
-    rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px);
-  pointer-events: none;
-}
-.bp-corner {
-  position: absolute; width: 11px; height: 11px;
-  border-color: rgba(var(--blue), 0.5); border-style: solid;
-}
-.bp-corner--tl { top: -1px; left: -1px;  border-width: 1px 0 0 1px; }
-.bp-corner--tr { top: -1px; right: -1px; border-width: 1px 1px 0 0; }
-.bp-corner--bl { bottom: -1px; left: -1px;  border-width: 0 0 1px 1px; }
-.bp-corner--br { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+.seismo-inner.arriving { opacity: 0; transform: translateY(-9px); }
 
-.bp-head {
-  position: relative; z-index: 1;
+/* A still of the docked instrument, left behind to lift away on its own while
+   the real one goes back to its row. One element cannot be in two places. */
+.seismo-ghost {
+  position: fixed; z-index: 94; top: 14px; right: 14px;
+  width: 184px; height: 34px; overflow: hidden; pointer-events: none;
+  border: 1px solid var(--hair); border-radius: 3px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.75);
+  background: linear-gradient(rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 100%);
+  transition: opacity 0.2s linear, transform 0.2s cubic-bezier(0.4, 0, 1, 1);
+}
+.seismo-ghost.gone { opacity: 0; transform: translateY(-18px); }
+.seismo-inner.docked .seismo-label,
+.seismo-ghost .seismo-label {
+  padding: 0 20px 0 10px; font-size: 9px; letter-spacing: 0.1em;
+}
+.seismo-label {
+  position: absolute; z-index: 4; left: 0; top: 0; bottom: 0;
+  display: flex; align-items: center; padding: 0 26px 0 var(--gut);
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.16em; color: var(--dim);
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(90deg, var(--bg) 0%, var(--bg) calc(100% - 26px), rgba(0,0,0,0) 100%);
+}
+
+/* ── cells ────────────────────────────────────────────────── */
+main { flex: 1; display: flex; flex-direction: column; }
+.bio { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.9); padding-top: 24px; padding-bottom: 24px; }
+.bio p + p { margin-top: 16px; }
+
+.sec-head {
+  display: flex; align-items: baseline; justify-content: space-between;
   font-family: var(--mono); font-size: 9px;
-  letter-spacing: 0.22em; text-transform: uppercase;
-  color: rgba(var(--blue), 0.55);
-  margin-bottom: 22px;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim);
+  padding-top: 13px; padding-bottom: 13px;
+  border-top: 1px solid var(--hair);
 }
-.bp-title {
-  position: relative; z-index: 1;
-  font-family: var(--mono);
-  font-size: clamp(24px, 3.6vw, 38px);
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: rgba(150, 215, 255, 0.95);
-  text-shadow: 0 0 34px rgba(var(--blue), 0.4);
-  margin-bottom: 18px;
-}
-.bp-body {
-  position: relative; z-index: 1;
-  font-family: var(--mono); font-size: 12.5px; line-height: 1.8;
-  color: rgba(232, 232, 226, 0.5);
-}
-.bp-body p + p { margin-top: 14px; }
+.sec-head a { color: var(--dim); text-decoration: none; transition: color 0.2s; }
+.sec-head a:hover { color: var(--fg); }
 
-@media (max-width: 640px) {
-  .corner-tl { top: 18px; left: 18px; }
-  .corner-tr { top: 18px; right: 18px; }
-  .corner-bl { bottom: 18px; left: 18px; }
-  .bp-panel { padding: 34px 26px 30px; }
+.row {
+  position: relative; display: flex; align-items: center; gap: 10px;
+  justify-content: space-between;
+  padding: 12px var(--gut);
+  border-top: 1px solid var(--hair);
+  text-decoration: none;
+  transition: background-color 0.25s ease;
+}
+.row:hover { background-color: rgba(255,255,255,0.06); }
+.row-l { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.row-t { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-r {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+  color: var(--dim); flex-shrink: 0; transition: color 0.2s;
+  white-space: nowrap;
+}
+.row-r i, .sec-head a i { font-size: 8px; margin-left: 4px; vertical-align: 1px; }
+.row:hover .row-r { color: var(--fg); }
+.row-sub { font-size: 12px; color: var(--dimmer); margin-top: 3px; }
+
+/* work rows carry a second line, so they stack instead */
+.row--stack { display: block; }
+.row--stack .row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+
+/* ── reading strip ────────────────────────────────────────── */
+.strip {
+  display: flex; overflow-x: auto;
+  scroll-snap-type: x mandatory; scroll-padding-left: 0;
+  border-top: 1px solid var(--hair);
+  scrollbar-width: none;
+}
+.strip::-webkit-scrollbar { display: none; }
+/* each card is a grid cell, divided from its neighbour by a rule */
+.card {
+  scroll-snap-align: start; flex: 0 0 160px;
+  padding: 16px; text-decoration: none;
+  border-right: 1px solid var(--hair);
+  transition: background-color 0.25s ease;
+}
+.card:hover { background-color: rgba(255,255,255,0.06); }
+.card-face {
+  position: relative; overflow: hidden;
+  aspect-ratio: 2 / 3; border-radius: 4px; margin-bottom: 8px;
+  border: 1px solid var(--hair);
+  padding: 12px;
+  display: flex; align-items: flex-end;
+  background: linear-gradient(rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%);
+}
+.card-face::after {
+  content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: linear-gradient(160deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.25) 100%);
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.22), inset 0 -1px 2px rgba(0,0,0,0.2);
+}
+.card-face span { position: relative; z-index: 3; font-size: 13px; line-height: 1.4; font-weight: 500; }
+.card-meta {
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim);
+}
+
+/* ── footer ───────────────────────────────────────────────── */
+footer {
+  display: grid; grid-template-columns: auto 1fr auto;
+  border-top: 1px solid var(--hair);
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim);
+}
+footer > * { padding: 16px var(--gut); }
+footer > * + * { border-left: 1px solid var(--hair); }
+footer a { text-decoration: none; transition: color 0.2s; }
+footer a:hover { color: var(--fg); }
+
+/* ── the pill's row ───────────────────────────────────────────
+   Hovering the pill floods the whole row with it. The canvas and the
+   label are absolutely placed so the grid keeps its two real columns. */
+.pill-liquid {
+  position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+  z-index: 4; pointer-events: none;
+}
+.pill-liquid-label {
+  position: absolute; inset: 0; z-index: 5;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: #ffdedb; text-shadow: 0 1px 10px rgba(0,0,0,0.9), 0 0 18px rgba(255,60,60,0.55);
+  opacity: 0; pointer-events: none;
+}
+.topbar-tag { position: relative; z-index: 0; }
+.topbar-act { position: relative; z-index: 2; }
+/* the pill goes under the flood and dissolves into it */
+.topbar-act .pill-swap { transition: opacity 0.12s linear; }
+/* the text lives in the row now, so the button's own tooltip stands down */
+.topbar.flooded .pill-swap__label { display: none; }
+
+/* ── the way back ─────────────────────────────────────────────
+   Its own cell at the top of the grid. It used to float over the
+   header, which is exactly the kind of thing this page is supposed
+   to not do. The one thing here that isn't monochrome. */
+.topbar {
+  position: relative;
+  display: grid; grid-template-columns: 1fr auto; align-items: center;
+  border-bottom: 1px solid var(--hair);
+}
+.topbar-tag {
+  padding: 0 var(--gut);
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.14em; color: var(--dimmer);
+}
+.topbar-act {
+  padding: 5px var(--gut); border-left: 1px solid var(--hair);
+  display: flex; justify-content: flex-end;
+}
+/* the shared button drops its label underneath itself, which lands on the
+   header — in this row there is room beside it instead */
+.topbar .pill-swap__label {
+  top: 50%; right: calc(100% + 8px);
+  transform: translateY(-50%) translateX(5px);
+}
+.topbar .pill-swap:hover .pill-swap__label,
+.topbar .pill-swap:focus-visible .pill-swap__label {
+  transform: translateY(-50%) translateX(0);
+}
+
+@media (max-width: 700px) {
+  .gap { height: 32px; }
+  .card { flex: 0 0 148px; }
 }
 </style>
 </head>
 <body>
 
-<div class="corner corner-tl">
-  <div class="logo">v4run</div>
-  <div class="c-sub">// blue.pill</div>
+<div class="bg" aria-hidden="true">
+  <div class="bg-glow"></div>
+  <div class="bg-grain"></div>
+  <div class="bg-grain-2"></div>
 </div>
 
-<div class="corner corner-tr">
-  <button class="pill-swap pill-swap--red" id="take-red"
-          aria-label="Go back and take the red pill instead">
-    <span class="pill-swap__glow" aria-hidden="true"></span>
-    <span class="pill-swap__pill" aria-hidden="true">
-      <i class="pill-swap__mote"></i><i class="pill-swap__mote"></i>
-      <i class="pill-swap__mote"></i><i class="pill-swap__mote"></i>
-    </span>
-    <span class="pill-swap__label" aria-hidden="true">Take the red pill</span>
-  </button>
-</div>
+<div class="col">
 
-<main>
-  <div class="bp-panel">
-    <div class="bp-corner bp-corner--tl"></div><div class="bp-corner bp-corner--tr"></div>
-    <div class="bp-corner bp-corner--bl"></div><div class="bp-corner bp-corner--br"></div>
-    <div class="bp-head">// blue pill &middot; placeholder</div>
-    <h1 class="bp-title">Back to normal</h1>
-    <div class="bp-body">
-      <p>You took the blue pill. The story ends, you wake up in your bed, and
-         you believe whatever you want to believe.</p>
-      <p>This room is still being built.</p>
+  <div class="topbar">
+    <span class="topbar-tag">// blue pill</span>
+    <div class="topbar-act">
+      <button class="pill-swap pill-swap--red" id="take-red"
+              aria-label="Go back and take the red pill instead">
+        <span class="pill-swap__glow" aria-hidden="true"></span>
+        <span class="pill-swap__pill" aria-hidden="true">
+          <i class="pill-swap__mote"></i><i class="pill-swap__mote"></i>
+          <i class="pill-swap__mote"></i><i class="pill-swap__mote"></i>
+        </span>
+        <span class="pill-swap__label" aria-hidden="true">Take the red pill</span>
+      </button>
     </div>
   </div>
-</main>
 
-<div class="corner corner-bl">
-  <a class="back-link" href="/">&larr; v4.run</a>
+  <header class="cell rule">
+    <div class="who">
+      <img class="avatar" src="/images/varun.jpg" alt="" width="48" height="48">
+      <div>
+        <div class="name">Varun Hemachandran</div>
+        <div class="role">Senior Curator at PUCAR</div>
+      </div>
+    </div>
+    <div class="where">
+      <div class="place">Bengaluru, IN</div>
+      <div class="clock" id="clock">—</div>
+    </div>
+  </header>
+
+  <div class="seismo">
+    <div class="seismo-inner glass-band" id="seismo-inner">
+      <canvas id="seismo"></canvas>
+      <div class="seismo-label">M&nbsp;<span id="mag">1.0</span></div>
+    </div>
+  </div>
+
+  <main>
+
+    <section class="bio cell rule">
+      <p>I'm a Senior Curator at PUCAR — the Public Collective for Avoidance and Resolution
+         of Disputes, an Agami initiative working to transform India's dispute resolution
+         experience through process re-engineering, open-source technology, and judicial
+         change management.</p>
+      <p>Before PUCAR, I led the OpenNyAI mission at Agami, exploring how AI and frontier
+         technologies can scale access to justice for over 1.4 billion Indians. Earlier, I
+         co-founded Talking Earth, building community capacity around environmental data,
+         and led The Bohemian House, a global community centred on sustainable livelihoods
+         for artists.</p>
+      <p>Across all of it — advertising, community-building, civic tech — the constant has
+         been the intersection of storytelling, technology, and systems change. When I'm not
+         working, you'll likely find me lost in the hills or caves across India, or touring
+         the coast on two wheels.</p>
+    </section>
+
+    <div class="gap"></div>
+
+    <section>
+      <div class="sec-head cell"><span>WORK</span><a href="https://linkedin.com/in/varunh" target="_blank" rel="noopener"><span class="t">LinkedIn</span> <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></div>
+
+      <div class="row row--stack">
+        <div class="row-top">
+          <div class="row-l"><span class="row-t">PUCAR</span> <span class="pill">Senior Curator</span></div>
+          <span class="row-r"><span class="t">2026 —</span></span>
+        </div>
+        <div class="row-sub">Dispute resolution in India's courts — process re-engineering, court technology deployment, field research.</div>
+      </div>
+
+      <div class="row row--stack">
+        <div class="row-top">
+          <div class="row-l"><span class="row-t">OpenNyAI</span> <span class="pill">Lead</span></div>
+          <span class="row-r"><span class="t">2023 — 2026</span></span>
+        </div>
+        <div class="row-sub">AI public goods — models, APIs, and a maker community of lawyers and technologists.</div>
+      </div>
+
+      <div class="row row--stack">
+        <div class="row-top">
+          <div class="row-l"><span class="row-t">Agami</span> <span class="pill">Curator</span></div>
+          <span class="row-r"><span class="t">2020 — 2023</span></span>
+        </div>
+        <div class="row-sub">Legal technology, community development, and justice innovation.</div>
+      </div>
+
+      <div class="row row--stack">
+        <div class="row-top">
+          <div class="row-l"><span class="row-t">Talking Earth</span> <span class="pill">Co-founder</span></div>
+          <span class="row-r"><span class="t">2016 — 2019</span></span>
+        </div>
+        <div class="row-sub">Community capacity around environmental data.</div>
+      </div>
+
+      <div class="row row--stack">
+        <div class="row-top">
+          <div class="row-l"><span class="row-t">The Bohemian House</span> <span class="pill">Business Lead</span></div>
+          <span class="row-r"><span class="t">2017 — 2019</span></span>
+        </div>
+        <div class="row-sub">A global community centred on sustainable livelihoods for artists.</div>
+      </div>
+    </section>
+
+    <div class="gap rule"></div>
+
+    <section>
+      <div class="sec-head cell"><span>PROJECTS</span><a href="https://github.com/varun-heman" target="_blank" rel="noopener"><span class="t">GitHub</span> <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></div>
+
+      <a class="row" href="/projects/judiciary-tracker/">
+        <div class="row-l"><span class="row-t">Judiciary Tracker</span> <span class="pill">Active</span></div>
+        <span class="row-r"><span class="t">View</span> <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></span>
+      </a>
+      <a class="row" href="/projects/court-scraper/">
+        <div class="row-l"><span class="row-t">Court Scraper</span> <span class="pill">Active</span></div>
+        <span class="row-r"><span class="t">View</span> <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></span>
+      </a>
+    </section>
+
+    <div class="gap rule"></div>
+
+    <section>
+      <div class="sec-head cell"><span>RECENTLY READ</span><a href="/#reads"><span class="t">All reads</span> <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></div>
+      <div class="strip">
+        <a class="card" href="https://aeon.co" target="_blank" rel="noopener">
+          <div class="card-face"><span>The Collapse of the Indus Valley Civilisation</span></div>
+          <div class="card-meta">Aeon</div>
+        </a>
+        <a class="card" href="/pdfs/Indic-Voice-Technologies-For-An-Inclusive-Digital-India_Toolkit-for-Developers.pdf">
+          <div class="card-face"><span>Indic Voice Technologies for an Inclusive Digital India</span></div>
+          <div class="card-meta">Bhashini</div>
+        </a>
+        <a class="card" href="/pdfs/Responsible-AI-in-Practice-Ensuring-Fairness-and-Trust-Google-x-Aapti-Institute_compressed-1.pdf">
+          <div class="card-face"><span>Responsible AI in Practice</span></div>
+          <div class="card-meta">Aapti Institute</div>
+        </a>
+        <a class="card" href="/#reads">
+          <div class="card-face"><span>Everything else</span></div>
+          <div class="card-meta">Reading list</div>
+        </a>
+      </div>
+    </section>
+
+    <div class="gap rule"></div>
+
+    <section>
+      <div class="sec-head cell"><span>ELSEWHERE</span><span>&nbsp;</span></div>
+      <a class="row" href="https://x.com/varunh" target="_blank" rel="noopener">
+        <span class="row-t">X</span><span class="row-r"><span class="t">@varunh</span> <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></span>
+      </a>
+      <a class="row" href="https://linkedin.com/in/varunh" target="_blank" rel="noopener">
+        <span class="row-t">LinkedIn</span><span class="row-r"><span class="t">/in/varunh</span> <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></span>
+      </a>
+    </section>
+
+    <div class="gap"></div>
+
+  </main>
+
+  <footer>
+    <span>2026</span>
+    <span></span>
+    <a href="/">v4.run</a>
+  </footer>
+
 </div>
 
 <script src="/scripts/plume-transition.js"></script>
 <script>
 (function () {
   'use strict';
+
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var jolt = null;          // the seismograph hands this out below
+  var onStrain = null;      // the facade listens for it
+  var otherWorld = false;   // true only while the facade is down
+  var strain = 0;           // how hard the ground has been shaking lately
+  var ruleRGB = '255,255,255';
+  var mixed = -1;
+
+  // Every rule on the page reads --rule, so moving it moves the whole grid at
+  // once: blue while the story holds, green as it starts to give.
+  function setRule(m) {
+    m = m < 0 ? 0 : m > 1 ? 1 : m;
+    var q = Math.round(m * 100) / 100;
+    if (q === mixed) return;
+    mixed = q;
+    ruleRGB = Math.round(255 - 155 * q) + ',255,' + Math.round(255 - 95 * q);
+    document.documentElement.style.setProperty('--rule', ruleRGB);
+  }
+
+  // Bengaluru time, because the header says Bengaluru.
+  var clock = document.getElementById('clock');
+  function tick() {
+    if (!clock) return;
+    clock.textContent = new Date().toLocaleTimeString('en-GB', {
+      timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit'
+    });
+  }
+  tick(); setInterval(tick, 20000);
+
+  // ── the seismograph ────────────────────────────────────────────
+  // The pen never moves sideways. The paper does. Everything to the
+  // left of the pen is history; everything to the right is blank.
+  (function seismograph() {
+    var cv = document.getElementById('seismo');
+    if (!cv || !cv.getContext) return;
+    var ctx = cv.getContext('2d');
+    var out = document.getElementById('mag');
+    var still = reduced;
+
+    var SPEED = 46;              // px of paper per second
+    var W = 0, H = 0, mid = 0, pen = 0;
+    var trace = [], roll = 0, quake = 0, t = 0, mag = 0.12;
+
+    // A seismometer is a mass hanging on a spring: the ground shoves it, the
+    // spring pulls it home, damping bleeds off the rest. Here the ground is
+    // the cursor, and what shoves the mass is how hard the cursor is changing
+    // speed — so a steady glide barely registers and a flick or a hard stop
+    // throws the pen and leaves it ringing.
+    var K = 0.8;                 // spring — stiff, so the pen chatters rather than swings
+    var C = 0.10;                // damping — light, so an impulse rings on for about a second
+    var mass = 0, massV = 0;     // where the pen is, and how fast
+    var drive = 0;               // ground acceleration, decaying between events
+
+    // The instrument shakes its own ground until it gets a real reading, so the
+    // page never arrives on a dead flat line — and a touch visitor, who will
+    // never send one, keeps the tremor for good.
+    var fine = !window.matchMedia || window.matchMedia('(pointer: fine)').matches;
+    var synthetic = true;
+
+    var px = 0, py = 0, pt = 0, pvx = 0, pvy = 0, tracking = false;
+
+    function forget() { tracking = false; pvx = pvy = 0; }
+
+    function onMove(e) {
+      var now = e.timeStamp || performance.now();
+      var x = e.clientX, y = e.clientY;
+      if (!tracking) { px = x; py = y; pt = now; tracking = true; return; }
+      var dt = (now - pt) / 1000;
+      pt = now;
+      // a long gap is the cursor reappearing somewhere else, not a movement
+      if (dt <= 0 || dt > 0.1) { px = x; py = y; pvx = pvy = 0; return; }
+
+      var vx = (x - px) / dt, vy = (y - py) / dt;
+      px = x; py = y;
+      var ax = (vx - pvx) / dt, ay = (vy - pvy) / dt;
+      pvx = vx; pvy = vy;
+      ground(ax + ay);
+    }
+
+    // Anything that shoves the ground goes through here.
+    function ground(a) {
+      var d = a / 1800000;
+      if (d > 0.25) d = 0.25; else if (d < -0.25) d = -0.25;
+      synthetic = false;          // there's a hand on it now
+      drive += d;
+      if (drive > 0.4) drive = 0.4; else if (drive < -0.4) drive = -0.4;
+    }
+
+    // Scrolling shakes it too — a hard fling or a dead stop registers the same
+    // way a flicked cursor does, so throwing the page around stresses it.
+    var sy = 0, sT = 0, sV = 0, sOn = false;
+    function onScroll(e) {
+      var now = (e && e.timeStamp) || performance.now();
+      var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+      if (!sOn) { sy = y; sT = now; sOn = true; return; }
+      var dt = (now - sT) / 1000;
+      sT = now;
+      if (dt <= 0 || dt > 0.2) { sy = y; sV = 0; return; }
+      var v = (y - sy) / dt; sy = y;
+      ground(((v - sV) / dt) * 0.6);   // a touch softer than a flicked cursor
+      sV = v;
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    if (fine) {
+      window.addEventListener('pointermove', onMove, { passive: true });
+      window.addEventListener('pointerdown', forget, { passive: true });
+      document.addEventListener('pointerleave', forget, { passive: true });
+      window.addEventListener('blur', forget);
+    }
+
+    function resize(seed) {
+      var r = cv.getBoundingClientRect();
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = Math.max(1, Math.round(r.width));
+      H = Math.min(200, Math.max(1, Math.round(r.height)));
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      mid = H / 2;
+      pen = Math.max(1, W - 28);
+      while (trace.length < pen) trace.unshift(seed ? sample() : (trace.length ? trace[0] : 0));
+      if (trace.length > pen) trace = trace.slice(trace.length - pen);
+    }
+
+    // One column of paper: advance the mass by a step, add the pen's own
+    // chatter, and let the reading settle towards what it just drew.
+    function sample() {
+      t++;
+      massV += drive * 6 - K * mass - C * massV;
+      mass += massV;
+      drive *= 0.62;
+      if (mass > 1.6) { mass = 1.6; massV = 0; }
+      else if (mass < -1.6) { mass = -1.6; massV = 0; }
+
+      if (synthetic) {
+        // no cursor to read, so shake the ground on our own
+        if (quake < 0.02 && Math.random() < 0.006) quake = 0.5 + Math.random() * 0.5;
+        if (quake > 0.001) { mass += (Math.random() * 2 - 1) * quake * 0.5; quake *= 0.945; }
+      }
+
+      var v = mass
+            + (Math.random() * 2 - 1) * 0.035              // pen chatter
+            + Math.sin(t * 0.031) * 0.02;                  // the roll isn't perfectly true
+      if (v > 1) v = 1; else if (v < -1) v = -1;
+      mag = mag * 0.93 + Math.abs(v) * 0.07;
+      // Ordinary movement never clears the floor here; only real shaking builds.
+      // Steep enough that half a second of it tears the page, capped so that
+      // stopping calms things down again within a second or two.
+      strain = strain * 0.988 + (Math.abs(v) > 0.30 ? (Math.abs(v) - 0.30) * 0.13 : 0);
+      if (strain > 2.5) strain = 2.5;
+      return v;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      var amp = mid - 4;
+
+      // ruled paper, drifting left with the roll
+      ctx.strokeStyle = 'rgba(' + ruleRGB + ',' + (otherWorld ? 0.22 : 0.16) + ')';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (var x = -(roll % 40); x < pen; x += 40) {
+        var gx = Math.round(x) + 0.5;
+        ctx.moveTo(gx, 0); ctx.lineTo(gx, H);
+      }
+      ctx.stroke();
+
+      // the line the pen rests on when nothing is happening
+      ctx.strokeStyle = 'rgba(' + ruleRGB + ',' + (otherWorld ? 0.34 : 0.26) + ')';
+      ctx.beginPath();
+      ctx.moveTo(0, Math.round(mid) + 0.5);
+      ctx.lineTo(pen, Math.round(mid) + 0.5);
+      ctx.stroke();
+
+      // the trace itself, fading out towards the old end of the roll
+      if (!traceGrad || gradPen !== pen) {
+        gradPen = pen;
+        traceGrad = ctx.createLinearGradient(0, 0, pen, 0);
+        traceGrad.addColorStop(0, 'rgba(255,255,255,0.06)');
+        traceGrad.addColorStop(0.55, 'rgba(255,255,255,0.42)');
+        traceGrad.addColorStop(1, 'rgba(255,255,255,0.95)');
+      }
+      ctx.strokeStyle = traceGrad;
+      ctx.lineWidth = 1.2; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (var i = 0; i < trace.length; i++) {
+        var y = mid - trace[i] * amp;
+        if (i === 0) ctx.moveTo(i, y); else ctx.lineTo(i, y);
+      }
+      ctx.stroke();
+
+      // the needle: an arm hanging from the top of the roll, pen at its tip
+      var py = mid - (trace.length ? trace[trace.length - 1] : 0) * amp;
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pen + 0.5, 0); ctx.lineTo(pen + 0.5, py);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.16)';
+      ctx.beginPath(); ctx.arc(pen, py, 5.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(pen, py, 2.4, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // ── docking ────────────────────────────────────────────────────
+    // Going out it actually travels: the box is interpolated from the row it
+    // is leaving to the corner it is heading for, and the canvas is re-sized
+    // to match each frame so the trace stays crisp rather than stretched.
+    // Coming back it does not — running that in reverse read badly, so the
+    // instrument is simply in the row again and fades up. It lives on <body>
+    // while it is out, because a tear puts a transform on .col and a
+    // transformed ancestor would capture position: fixed.
+    var holder = document.querySelector('.seismo');
+    var inner = document.getElementById('seismo-inner');
+    var docked = false, morphing = false, dockP = 0;
+    var MW = 184, MH = 34, MGAP = 14;
+
+    function layout() {
+      if (!inner || !holder) return;
+      var r = holder.getBoundingClientRect();
+      var tx = window.innerWidth - MW - MGAP, ty = MGAP, p = dockP;
+      inner.style.position = 'fixed';
+      inner.style.zIndex = '95';
+      inner.style.right = 'auto'; inner.style.bottom = 'auto';
+      inner.style.left   = (r.left + (tx - r.left) * p) + 'px';
+      inner.style.top    = (r.top + (ty - r.top) * p) + 'px';
+      inner.style.width  = (r.width + (MW - r.width) * p) + 'px';
+      inner.style.height = (r.height + (MH - r.height) * p) + 'px';
+    }
+
+    function startDock() {
+      docked = true; morphing = true; dockP = 0;
+      document.body.appendChild(inner);
+      layout();                       // place it before the next paint
+    }
+
+    // the mini one lifts away instead of being cut, while the real instrument
+    // is quietly put back in its row underneath
+    function ghostOut() {
+      var g = document.createElement('div');
+      g.className = 'seismo-ghost';
+      g.setAttribute('aria-hidden', 'true');
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var gc = document.createElement('canvas');
+      gc.width = Math.round(184 * dpr); gc.height = Math.round(34 * dpr);
+      gc.style.cssText = 'display:block;width:100%;height:100%';
+      try { gc.getContext('2d').drawImage(cv, 0, 0, gc.width, gc.height); } catch (err) {}
+      g.appendChild(gc);
+      var l = inner.querySelector('.seismo-label');
+      if (l) g.appendChild(l.cloneNode(true));
+      document.body.appendChild(g);
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { g.classList.add('gone'); });
+      });
+      setTimeout(function () { if (g.parentNode) g.parentNode.removeChild(g); }, 340);
+    }
+
+    function endDock() {
+      if (docked) ghostOut();
+      docked = false; morphing = false; dockP = 0;
+      holder.appendChild(inner);
+      inner.removeAttribute('style');
+      inner.classList.remove('docked');
+      inner.classList.add('arriving');
+      resize(false);
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { inner.classList.remove('arriving'); });
+      });
+    }
+
+    function checkDock() {
+      if (!holder || !inner) return;
+      var b = holder.getBoundingClientRect().bottom;
+      if (!docked && b < 6) startDock();
+      else if (docked && b > 26) endDock();   // hysteresis, so it can't flutter
+    }
+    window.addEventListener('scroll', checkDock, { passive: true });
+    window.addEventListener('resize', checkDock);
+    checkDock();
+
+    var raf = 0, last = 0, carry = 0, settle = 0, visible = true;
+    var traceGrad = null, gradPen = -1;
+    function step(now) {
+      // whichever copy is on screen is the only one running; scrolled out of
+      // sight it stops dead. A backgrounded tab is already handled by rAF and
+      // by the visibility listener below, so it isn't re-checked here.
+      if (!visible) { raf = 0; return; }
+      if (!last) last = now;
+      var dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      carry += dt * SPEED;
+      var cols = Math.floor(carry);
+      carry -= cols;
+      if (cols > 0) {
+        if (cols > 120) cols = 120;
+        for (var i = 0; i < cols; i++) trace.push(sample());
+        if (trace.length > pen) trace.splice(0, trace.length - pen);
+        roll += cols;
+        if (out) out.textContent = (1 + mag * 7).toFixed(1);
+        if (onStrain) onStrain(strain);
+      }
+
+      if (morphing) {
+        dockP += (1 - dockP) * (still ? 1 : 0.36);
+        layout();
+        if (1 - dockP < 0.004) {
+          morphing = false;
+          inner.removeAttribute('style');       // CSS pins it from here
+          inner.classList.add('docked');
+        }
+        var m = cv.getBoundingClientRect();
+        if (Math.round(m.width) !== W || Math.round(m.height) !== H) resize(false);
+      } else if (--settle <= 0) {
+        // otherwise the box only changes on a window resize, so check it rarely
+        settle = 30;
+        var b = cv.getBoundingClientRect();
+        if (Math.round(b.width) !== W || Math.round(b.height) !== H) resize(false);
+      }
+
+      draw();
+      raf = requestAnimationFrame(step);
+    }
+
+    // something shoving the ground that isn't a cursor
+    jolt = function (n) { drive = Math.max(-0.4, Math.min(0.4, drive + n)); synthetic = false; };
+
+    resize(true);
+    if (out) out.textContent = (1 + mag * 7).toFixed(1);
+    if (still) {
+      draw();          // one frozen reading rather than a moving pen
+      return;
+    }
+    raf = requestAnimationFrame(step);
+
+
+    // don't burn frames on a tab nobody is looking at
+    if (window.IntersectionObserver && inner) {
+      new IntersectionObserver(function (es) {
+        visible = es[0].isIntersecting;
+        if (visible && !raf && !still) { last = 0; raf = requestAnimationFrame(step); }
+      }, { threshold: 0 }).observe(inner);
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }
+      else if (!raf && visible) { last = 0; raf = requestAnimationFrame(step); }
+    });
+  })();
+
+  // ── the world behind ───────────────────────────────────────────
+  // Damage is a level, not an event: it tracks the strain coming off the roll
+  // frame by frame, so the harder the instrument is shaken the more of the
+  // thing underneath comes through, and it eases back down when you stop.
+  // Scheduled glitches feed the same level — a burst of damage nobody caused.
+  (function facade() {
+    if (reduced) return;
+
+    var root = document.documentElement;
+    var col = document.querySelector('.col');
+    var tag = document.querySelector('.topbar-tag');
+    var said = tag ? tag.textContent : '';
+
+    var cv = document.createElement('canvas');
+    cv.className = 'tear-canvas';
+    cv.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(cv);
+    var ctx = cv.getContext('2d');
+    if (!ctx) return;
+
+    var GLYPHS = '\u30a2\u30a4\u30a6\u30a8\u30aa\u30ab\u30ad\u30af\u30b1\u30b3\u30b5\u30b7\u30b9\u30bb\u30bd\u30bf\u30c1\u30c4\u30c6\u30c8\u30ca\u30cb\u30cc\u30cd\u30ce\u30cf\u30d2\u30d5\u30d8\u30db\u30de\u30df\u30e0\u30e1\u30e2\u30e4\u30e6\u30e8\u30e9\u30ea\u30eb\u30ec\u30ed\u30ef\u30f30123456789:.=*+-<>';
+    var CELL = 18, NG = GLYPHS.length;
+
+    // Every glyph is drawn once, at four brightnesses, into a sprite sheet.
+    // After that the rain is pure drawImage — no text rasterising, no fill
+    // colour changes, which is most of what made this expensive.
+    var TINTS = ['rgb(215,255,230)', 'rgb(120,255,175)', 'rgba(100,255,160,0.55)', 'rgba(100,255,160,0.2)'];
+    var atlas = document.createElement('canvas');
+    function buildAtlas() {
+      atlas.width = NG * CELL; atlas.height = TINTS.length * CELL;
+      var a = atlas.getContext('2d');
+      a.font = "13px 'Space Mono', 'Courier New', monospace";
+      a.textBaseline = 'top';
+      for (var t = 0; t < TINTS.length; t++) {
+        a.fillStyle = TINTS[t];
+        for (var i = 0; i < NG; i++) a.fillText(GLYPHS.charAt(i), i * CELL + 3, t * CELL + 1);
+      }
+    }
+    buildAtlas();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(buildAtlas);
+
+    // one scanline tile, stamped as a repeating pattern instead of ~270 rects
+    var lineTile = document.createElement('canvas');
+    lineTile.width = 1; lineTile.height = 3;
+    var lt = lineTile.getContext('2d');
+    lt.fillStyle = '#000'; lt.fillRect(0, 0, 1, 1);
+    var linePat = ctx.createPattern(lineTile, 'repeat');
+
+    // the rain lives on its own canvas and is blitted into the tears
+    var rcv = document.createElement('canvas'), rctx = rcv.getContext('2d');
+    var W = 0, H = 0, cols = [], rainAge = 0;
+
+    function size() {
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = window.innerWidth; H = window.innerHeight;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      linePat = ctx.createPattern(lineTile, 'repeat');
+      rcv.width = W; rcv.height = H;      // 1x is plenty for falling noise
+      cols.length = 0;
+      for (var i = 0, n = Math.ceil(W / CELL) + 1; i < n; i++) {
+        cols.push({ y: Math.random() * H, v: 7 + Math.random() * 17, len: 7 + (Math.random() * 14 | 0) });
+      }
+      paintRain();
+    }
+
+    function paintRain() {
+      rctx.clearRect(0, 0, W, H);
+      for (var i = 0; i < cols.length; i++) {
+        var c = cols[i], x = i * CELL;
+        for (var y = -CELL; y < H; y += CELL) {
+          var d = (c.y - y) / CELL, t;
+          if (d >= 0 && d < 1) t = 0;
+          else if (d < 0 || d > c.len) t = 3;
+          else t = d < c.len * 0.45 ? 1 : 2;
+          rctx.drawImage(atlas, ((Math.random() * NG) | 0) * CELL, t * CELL, CELL, CELL, x, y, CELL, CELL);
+        }
+        c.y += c.v;
+        if (c.y - c.len * CELL > H) c.y = -Math.random() * 90;
+      }
+    }
+
+    size();
+    window.addEventListener('resize', size);
+
+    function glyph() { return GLYPHS.charAt((Math.random() * NG) | 0); }
+
+    // ── the text stops holding together too ────────────────────────
+    // Nothing here reads back what is on the page: the real text is captured
+    // once and every scramble derives from that copy, so an element picked
+    // twice in a tick can't have its scrambled state restored as the original.
+    // The clock, the M readout and the corner tag are deliberately absent —
+    // they rewrite themselves.
+    var TEXTY = [].slice.call(document.querySelectorAll(
+      '.name, .role, .where .place, .sec-head span, .sec-head a .t, .row-t, .row-r .t,' +
+      ' .row-sub, .bio p, .card-face span, .card-meta, footer span, footer a'));
+    var PRISTINE = TEXTY.map(function (el) { return el.textContent; });
+    var corrupt = TEXTY.map(function () { return 0; });
+    var dirty = [];
+
+    function unscramble() {
+      for (var i = 0; i < dirty.length; i++) {
+        corrupt[dirty[i]] = 0;
+        TEXTY[dirty[i]].textContent = PRISTINE[dirty[i]];
+      }
+      dirty.length = 0;
+    }
+
+    // How broken a line currently is decides how much of it is glyphs. Nothing
+    // is ever derived from what is on screen, only from the captured copy, so
+    // repainting the same line repeatedly can't corrupt its own original.
+    function paint(k) {
+      var t = PRISTINE[k], c = corrupt[k], out = '';
+      if (c <= 0) { TEXTY[k].textContent = t; return; }
+      for (var j = 0; j < t.length; j++) {
+        out += (t.charCodeAt(j) !== 32 && Math.random() < c) ? glyph() : t.charAt(j);
+      }
+      TEXTY[k].textContent = out;
+    }
+
+    function churn(L) {
+      var n = Math.min(TEXTY.length, 2 + Math.round((L - 0.6) * 9));
+      var p = Math.min(0.6, 0.18 + (L - 0.6) * 0.28);
+      for (var i = 0; i < n; i++) {
+        var k = (Math.random() * TEXTY.length) | 0;
+        if (!PRISTINE[k]) continue;
+        if (corrupt[k] === 0) dirty.push(k);
+        var c = p * (0.6 + Math.random() * 0.4);
+        if (c > corrupt[k]) corrupt[k] = c;
+      }
+      // only some lines re-roll their glyphs on any given tick — all of them
+      // changing at once reads as a flicker rather than as text coming apart
+      for (var d = 0; d < dirty.length; d++) if (Math.random() < 0.5) paint(dirty[d]);
+    }
+
+    // Recovery is per line, and each line snaps: it is either corrupt or it is
+    // the real text again, never a fade between the two. Several go back each
+    // tick, scaled to how many are left, so a big break and a small one both
+    // reassemble in about the same time — and never all in one frame.
+    function heal() {
+      var n = Math.max(2, Math.round(dirty.length / (4 + Math.random() * 3)));
+      for (var i = 0; i < n && dirty.length; i++) {
+        var d = (Math.random() * dirty.length) | 0;
+        var k = dirty[d];
+        corrupt[k] = 0;
+        TEXTY[k].textContent = PRISTINE[k];
+        dirty.splice(d, 1);
+      }
+    }
+
+    function bands(n, L) {
+      var out = [];
+      for (var i = 0; i < n; i++) {
+        var h = 8 + Math.random() * Math.min(160, H * 0.1 + H * 0.16 * Math.min(1, L));
+        out.push({ y: Math.random() * (H - h), h: h, dx: (Math.random() * 2 - 1) * 30 * Math.min(1.4, 0.4 + L) });
+      }
+      return out;
+    }
+
+    function render(L) {
+      ctx.clearRect(0, 0, W, H);
+      if (L < 0.65) return;
+      // at low damage the seam only flickers; it steadies as the level climbs
+      if (Math.random() > Math.min(0.94, 0.18 + (L - 0.65) * 0.9)) return;
+
+      if (++rainAge >= 3) { rainAge = 0; paintRain(); }
+
+      if (L > 1.6 && Math.random() < (L - 1.6) * 0.55) {
+        ctx.fillStyle = 'rgba(0,0,0,' + Math.min(0.9, 0.55 + L * 0.2) + ')';
+        ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = 0.85;
+        ctx.drawImage(rcv, 0, 0);
+        ctx.globalAlpha = 1;
+      } else {
+        var bs = bands(1 + Math.round(Math.min(6, (L - 0.65) * 3.4)), L);
+        for (var i = 0; i < bs.length; i++) {
+          var b = bs[i], h = Math.min(b.h, H - b.y);
+          if (h <= 0) continue;
+          ctx.fillStyle = 'rgba(0,0,0,0.9)';
+          ctx.fillRect(0, b.y, W, h);
+          ctx.globalAlpha = 0.9;
+          ctx.drawImage(rcv, 0, b.y, W, h, b.dx, b.y, W, h);
+          ctx.globalAlpha = 1;
+          // the split a torn signal leaves along the cut
+          ctx.fillStyle = 'rgba(255,40,80,0.5)';
+          ctx.fillRect(b.dx * 0.4, b.y - 1, W, 1);
+          ctx.fillStyle = 'rgba(80,255,220,0.5)';
+          ctx.fillRect(-b.dx * 0.4, b.y + h, W, 1);
+        }
+      }
+
+      ctx.globalAlpha = Math.min(0.32, 0.06 + (L - 0.65) * 0.16);
+      ctx.fillStyle = linePat;
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = 1;
+    }
+
+    // ── the level ──────────────────────────────────────────────────
+    var strainLevel = 0, burst = 0, level = 0, raf = 0, lastText = 0, holdUntil = 0, torn = false;
+
+    onStrain = function (v) { strainLevel = v; wake(); };
+
+    function wake() { if (!raf) raf = requestAnimationFrame(loop); }
+
+    function calm() {
+      ctx.clearRect(0, 0, W, H);
+      root.classList.remove('tear');
+      if (col) col.style.transform = '';
+      if (tag) tag.textContent = said;
+      unscramble();
+      otherWorld = false;
+      torn = false;
+      setRule(0);
+      raf = 0;
+    }
+
+    function loop(now) {
+      burst *= 0.93;
+      level = Math.max(strainLevel, burst);
+
+      // keep going while words are still healing, even once it is calm
+      if (document.hidden || (level < 0.02 && !dirty.length)) { calm(); return; }
+
+      setRule((level - 0.30) / 0.60);
+
+      var t = level > 0.65;
+      if (t !== torn) {
+        torn = t;
+        otherWorld = t;
+        root.classList.toggle('tear', t);
+        if (!t) { if (col) col.style.transform = ''; if (tag) tag.textContent = said; }
+      }
+
+      if (t) {
+        render(level);
+        if (col) {
+          var j = Math.min(7, (level - 0.65) * 4);
+          col.style.transform = 'translate3d(' + ((Math.random() * 2 - 1) * j | 0) + 'px,0,0)';
+        }
+        if (tag) tag.textContent = level > 1.5 ? '// wake up' : said;
+      } else {
+        ctx.clearRect(0, 0, W, H);
+      }
+
+      if (level >= 0.60) {
+        if (now - lastText > 55) { lastText = now; churn(level); }
+        holdUntil = now + 420;          // stay broken a beat after it settles
+      } else if (dirty.length && now > holdUntil && now - lastText > 105) {
+        lastText = now; heal();
+      }
+
+      raf = requestAnimationFrame(loop);
+    }
+
+    // a glitch nobody caused, every so often
+    function schedule() {
+      setTimeout(function () {
+        if (!document.hidden) { burst = Math.max(burst, Math.random() < 0.28 ? 1.7 : 0.95); wake(); }
+        schedule();
+      }, 24000 + Math.random() * 40000);
+    }
+    setTimeout(function () { burst = 0.95; wake(); schedule(); }, 9000 + Math.random() * 7000);
+  })();
+
+  // ── the pill bleeds into its row ───────────────────────────────
+  // Hovering the red pill doesn't reveal a tooltip, it ruptures. A white-hot
+  // core goes first, the pill dissolves into it, and what comes out runs the
+  // length of the row under its own surface tension: a rounded meniscus that
+  // bulges while it is moving and relaxes when it stops, spray thrown ahead of
+  // the front, filaments drifting through the body, bubbles going up and
+  // breaking at the surface. The words are not faded in — they are uncovered
+  // by the liquid as it reaches them. Leaving drains the whole thing back into
+  // the pill, and the pill comes back.
+  (function flood() {
+    var bar = document.querySelector('.topbar');
+    var pill = document.getElementById('take-red');
+    if (!bar || !pill || reduced) return;
+
+    var cv = document.createElement('canvas');
+    cv.className = 'pill-liquid';
+    cv.setAttribute('aria-hidden', 'true');
+    var lab = document.createElement('div');
+    lab.className = 'pill-liquid-label';
+    lab.setAttribute('aria-hidden', 'true');
+    lab.textContent = 'Take the red pill';
+    bar.appendChild(cv);
+    bar.appendChild(lab);
+    var ctx = cv.getContext('2d');
+    if (!ctx) return;
+    bar.classList.add('flooded');
+
+    // two sprites, drawn once: everything luminous in here is a scaled blit
+    function orb(size, stops) {
+      var c = document.createElement('canvas');
+      c.width = c.height = size;
+      var x = c.getContext('2d');
+      var g = x.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+      for (var i = 0; i < stops.length; i++) g.addColorStop(stops[i][0], stops[i][1]);
+      x.fillStyle = g; x.fillRect(0, 0, size, size);
+      return c;
+    }
+    var SPARK = orb(32, [[0, 'rgba(255,244,238,1)'], [0.3, 'rgba(255,120,86,0.8)'], [1, 'rgba(255,70,50,0)']]);
+    var BLOOM = orb(64, [[0, 'rgba(255,96,70,0.55)'], [0.45, 'rgba(210,30,34,0.22)'], [1, 'rgba(160,10,20,0)']]);
+    var CORE  = orb(96, [[0, 'rgba(255,255,255,1)'], [0.16, 'rgba(255,214,200,0.9)'], [0.42, 'rgba(255,90,64,0.5)'], [1, 'rgba(255,60,40,0)']]);
+
+    var W = 0, H = 0, f = 0, to = 0, t = 0, raf = 0, prev = 0, fired = 0, flash = 0;
+    var strands = [], bubbles = [], spray = [], swirls = [];
+    var body = null, gh = -1;
+
+    function newBubble() {
+      return { x: Math.random(), y: 1.1 + Math.random() * 0.5, r: 0.7 + Math.random() * 2.1,
+               v: 0.30 + Math.random() * 0.75, ph: Math.random() * 6.283 };
+    }
+
+    function seed() {
+      strands.length = 0;
+      for (var i = 0; i < 11; i++) {
+        strands.push({ x: Math.random(), y: 0.14 + Math.random() * 0.72,
+                       w: 40 + Math.random() * 160, h: 0.6 + Math.random() * 1.9,
+                       v: 24 + Math.random() * 95, a: 0.05 + Math.random() * 0.14 });
+      }
+      bubbles.length = 0;
+      for (var j = 0; j < 9; j++) bubbles.push(newBubble());
+      spray.length = 0;
+      for (var k = 0; k < 7; k++) {
+        spray.push({ d: 6 + Math.random() * 46, y: 0.22 + Math.random() * 0.56,
+                     r: 0.9 + Math.random() * 2.2, ph: Math.random() * 6.283 });
+      }
+      swirls.length = 0;
+      for (var m = 0; m < 3; m++) {
+        swirls.push({ x: Math.random(), y: 0.3 + Math.random() * 0.4,
+                      s: 34 + Math.random() * 46, v: 10 + Math.random() * 26, ph: Math.random() * 6.283 });
+      }
+    }
+
+    function size() {
+      var r = bar.getBoundingClientRect();
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      gh = -1;
+      if (!strands.length) seed();
+    }
+    window.addEventListener('resize', size);
+
+    // where the pill sits, in the row's own coordinates
+    function origin() {
+      var b = bar.getBoundingClientRect(), p = pill.getBoundingClientRect();
+      return Math.max(0, Math.min(W, p.left + p.width / 2 - b.left));
+    }
+
+    function blit(sprite, x, y, d, a) {
+      ctx.globalAlpha = a;
+      ctx.drawImage(sprite, x - d / 2, y - d / 2, d, d);
+    }
+
+    function render(dt) {
+      ctx.clearRect(0, 0, W, H);
+      if (f <= 0.003 && flash <= 0.02) return;
+      t += dt;
+
+      var closing = to === 0;
+      // going out it eases; coming back it accelerates, so the last of it is
+      // snatched into the pill instead of dawdling there
+      var e = closing ? Math.pow(f, 1.6) : (f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2);
+      var ox = origin();
+      var L = ox - ox * e, R = ox + (W - ox) * e;
+      // retracting liquid necks: it thins before it lets go
+      var neck = closing ? 0.24 + 0.76 * Math.min(1, e * 2.2) : 1;
+      var HH = H * neck;
+
+      // surface tension: the front bulges while it is running and relaxes when
+      // it arrives, and the whole edge breathes
+      var rush = Math.min(1, Math.abs(to - f) * 6);
+      var bulge = (3 + 15 * (1 - e)) * (0.5 + rush) + Math.sin(t * 7.1) * 1.5 + Math.sin(t * 11.3) * 0.8;
+
+      // Opening keeps the shape it always had: a straight body with a curved
+      // meniscus at each front. Only the retraction is re-sampled — parallel
+      // sides collapsing to a point read as a machined lozenge, which is what
+      // made the close look wrong.
+      if (closing) {
+        var mid = H * 0.5, N = 18, span = Math.max(0.001, R - L);
+        var top = [], bot = [];
+        for (var n = 0; n <= N; n++) {
+          var u = n / N;
+          var cap = Math.pow(Math.sin(Math.PI * u), 0.4);
+          var wob = 1 + Math.sin(u * 6.4 + t * 5.1) * 0.11
+                      + Math.sin(u * 12.7 - t * 3.3) * 0.055
+                      + Math.sin(u * 3.1 + t * 2.2) * 0.05;
+          var hh = (HH * 0.5) * cap * wob;
+          var xx = L + span * u;
+          top.push(xx); top.push(mid - hh);
+          bot.push(xx); bot.push(mid + hh);
+        }
+        ctx.beginPath();
+        ctx.moveTo(top[0], top[1]);
+        for (var a = 2; a < top.length; a += 2) {
+          ctx.quadraticCurveTo(top[a - 2], top[a - 1], (top[a - 2] + top[a]) / 2, (top[a - 1] + top[a + 1]) / 2);
+        }
+        ctx.lineTo(bot[bot.length - 2], bot[bot.length - 1]);
+        for (var c = bot.length - 4; c >= 0; c -= 2) {
+          ctx.quadraticCurveTo(bot[c + 2], bot[c + 3], (bot[c + 2] + bot[c]) / 2, (bot[c + 3] + bot[c + 1]) / 2);
+        }
+        ctx.closePath();
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(R, 0);
+        ctx.lineTo(L, 0);
+        ctx.quadraticCurveTo(L - bulge, H * 0.5, L, H);
+        ctx.lineTo(R, H);
+        ctx.quadraticCurveTo(R + bulge, H * 0.5, R, 0);
+        ctx.closePath();
+      }
+
+      ctx.save();
+      ctx.clip();
+
+      if (gh !== H) {
+        gh = H;
+        body = ctx.createLinearGradient(0, 0, 0, H);
+        body.addColorStop(0, 'rgb(122,10,20)');
+        body.addColorStop(0.35, 'rgb(88,4,12)');
+        body.addColorStop(1, 'rgb(30,1,5)');
+      }
+      ctx.fillStyle = body;
+      ctx.fillRect(L - 40, 0, (R - L) + 80, H);
+
+      // everything below is light in the liquid, not paint on it
+      ctx.globalCompositeOperation = 'lighter';
+
+      for (var q = 0; q < swirls.length; q++) {
+        var sw = swirls[q];
+        sw.x -= (sw.v * dt) / Math.max(1, W);
+        if (sw.x < -0.15) sw.x += 1.3;
+        blit(BLOOM, sw.x * W, (sw.y + Math.sin(t * 0.7 + sw.ph) * 0.07) * H,
+             sw.s * (1 + Math.sin(t * 0.9 + sw.ph) * 0.12), 0.5 * e);
+      }
+
+      ctx.globalAlpha = 1;
+      for (var i = 0; i < strands.length; i++) {
+        var st = strands[i];
+        st.x -= (st.v * dt) / Math.max(1, W);
+        if (st.x < -0.4) { st.x += 1.5; st.y = 0.14 + Math.random() * 0.72; }
+        ctx.fillStyle = 'rgba(255,104,74,' + (st.a * e) + ')';
+        ctx.fillRect(st.x * W, st.y * H, st.w, st.h);
+      }
+
+      for (var b = 0; b < bubbles.length; b++) {
+        var bu = bubbles[b];
+        bu.y -= bu.v * dt;
+        if (bu.y < -0.1) { bubbles[b] = newBubble(); continue; }
+        var bx = bu.x * W + Math.sin(t * 3.2 + bu.ph) * 2.4;
+        var by = bu.y * H;
+        // brighter as it nears the surface, then it is gone
+        var ba = Math.min(1, (1.1 - bu.y)) * 0.5 * e;
+        ctx.strokeStyle = 'rgba(255,190,170,' + ba + ')';
+        ctx.lineWidth = 0.9;
+        ctx.beginPath(); ctx.arc(bx, by, bu.r, 0, 6.283); ctx.stroke();
+        blit(SPARK, bx, by, bu.r * 5, ba * 0.5);
+        ctx.globalAlpha = 1;
+      }
+
+      if (!closing) {
+        // the light that sits along the top of anything liquid
+        var surf = ctx.createLinearGradient(L, 0, R, 0);
+        surf.addColorStop(0, 'rgba(255,150,120,0.5)');
+        surf.addColorStop(0.5, 'rgba(255,110,86,0.16)');
+        surf.addColorStop(1, 'rgba(255,150,120,0.42)');
+        ctx.fillStyle = surf;
+        ctx.fillRect(L, 0, R - L, 1.4);
+      }
+
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      ctx.restore();
+
+      // The path from above is still current — clipping is part of the saved
+      // state, the path is not — so retraction traces the same outline it was
+      // filled through, while the open shape strokes just its two fronts.
+      ctx.lineWidth = 1.3;
+      if (closing) {
+        var edge = ctx.createLinearGradient(L, 0, R, 0);
+        edge.addColorStop(0, 'rgba(255,158,128,' + (0.32 + 0.55 * rush) + ')');
+        edge.addColorStop(0.5, 'rgba(255,120,96,' + (0.16 + 0.3 * rush) + ')');
+        edge.addColorStop(1, 'rgba(255,158,128,' + (0.30 + 0.5 * rush) + ')');
+        ctx.strokeStyle = edge;
+        ctx.stroke();
+      } else {
+        ctx.strokeStyle = 'rgba(255,138,110,' + (0.30 + 0.5 * rush) + ')';
+        ctx.beginPath();
+        ctx.moveTo(L, 0);
+        ctx.quadraticCurveTo(L - bulge, H * 0.5, L, H);
+        ctx.moveTo(R, 0);
+        ctx.quadraticCurveTo(R + bulge, H * 0.5, R, 0);
+        ctx.stroke();
+      }
+
+      // spray thrown ahead of the leading edge while it is still travelling
+      ctx.globalCompositeOperation = 'lighter';
+      if (e < 0.97 && L > 0) {
+        for (var d = 0; d < spray.length; d++) {
+          var sp = spray[d];
+          var sa = (1 - e) * (0.5 + 0.5 * Math.sin(t * 9 + sp.ph)) * 0.85;
+          blit(SPARK, L - sp.d * (0.4 + rush), (sp.y + Math.sin(t * 4 + sp.ph) * 0.08) * H, sp.r * 6, sa);
+        }
+      }
+
+      if (closing) {
+        // stragglers: what the retreating body couldn't drag back with it,
+        // hanging behind the front before they are pulled in too
+        for (var g = 0; g < spray.length; g++) {
+          var sg = spray[g];
+          var lag = (1 - e) * (10 + sg.d * 0.8);
+          blit(SPARK, L - lag, H * 0.5 + Math.sin(t * 5 + sg.ph) * HH * 0.28,
+               sg.r * 5 * e, e * 0.55);
+        }
+        // and the last of it balls up hot at the pill before it goes
+        if (e < 0.34) {
+          var ba2 = 1 - e / 0.34;
+          blit(CORE, ox, H * 0.5, 8 + 46 * e, ba2 * 0.85);
+          blit(SPARK, ox, H * 0.5, 5 + 22 * e, ba2);
+        }
+      } else if (e < 0.55) {
+        // the pill going up: a hard core at the origin that fades as it spreads
+        var ca = Math.min(1, (1 - e / 0.55));
+        blit(CORE, ox, H * 0.5, 26 + 92 * e, ca);
+        blit(SPARK, ox, H * 0.5, 14 + 30 * e, ca);
+      }
+
+      // the pinch, once there is nothing left to hold together
+      if (flash > 0.02) {
+        blit(CORE, ox, H * 0.5, 20 + 120 * (1 - flash), flash);
+        blit(SPARK, ox, H * 0.5, 10 + 46 * (1 - flash), flash);
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+
+      // uncovered by the liquid rather than faded in
+      lab.style.clipPath = 'inset(0px ' + Math.max(0, W - R) + 'px 0px ' + Math.max(0, L) + 'px)';
+      lab.style.opacity = e > 0.04 ? '1' : '0';
+      pill.style.opacity = String(1 - Math.min(1, Math.max(0, (e - (closing ? 0.02 : 0.04)) / (closing ? 0.2 : 0.28))));
+    }
+
+    function loop(now) {
+      var dt = prev ? Math.min(0.05, (now - prev) / 1000) : 0.016;
+      prev = now;
+      if (to === 1) {
+        f += (1 - f) * 0.30;
+        if (1 - f < 0.002) f = 1;
+      } else if (f > 0) {
+        // on a clock, not a decay curve — an exponential never quite arrives,
+        // and the last sliver of it sitting by the pill was the ugly part
+        f -= dt / 0.26;
+        if (f <= 0) { f = 0; flash = 1; }
+      }
+      flash *= 0.76;
+      render(dt);
+      if (f === 0 && to === 0 && flash <= 0.02) {
+        raf = 0; prev = 0; fired = 0; flash = 0;
+        ctx.clearRect(0, 0, W, H);
+        lab.style.opacity = '0'; lab.style.clipPath = '';
+        pill.style.opacity = '';
+        return;
+      }
+      raf = requestAnimationFrame(loop);
+    }
+    function run() { if (!raf) raf = requestAnimationFrame(loop); }
+
+    function on() {
+      size();
+      if (!fired) { fired = 1; seed(); if (jolt) jolt(0.12); }   // the roll feels it go
+      to = 1; run();
+    }
+    function off() { to = 0; run(); }
+
+    pill.addEventListener('pointerenter', on);
+    pill.addEventListener('pointerleave', off);
+    pill.addEventListener('focus', on);
+    pill.addEventListener('blur', off);
+    size();
+  })();
+
   var btn = document.getElementById('take-red');
   if (!btn) return;
   btn.addEventListener('click', function () {
