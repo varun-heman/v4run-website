@@ -4510,6 +4510,16 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
      air before its hum starts and its main pop lands at ~1.03s, so the JS seeks
      past that lead-in to land the pop on the flash — see CRT_ON_SFX_LEAD. -->
 <audio id="crt-on-sound" src="audio/static-tv-on.mp3" preload="auto"></audio>
+<!-- The clearance gate announcing itself, and the shorter chirp every modal
+     opens on. Both clips start at their first sample, so unlike the CRT static
+     neither needs seeking — see playGateAlert / the MODAL ALERT block. -->
+<audio id="gate-alert-sound" src="audio/first-alert.mp3" preload="auto"></audio>
+<audio id="modal-alert-sound" src="audio/second-alert.mp3" preload="auto"></audio>
+<!-- The bed under the boot loader. Ten seconds, near-silent at both ends, so
+     the plain loop attribute seams without a click and needs no scheduling. -->
+<audio id="loading-sound" src="audio/subtle-loading.mp3" loop preload="auto"></audio>
+<!-- The glitch that answers PROCEED. -->
+<audio id="start-story-sound" src="audio/start-story.mp3" preload="auto"></audio>
 
 <div class="corner corner-br">
   <button id="music-control" class="muted" aria-label="Toggle music">
@@ -6127,7 +6137,37 @@ const NAV_LABELS = {};  // key → display label
 
     // First visit on root — the gate waits behind the choice's loader, so
     // Proceed is never clickable before the scene can play without stalling.
-    const showGate = () => requestAnimationFrame(() => gate.classList.add('visible'));
+    //
+    // The gate's reveal is a sequence, not a single beat: the panel fades over
+    // 400ms while the corner brackets snap outward from centre and land at
+    // 540ms, which is also when the header glitches in (body 620ms, buttons
+    // 700ms). first-alert opens on low ticking and resolves into a rise that
+    // peaks at 420ms, so it's held back 120ms to put that peak on the 540ms
+    // landing — the ticking runs under the brackets travelling, the resolve
+    // hits as they arrive and the text appears, and the clip is out of the way
+    // before the body line follows.
+    const GATE_SFX_DELAY = 120;
+    function playGateAlert() {
+      const sfx = document.getElementById('gate-alert-sound');
+      if (!sfx || window._audioMuted) return;
+      setTimeout(() => {
+        if (window._audioMuted) return;
+        sfx.currentTime = 0;
+        // first-alert is a quiet recording (RMS ~0.035) where second-alert is
+        // a hot one (~0.269), so the two volumes below sit almost 8x apart on
+        // paper and land within a hair of each other in the room. Both are
+        // pitched just under the CRT static and a touch over the hover chime.
+        sfx.volume = 0.9;
+        // No user gesture yet on a first visit, so this is usually blocked —
+        // same deal as the CRT static and the score, and just as harmless.
+        sfx.play().catch(() => {});
+      }, GATE_SFX_DELAY);
+    }
+
+    const showGate = () => requestAnimationFrame(() => {
+      gate.classList.add('visible');
+      playGateAlert();
+    });
     if (window._pillAssetsDone || !document.getElementById('pill-scene')) {
       showGate();
     } else {
@@ -6192,6 +6232,12 @@ const NAV_LABELS = {};  // key → display label
     });
 
     // ── PROCEED ──
+    // The gate does not go the instant it's answered. The glitch fires off the
+    // click itself and the panel holds, still and quiet, for a second before it
+    // tears itself down — sound leading picture rather than scoring it. The
+    // clip spends itself in ~0.4s, so most of that second is silence, which is
+    // the point: the answer lands, then the world comes apart.
+    const PROCEED_HOLD_MS = 1000;
     btnProceed && btnProceed.addEventListener('click', () => {
       stopCycle();
 
@@ -6209,26 +6255,57 @@ const NAV_LABELS = {};  // key → display label
         if (music) { music.volume = 0.35; music.play().catch(() => {}); }
       }
 
-      // Dismiss gate — panel shrinks toward centre while glitching, corners
-      // implode back to the centre point they started from (see CSS)
-      gate.classList.add('dismissing');
-      gate.classList.remove('visible');
+      // The glitch out. This one has to fire here, in the gesture, rather than
+      // alongside the dismissal it heralds — a hot clip, so it sits well below
+      // its own level to land between the modal chirp and the big bang.
+      const storySfx = document.getElementById('start-story-sound');
+      if (storySfx && !window._audioMuted) {
+        storySfx.currentTime = 0;
+        storySfx.volume = 0.25;
+        storySfx.play().catch(() => {});
+      }
+
+      // A held second with nothing moving in it reads as a hang rather than a
+      // beat — and stopCycle() has just frozen the one thing on this panel
+      // that ever moves, so the click would otherwise land on total stillness.
+      // The panel convulses along with the clip instead: jolts tracking its
+      // decay (it spends itself by ~0.35s), then genuine stillness, then the
+      // dismissal. No text change — this is the panel failing under the
+      // answer, not the name cycling on.
+      const jolt = () => {
+        nameEl.classList.add('glitching');
+        wrap && wrap.classList.add('glitching');
+        setTimeout(() => {
+          nameEl.classList.remove('glitching');
+          wrap && wrap.classList.remove('glitching');
+        }, 140);
+      };
+      // Spaced wider than the 140ms animation so no jolt cuts the one before
+      // it short, and widening as they go so the panel settles rather than stops.
+      [0, 160, 330, 500].forEach(t => setTimeout(jolt, t));
 
       setTimeout(() => {
-        gate.style.display = 'none';
+        // Dismiss gate — panel shrinks toward centre while glitching, corners
+        // implode back to the centre point they started from (see CSS)
+        gate.classList.add('dismissing');
+        gate.classList.remove('visible');
 
-        if (!window._isFirstVisit) {
-          // Return visitor — skip intro, fire bang; no music auto-start
-          if (window._triggerBigBang) window._triggerBigBang();
-          setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9200);
-        } else {
-          setVisited();
-          // First visit: the choice comes before the site does. The intro
-          // waits for a pill to be taken (see _pillTaken below).
-          if (window._pillStart) window._pillStart();
-          else startTypedIntro();
-        }
-      }, 620); // matches the new shrink-and-glitch dismiss animation
+        setTimeout(() => {
+          gate.style.display = 'none';
+
+          if (!window._isFirstVisit) {
+            // Return visitor — skip intro, fire bang; no music auto-start
+            if (window._triggerBigBang) window._triggerBigBang();
+            setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9200);
+          } else {
+            setVisited();
+            // First visit: the choice comes before the site does. The intro
+            // waits for a pill to be taken (see _pillTaken below).
+            if (window._pillStart) window._pillStart();
+            else startTypedIntro();
+          }
+        }, 620); // matches the new shrink-and-glitch dismiss animation
+      }, PROCEED_HOLD_MS);
     });
     } // end runGateLogic
 
@@ -8912,6 +8989,70 @@ window.addEventListener('popstate', (e) => {
   if (hash) _openFromHash(hash);
 });
 
+// ── MODAL ALERT ──────────────────────────────────────────────────────────
+// One chirp for every layer that opens over the page. There are a dozen
+// openers for ten layers — #contact-overlay alone has two, and #modal has a
+// plain and a PDF path — so calling a helper from each would mean ten edits
+// now and a silent modal the first time someone adds an eleventh. This
+// watches the class that does the opening instead: whatever reveals a
+// registered layer earns the chirp, whoever triggered it.
+(function () {
+  const sfx = document.getElementById('modal-alert-sound');
+  if (!sfx) return;
+
+  // [id, the class that means open]. #modal-scrim is deliberately absent —
+  // it opens in lockstep with #modal and would only ever be a double. The
+  // nested layers (#project-detail-view over the projects overlay,
+  // #gallery-lightbox over the gallery, #subscribe-confirm inside the
+  // contact form) are all here on purpose: they're their own arrival.
+  const LAYERS = [
+    ['modal',               'open'],
+    ['moments-overlay',     'open'],
+    ['viewall-overlay',     'open'],
+    ['reads-overlay',       'open'],
+    ['projects-overlay',    'open'],
+    ['project-detail-view', 'open'],
+    ['gallery-overlay',     'open'],
+    ['gallery-lightbox',    'open'],
+    ['contact-overlay',     'open'],
+    ['subscribe-confirm',   'open'],
+  ];
+
+  // A deep link can open a gallery and its lightbox back to back. One shared
+  // element means the second open restarts the clip rather than stacking a
+  // copy on it, which is right — but restarting it mid-chirp is an audible
+  // stutter, so a layer arriving on the heels of another rides the sound
+  // that's already playing.
+  let last = -Infinity;
+  function chirp() {
+    if (window._audioMuted) return;
+    const now = performance.now();
+    if (now - last < 220) return;
+    last = now;
+    sfx.currentTime = 0;
+    sfx.volume = 0.13; // hot clip — see the note on the gate's volume
+    sfx.play().catch(() => {});
+  }
+
+  function watch(el, cls) {
+    if (!el) return;
+    let was = el.classList.contains(cls);
+    new MutationObserver(() => {
+      const is = el.classList.contains(cls);
+      // Only the closed -> open edge. Class attributes get rewritten for all
+      // sorts of reasons (filter pills, detail-mode, body state) and most of
+      // those touches leave the layer exactly as open as it already was.
+      if (is && !was) chirp();
+      was = is;
+    }).observe(el, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  LAYERS.forEach(([id, cls]) => watch(document.getElementById(id), cls));
+  // The mobile logo panel is driven from body rather than from the panel, so
+  // it's watched where the class actually lands.
+  watch(document.body, 'logo-tapped');
+})();
+
 // ── REPLAY INTRO ─────────────────────────────────────────────────────────
 (function () {
   const btn  = document.getElementById('replay-intro-btn');
@@ -10586,10 +10727,42 @@ window.addEventListener('popstate', (e) => {
     });
   }
 
+  /* A bed under the wait, for as long as the wait lasts — which is however
+     long the link takes, so it loops rather than being cut to any one length.
+     Nothing has been clicked yet at this point, so autoplay will often refuse
+     it; that's the same bargain the score and the CRT static already take. */
+  /* el() is scoped to the scene element; this one lives outside it. */
+  var loadingBed = document.getElementById('loading-sound'), bedFade = null;
+  var LOADING_BED_VOL = 0.8;
+  function startLoadingBed() {
+    if (!loadingBed || window._audioMuted) return;
+    loadingBed.volume = LOADING_BED_VOL;
+    loadingBed.play().catch(function () {});
+  }
+  /* Faded out over the same 260ms the loader takes to hand the screen to the
+     gate, so the bed is gone exactly as the thing it was scoring leaves —
+     a hard stop on a loop that has no ending of its own reads as a dropout. */
+  function stopLoadingBed(ms) {
+    if (!loadingBed || loadingBed.paused) return;
+    clearInterval(bedFade);
+    var steps = Math.max(1, Math.round(ms / 20)), i = 0, from = loadingBed.volume;
+    bedFade = setInterval(function () {
+      i++;
+      loadingBed.volume = Math.max(0, from * (1 - i / steps));
+      if (i >= steps) {
+        clearInterval(bedFade);
+        loadingBed.pause();
+        loadingBed.currentTime = 0;
+        loadingBed.volume = LOADING_BED_VOL;
+      }
+    }, 20);
+  }
+
   function ready() {
     if (assetsReady) return;
     assetsReady = true;
     window._pillAssetsDone = true;
+    stopLoadingBed(260);
     var fill = el('boot-fill'), pctEl = el('boot-pct'),
         lbl = el('boot-label'), sub = el('boot-sub');
     var got = sum(gotBytes), expect = sum(expectBytes);
@@ -10618,6 +10791,7 @@ window.addEventListener('popstate', (e) => {
      memory and nothing can stall once he starts speaking. */
   scene.classList.add('loading');
   document.body.classList.add('pill-busy');
+  startLoadingBed();
   progress();
   if (window.fetch && ASSETS.length) {
     Promise.all(ASSETS.map(fetchAsset)).then(ready);
