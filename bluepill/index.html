@@ -219,6 +219,21 @@ header {
 .seismo-ghost .seismo-label {
   padding: 0 20px 0 10px; font-size: 9px; letter-spacing: 0.1em;
 }
+/* The instrument is where a phone is asked for motion, and where it is told
+   what to do with it once it has it. */
+.seismo-ask {
+  position: absolute; inset: 0; z-index: 6;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 10px; text-align: center;
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--fg); background: rgba(0, 0, 0, 0.9);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.32s linear;
+}
+.seismo-ask[hidden] { display: none; }
+.seismo-ask.fading { opacity: 0; pointer-events: none; }
+
 .seismo-label {
   position: absolute; z-index: 4; left: 0; top: 0; bottom: 0;
   display: flex; align-items: center; padding: 0 26px 0 var(--gut);
@@ -414,6 +429,7 @@ footer a:hover { color: var(--fg); }
     <div class="seismo-inner glass-band" id="seismo-inner">
       <canvas id="seismo"></canvas>
       <div class="seismo-label">M&nbsp;<span id="mag">1.0</span></div>
+      <div class="seismo-ask" id="seismo-ask" hidden></div>
     </div>
   </div>
 
@@ -670,24 +686,51 @@ footer a:hover { color: var(--fg); }
       var d = m - lastG;
       lastG = m;
       var ad = d < 0 ? -d : d;
-      if (ad < 2) return;
-      ground((d < 0 ? -1 : 1) * (ad - 2) * 24000);
+      if (ad < 0.8) return;
+      ground((d < 0 ? -1 : 1) * (ad - 0.8) * 70000);
     }
 
-    if (window.DeviceMotionEvent) {
+    var askEl = document.getElementById('seismo-ask');
+    var askTimer = 0;
+    function say(text, holdMs) {
+      if (!askEl) return;
+      clearTimeout(askTimer);
+      askEl.textContent = text;
+      askEl.hidden = false;
+      askEl.classList.remove('fading');
+      if (!holdMs) return;
+      askTimer = setTimeout(function () {
+        askEl.classList.add('fading');
+        askTimer = setTimeout(function () {
+          askEl.hidden = true;
+          askEl.classList.remove('fading');
+        }, 340);
+      }, holdMs);
+    }
+
+    // Only a device that can actually be shaken is offered any of this.
+    if (window.DeviceMotionEvent && !fine && askEl) {
       if (typeof window.DeviceMotionEvent.requestPermission === 'function') {
-        // iOS only hands motion over from inside a gesture, and only if asked
-        var ask = function () {
-          document.removeEventListener('touchend', ask);
+        // iOS hands motion over only from inside a gesture, and only if asked,
+        // so the instrument itself is the button
+        say('Tap to allow motion', 0);
+        askEl.addEventListener('click', function once() {
+          askEl.removeEventListener('click', once);
+          say('...', 0);
           try {
             window.DeviceMotionEvent.requestPermission().then(function (r) {
-              if (r === 'granted') window.addEventListener('devicemotion', onMotion);
-            })['catch'](function () {});
-          } catch (err) {}
-        };
-        document.addEventListener('touchend', ask, { once: true, passive: true });
-      } else if (!fine) {
+              if (r === 'granted') {
+                window.addEventListener('devicemotion', onMotion);
+                say('Shake the phone \u2014 this world might break', 4200);
+              } else {
+                say('Motion refused', 2000);
+              }
+            })['catch'](function () { say('Motion unavailable', 2000); });
+          } catch (err) { say('Motion unavailable', 2000); }
+        });
+      } else {
         window.addEventListener('devicemotion', onMotion);
+        say('Shake the phone \u2014 this world might break', 4200);
       }
     }
 

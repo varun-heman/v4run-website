@@ -87,6 +87,8 @@
     if (!borrowed) {
     el = new Audio();
     el.preload = 'auto';
+    el.playsInline = true;
+    el.setAttribute('playsinline', '');
     el.src = (opts.blobFor && opts.blobFor[audioUrl]) || audioUrl;
     try {
       var AC = window.AudioContext || window.webkitAudioContext;
@@ -94,13 +96,25 @@
         if (!global._audioCtx) global._audioCtx = new AC();
         var actx = global._audioCtx;
         if (actx.state === 'suspended') actx.resume();
-        var src = actx.createMediaElementSource(el);
-        analyser = actx.createAnalyser();
-        analyser.fftSize = 512;
-        analyser.smoothingTimeConstant = 0.55;
-        src.connect(analyser);
-        analyser.connect(actx.destination);
-        data = new Uint8Array(analyser.fftSize);
+        /* Putting the element through the graph makes the graph the only way
+           out of it. On a phone the context is usually still suspended at this
+           point — resume() only settles a tick later — and routing into a
+           suspended graph doesn't delay the audio, it silences it outright
+           while the element plays on and reports that it ended. That is how
+           you get a black screen, no voice, and then the next page.
+
+           So the analyser is a luxury and being heard is not: unless the
+           context is already running, leave the element alone and let it play
+           itself. The plume falls back to breathing on its own below. */
+        if (actx.state === 'running') {
+          var src = actx.createMediaElementSource(el);
+          analyser = actx.createAnalyser();
+          analyser.fftSize = 512;
+          analyser.smoothingTimeConstant = 0.55;
+          src.connect(analyser);
+          analyser.connect(actx.destination);
+          data = new Uint8Array(analyser.fftSize);
+        }
       }
     } catch (e) { analyser = null; }
     }
