@@ -4597,6 +4597,45 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 <div id="hud-boot-overlay">
   <svg id="hud-boot-svg" viewBox="0 0 100 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"></svg>
 </div>
+<script>
+/* ── arriving with the sound still on ──────────────────────────────
+   A page reached by navigation starts with no user activation, so anything
+   that tries to make a sound as it loads is refused outright and the world
+   turns up silent. That is what coming back from the blue side looked like:
+   the bang landed, the score never started, and both play() calls quietly
+   swallowed their own rejection.
+
+   Ask anyway — a browser that already trusts this origin will allow it — and
+   when it refuses, put the sound on the next thing the visitor does. `grace`
+   is how long a sound is still worth hearing: the score will wait as long as
+   it takes, the bang is pointless once its picture is long gone. */
+window._playOrArm = function (getEl, vol, grace) {
+  var armed = false, t0 = Date.now();
+  function attempt(fromGesture) {
+    var el = typeof getEl === 'function' ? getEl() : getEl;
+    if (!el || window._audioMuted) return;
+    if (vol != null) { try { el.volume = vol; } catch (e) {} }
+    var p = null;
+    try { p = el.play(); } catch (e) {}
+    if (p && p.catch) p.catch(function () { if (!fromGesture) arm(); });
+  }
+  var EVS = ['pointerdown', 'touchstart', 'keydown', 'wheel'];
+  function off(go) { for (var i = 0; i < EVS.length; i++) document.removeEventListener(EVS[i], go, true); }
+  function arm() {
+    if (armed) return;
+    armed = true;
+    var go = function () {
+      off(go);
+      if (grace && Date.now() - t0 > grace) return;
+      attempt(true);
+    };
+    for (var i = 0; i < EVS.length; i++) {
+      document.addEventListener(EVS[i], go, { capture: true, passive: true });
+    }
+  }
+  attempt(false);
+};
+</script>
 <audio id="bg-music" src="audio/bg_score.mp3" loop preload="auto"></audio>
 <audio id="bang-sound" src="audio/big_bang.mp3" preload="auto"></audio>
 <audio id="hud-in-sound" src="audio/hud_in.mp3" preload="auto"></audio>
@@ -5674,8 +5713,7 @@ window.addEventListener('pageshow', (e) => {
 
       if (full) {
         // Play big bang sound effect
-        const bangSfx = document.getElementById('bang-sound');
-        if (bangSfx && !window._audioMuted) { bangSfx.volume = 0.7; bangSfx.play().catch(() => {}); }
+        window._playOrArm(function () { return document.getElementById('bang-sound'); }, 0.7, 4000);
       }
 
       setTimeout(() => {
@@ -6198,8 +6236,7 @@ const NAV_LABELS = {};  // key → display label
       gate.style.display = 'none';
       window._isFirstVisit = false;
       setVisited();
-      const blueMusic = document.getElementById('bg-music');
-      if (blueMusic) { blueMusic.volume = 0.35; blueMusic.play().catch(() => {}); }
+      window._playOrArm(function () { return document.getElementById('bg-music'); }, 0.35);
       document.body.classList.remove('pill-busy');
       const psc = document.getElementById('pill-scene');
       if (psc) { psc.classList.add('dismissed'); psc.classList.remove('running', 'loading'); }
@@ -6216,8 +6253,7 @@ const NAV_LABELS = {};  // key → display label
       // Music used to only auto-start via the gate's PROCEED button, so
       // returning visitors (who never see that button) got no music by
       // default — changed so a revisit also starts it.
-      const returnMusic = document.getElementById('bg-music');
-      if (returnMusic) { returnMusic.volume = 0.35; returnMusic.play().catch(() => {}); }
+      window._playOrArm(function () { return document.getElementById('bg-music'); }, 0.35);
       if (window._triggerBigBang) window._triggerBigBang();
       setTimeout(() => { if (!isNavHover) showNextQuote(); }, 9200);
       return;
