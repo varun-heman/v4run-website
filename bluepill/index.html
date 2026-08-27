@@ -129,8 +129,7 @@ html.tear .col { will-change: transform; }
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid var(--hair);
-  border-right: 1px solid var(--hair);
+  border: 1px solid var(--hair);
 }
 .cell { padding-left: var(--gut); padding-right: var(--gut); }
 .rule { border-bottom: 1px solid var(--hair); }
@@ -239,7 +238,6 @@ main { flex: 1; display: flex; flex-direction: column; }
   font-family: var(--mono); font-size: 9px;
   letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim);
   padding-top: 13px; padding-bottom: 13px;
-  border-top: 1px solid var(--hair);
 }
 .sec-head a { color: var(--dim); text-decoration: none; transition: color 0.2s; }
 .sec-head a:hover { color: var(--fg); }
@@ -271,7 +269,7 @@ main { flex: 1; display: flex; flex-direction: column; }
 /* ── reading strip ────────────────────────────────────────── */
 .strip {
   display: flex; overflow-x: auto;
-  scroll-snap-type: x mandatory; scroll-padding-left: 0;
+  scroll-snap-type: x mandatory;
   border-top: 1px solid var(--hair);
   scrollbar-width: none;
 }
@@ -279,26 +277,27 @@ main { flex: 1; display: flex; flex-direction: column; }
 /* each card is a grid cell, divided from its neighbour by a rule */
 .card {
   scroll-snap-align: start; flex: 0 0 160px;
-  padding: 16px; text-decoration: none;
+  text-decoration: none;
   border-right: 1px solid var(--hair);
   transition: background-color 0.25s ease;
 }
 .card:hover { background-color: rgba(255,255,255,0.06); }
+/* the cell is the box — no second one drawn inside it */
 .card-face {
   position: relative; overflow: hidden;
-  aspect-ratio: 2 / 3; border-radius: 4px; margin-bottom: 8px;
-  border: 1px solid var(--hair);
-  padding: 12px;
+  aspect-ratio: 2 / 3;
+  padding: 14px;
   display: flex; align-items: flex-end;
+  border-bottom: 1px solid var(--hair);
   background: linear-gradient(rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%);
 }
 .card-face::after {
   content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
-  background: linear-gradient(160deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.25) 100%);
-  box-shadow: inset 0 1px 2px rgba(255,255,255,0.22), inset 0 -1px 2px rgba(0,0,0,0.2);
+  background: linear-gradient(160deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.22) 100%);
 }
 .card-face span { position: relative; z-index: 3; font-size: 13px; line-height: 1.4; font-weight: 500; }
 .card-meta {
+  padding: 10px 14px;
   font-family: var(--mono); font-size: 9px;
   letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim);
 }
@@ -436,7 +435,7 @@ footer a:hover { color: var(--fg); }
          the coast on two wheels.</p>
     </section>
 
-    <div class="gap"></div>
+    <div class="gap rule"></div>
 
     <section>
       <div class="sec-head cell"><span>WORK</span><a href="https://linkedin.com/in/varunh" target="_blank" rel="noopener"><span class="t">LinkedIn</span> <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></div>
