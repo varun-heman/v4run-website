@@ -710,6 +710,94 @@ body.moments-closing .corner {
 }
 #pill-scene.running, #pill-scene.loading { display: block; }
 
+/* ── HANDOVER — gate to scene ────────────────────────────────────────────
+   The gate used to hand straight over: its backdrop faded off the live site
+   and then, one frame later, the scene's black dropped on top. A slam where
+   there should be a dissolve. The scene is raised underneath the gate
+   instead, over the same 620ms the gate takes to implode, so the site is
+   never uncovered and there is no cut to see.
+
+   The logo is the only chrome the prelude leaves standing (the other three
+   corners are held at zero until he stops talking), so on its own it would
+   arrive as a pop against the black. It comes up on a long curve of its
+   own, well behind the dissolve — the first thing to surface out of the
+   dark, rather than something switched on in it.
+
+   Both layers are black, so they cannot simply cross at equal rates: two
+   half-opaque blacks over the site total less than either at full, and the
+   site would ghost back through the middle of the handover. The scene comes
+   up faster than the gate goes down — 420ms against 620ms, front-loaded —
+   so the screen never gets lighter than the gate had it.
+
+   The .corner-tl rules carry the extra class only to outrank
+   `#pill-scene.booted .corner`, which is declared later in this sheet. */
+#pill-scene.arriving { display: block; opacity: 0; }
+#pill-scene.arriving.settling { opacity: 1; transition: opacity 0.42s ease-out; }
+#pill-scene.arriving .corner.corner-tl { opacity: 0; }
+#pill-scene.arriving.settling .corner.corner-tl {
+  opacity: 1;
+  transition: opacity 2.8s ease 1.1s;
+}
+
+/* ── DUST ────────────────────────────────────────────────────────────────
+   He speaks over black for several seconds before the hands rise, and empty
+   black reads as a stall rather than a held breath. Motes drift up out of
+   the bottom of the frame through it — slow, uneven, barely there — and are
+   faded off again as the hands unfurl so they never compete with footage.
+
+   Two nodes per mote so the two motions stay independent: the outer rises
+   and carries the fade, the inner sways across it. Transform and opacity
+   only, nothing that touches layout, and the whole field is torn out of the
+   DOM once the scene has opened. */
+#pill-scene #dust {
+  position: absolute; inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  /* The transition here is only ever used on the way OUT — a transition
+     belongs to the state being entered, and the raised state below declares
+     none. Fading the field IN was the bug: motes on a near-zero delay had
+     already climbed a fifth of the screen by the time the field was visible
+     enough to see them, so the first thing you saw was dust hanging in the
+     middle, with the rise starting underneath it afterwards. The field is
+     switched on at full instead and every mote fades itself up out of the
+     bottom edge (see mote-rise), so nothing is ever visible that has not
+     just come in from below. */
+  transition: opacity 1.6s ease;
+}
+#pill-scene.dust-up #dust { opacity: 1; transition: none; }
+#pill-scene .mote {
+  position: absolute;
+  bottom: -14px;
+  animation: mote-rise linear infinite;
+}
+#pill-scene .mote i {
+  display: block;
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  background: rgba(236, 240, 236, var(--a, 0.5));
+  box-shadow: 0 0 6px rgba(214, 255, 228, calc(var(--a, 0.5) * 0.6));
+  animation: mote-sway ease-in-out infinite alternate;
+}
+/* Held at full for most of the climb, so motes are not perpetually
+   twinkling — they simply arrive low, cross, and are gone off the top. */
+@keyframes mote-rise {
+  0%   { transform: translate3d(0, 0, 0);      opacity: 0; }
+  14%  { opacity: 1; }
+  74%  { opacity: 1; }
+  100% { transform: translate3d(0, -104vh, 0); opacity: 0; }
+}
+@keyframes mote-sway {
+  from { transform: translateX(calc(var(--dx, 8px) * -1)); }
+  to   { transform: translateX(var(--dx, 8px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #pill-scene #dust { display: none; }
+  #pill-scene.arriving.settling,
+  #pill-scene.arriving.settling .corner-tl { transition: none; }
+}
+
 /* The loader, the gate and the scene each cover the page, but covering it is
    not the same as disabling it: nav items underneath were still taking
    mouseenter and firing their hover chime while the loader was up. Nothing
@@ -4365,7 +4453,8 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
   </div>
   </div>
 
-  <div id="vignette"></div>
+  <div id="dust" aria-hidden="true"></div>
+    <div id="vignette"></div>
 
   <div id="glow-red" class="pill-glow"></div>
   <div id="glow-blue" class="pill-glow"></div>
@@ -6290,6 +6379,20 @@ const NAV_LABELS = {};  // key → display label
         gate.classList.add('dismissing');
         gate.classList.remove('visible');
 
+        // Raise the scene under the panel as it goes, so the two are one
+        // dissolve rather than a fade followed by a slam. First visit only:
+        // a return visitor is going back to the lit site, which is already
+        // behind the gate and needs nothing brought up under it.
+        const psc = window._isFirstVisit ? document.getElementById('pill-scene') : null;
+        if (psc) {
+          psc.classList.add('arriving');
+          // Two frames: one for the browser to take `display: block` and the
+          // start opacity, the next to have something to transition from.
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            psc.classList.add('settling');
+          }));
+        }
+
         setTimeout(() => {
           gate.style.display = 'none';
 
@@ -6303,6 +6406,10 @@ const NAV_LABELS = {};  // key → display label
             // waits for a pill to be taken (see _pillTaken below).
             if (window._pillStart) window._pillStart();
             else startTypedIntro();
+            // Both arrival rules land on the same values the scene holds
+            // anyway, so dropping them once they've run changes nothing on
+            // screen and keeps the scene's own state readable.
+            if (psc) setTimeout(() => psc.classList.remove('arriving', 'settling'), 4200);
           }
         }, 620); // matches the new shrink-and-glitch dismiss animation
       }, PROCEED_HOLD_MS);
@@ -11006,6 +11113,7 @@ window.addEventListener('popstate', (e) => {
   window._pillStart = function () {
     if (audioOn) return;
     scene.classList.add('running');
+    raiseDust();
     /* Locked from the very first frame. There used to be a live window
        between the hands opening and the monologue actually starting — long
        enough to hover a hand, trigger its line, and then have the monologue
@@ -11018,6 +11126,53 @@ window.addEventListener('popstate', (e) => {
     if (assetsReady) beginScene();
     else { startQueued = true; scene.classList.add('loading'); }
   };
+
+  /* Built on the way in rather than shipped in the markup: 24 nodes that
+     only matter for the twenty-odd seconds he is talking over the black, and
+     nothing at all to a visitor who never takes this path. Every mote gets
+     its own size, lane, drift, brightness and period, and a negative delay so
+     the field is already mid-flight on its first frame instead of starting
+     as a tidy row along the bottom edge. */
+  var DUST_RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function raiseDust() {
+    var d = document.getElementById('dust');
+    if (!d || DUST_RM || d.childElementCount) return;
+    var n = window.matchMedia('(max-width: 700px)').matches ? 14 : 24;
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < n; i++) {
+      var m = document.createElement('span'), dot = document.createElement('i');
+      var size = 1.4 + Math.random() * 2.4;
+      m.className = 'mote';
+      m.style.left = (Math.random() * 100).toFixed(2) + '%';
+      m.style.width = m.style.height = size.toFixed(2) + 'px';
+      m.style.animationDuration = (11 + Math.random() * 13).toFixed(1) + 's';
+      /* Positive, staggered — the point is that they come up out of the
+         bottom edge. A negative delay would drop the whole field onto the
+         screen mid-flight on frame one, which is the opposite: no rise to
+         watch, just dust that was always there. Spread over ~5s so they
+         trickle up rather than launching as a row. */
+      m.style.animationDelay = (0.2 + Math.random() * 6).toFixed(2) + 's';
+      /* smaller motes read as further off, so they drift less and sit dimmer */
+      dot.style.setProperty('--a', (0.3 + (size / 3.2) * 0.5).toFixed(2));
+      dot.style.setProperty('--dx', (4 + Math.random() * 22).toFixed(1) + 'px');
+      dot.style.animationDuration = (4 + Math.random() * 5).toFixed(1) + 's';
+      dot.style.animationDelay = (-Math.random() * 8).toFixed(1) + 's';
+      m.appendChild(dot);
+      frag.appendChild(m);
+    }
+    d.appendChild(frag);
+    /* one frame between the nodes landing and the fade, or there is nothing
+       for the 3.2s transition to run from */
+    requestAnimationFrame(function () { scene.classList.add('dust-up'); });
+  }
+  /* Faded rather than cut, and only torn down once it has actually gone —
+     the hands are unfurling over the top of this. */
+  function settleDust() {
+    var d = document.getElementById('dust');
+    if (!d || !d.childElementCount) return;
+    scene.classList.remove('dust-up');
+    setTimeout(function () { d.innerHTML = ''; }, 1800);
+  }
 
   function beginScene() {
     scene.classList.remove('loading');
@@ -11166,6 +11321,7 @@ window.addEventListener('popstate', (e) => {
       revealed = true;
       elVoice.removeEventListener('ended', reveal);
       body.classList.remove('prelude');
+      settleDust();
       refreshCursor();
       /* The fists fade up out of the black, register as fists, then unfurl
          into the offer. Only once they are open does he start the pitch —
