@@ -6339,9 +6339,15 @@ const NAV_LABELS = {};  // key → display label
     btnProceed && btnProceed.addEventListener('click', () => {
       stopCycle();
 
-      // Create AudioContext during the gesture so typewriter clicks can play later
+      // Create AudioContext during the gesture so typewriter clicks can play
+      // later. Never replace one that already exists: anything already routed
+      // through it keeps playing into the old graph, and the two then run with
+      // no relation to each other.
       try {
-        window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (!window._audioCtx) {
+          window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (window._audioCtx.state === 'suspended') window._audioCtx.resume();
       } catch(e) {}
 
       // Flag first visit BEFORE setVisited() so the bang can detect it
@@ -9977,9 +9983,17 @@ window.addEventListener('popstate', (e) => {
         var an = breath.ctx.createAnalyser();
         an.fftSize = 512;
         an.smoothingTimeConstant = kind === 'voice' ? 0.55 : 0.8;
+        /* A gain stage of its own, because iOS ignores volume set on a media
+           element — it is read-only there and the hardware buttons own it. On
+           a phone that left the breathing bed running at full level straight
+           over the top of him talking. Anything routed through here ducks with
+           this instead. */
+        var gn = breath.ctx.createGain();
+        gn.gain.value = 1;
         src.connect(an);
-        an.connect(breath.ctx.destination);   /* keep it audible */
-        breath.taps[kind] = { an: an, data: new Uint8Array(an.fftSize) };
+        an.connect(gn);
+        gn.connect(breath.ctx.destination);   /* keep it audible */
+        breath.taps[kind] = { an: an, data: new Uint8Array(an.fftSize), gain: gn };
         return true;
       } catch (e) { return false; }
     }
@@ -11088,7 +11102,21 @@ window.addEventListener('popstate', (e) => {
   /* the breathing bed steps back while he speaks rather than cutting out */
   function duckBreath(down) {
     if (!elBreath) return;
-    elBreath.volume = down ? 0.18 : 0.55;
+    var level = down ? 0.18 : 0.55;
+    var tap = window.choiceBreath && window.choiceBreath.taps
+      && window.choiceBreath.taps.nasal;
+    if (tap && tap.gain) {
+      /* ramped, so the bed leans back rather than stepping */
+      var g = tap.gain.gain, now = tap.gain.context.currentTime;
+      try {
+        g.cancelScheduledValues(now);
+        g.setValueAtTime(g.value, now);
+        g.linearRampToValueAtTime(level / 0.55, now + 0.22);
+      } catch (e) { g.value = level / 0.55; }
+      elBreath.volume = 0.55;   /* ignored on iOS, correct everywhere else */
+      return;
+    }
+    elBreath.volume = level;
   }
 
   elVoice.addEventListener('ended', function () {
