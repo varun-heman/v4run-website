@@ -20,6 +20,36 @@
 (function (global) {
   'use strict';
 
+  /* Warm the shared context on the first gesture anywhere on the page, well
+     before a transition needs it.
+
+     A context created at the moment of the click is not usable at the moment
+     of the click: it reports 'suspended' for a tick or two while it starts,
+     on desktop as much as on a phone. Reading that state and deciding from it
+     is what stopped the plume tracking the voice. Warmed on an earlier
+     gesture, it is genuinely running by the time anyone reaches a transition,
+     and the analyser can be trusted again. */
+  function warm() {
+    try {
+      var AC = global.AudioContext || global.webkitAudioContext;
+      if (!AC) return;
+      if (!global._audioCtx) global._audioCtx = new AC();
+      var c = global._audioCtx;
+      if (c.state === 'suspended') c.resume();
+      if (!c._unlocked) {
+        c._unlocked = true;
+        var s = c.createBufferSource();
+        s.buffer = c.createBuffer(1, 1, 22050);
+        s.connect(c.destination);
+        s.start(0);
+      }
+    } catch (e) {}
+  }
+  var GESTURES = ['pointerdown', 'touchstart', 'mousedown', 'keydown'];
+  for (var gi = 0; gi < GESTURES.length; gi++) {
+    document.addEventListener(GESTURES[gi], warm, { capture: true, passive: true });
+  }
+
   var HEAD_X = 0.507;          /* he is not dead centre */
   var PLUME_TILT = 0.055;      /* nor square to the camera */
   var CAP = 130;
@@ -93,9 +123,8 @@
     try {
       var AC = window.AudioContext || window.webkitAudioContext;
       if (AC) {
-        if (!global._audioCtx) global._audioCtx = new AC();
+        warm();
         var actx = global._audioCtx;
-        if (actx.state === 'suspended') actx.resume();
         /* Putting the element through the graph makes the graph the only way
            out of it. On a phone the context is usually still suspended at this
            point — resume() only settles a tick later — and routing into a

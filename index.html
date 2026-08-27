@@ -4957,7 +4957,10 @@ window.addEventListener('pageshow', (e) => {
   `;
 
   const isMobile = window.innerWidth <= 768;
-  const N = isMobile ? 2200 : 5000;
+  /* Every dot is an additively blended sprite, so on a phone the cost is
+     overdraw rather than geometry, and a phone has the fill rate of a
+     postage stamp. The sphere reads the same at half the population. */
+  const N = isMobile ? 1200 : 5000;
   const base  = new Float32Array(N * 3);
   const seed  = new Float32Array(N);
   const seed2 = new Float32Array(N);
@@ -5061,7 +5064,7 @@ window.addEventListener('pageshow', (e) => {
     `
   });
 
-  const NODES = 80;
+  const NODES = isMobile ? 44 : 80;
   const nIdx  = Array.from({ length: NODES }, (_, i) => Math.floor(i * N / NODES));
   const nv    = nIdx.map(i =>
     new THREE.Vector3(base[i*3], base[i*3+1], base[i*3+2]).normalize()
