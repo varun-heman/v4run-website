@@ -4506,6 +4506,10 @@ body.hud-boot .hud-node { animation-name: hud-node-pulse; animation-timing-funct
 <audio id="bang-sound" src="audio/big_bang.mp3" preload="auto"></audio>
 <audio id="hud-in-sound" src="audio/hud_in.mp3" preload="auto"></audio>
 <audio id="nav-hover-sound" src="audio/button_hover.mp3" preload="auto"></audio>
+<!-- The static burst that rides the CRT-ON intro. The clip has ~0.34s of dead
+     air before its hum starts and its main pop lands at ~1.03s, so the JS seeks
+     past that lead-in to land the pop on the flash — see CRT_ON_SFX_LEAD. -->
+<audio id="crt-on-sound" src="audio/static-tv-on.mp3" preload="auto"></audio>
 
 <div class="corner corner-br">
   <button id="music-control" class="muted" aria-label="Toggle music">
@@ -6020,11 +6024,47 @@ const NAV_LABELS = {};  // key → display label
     const crtOnOverlay = document.getElementById('crt-on-overlay');
     const skipCrtOn = !!location.hash ||
       (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+    // The tube's own noise, cut to the picture. The clip opens with ~0.34s of
+    // dead air, hums up from 0.52s and lands its pop at ~1.03s — while the
+    // 900ms animation reaches full width at 648ms and flashes white at 846ms.
+    // Starting the clip 0.34s in puts the hum under the expanding dot, the pop
+    // across the full-width snap and flash, and lets the tail bleed a hair past
+    // the reveal.
+    const CRT_ON_SFX_LEAD = 0.34;
+    const CRT_ON_MS = 900;
+    function playCrtOnStatic() {
+      const sfx = document.getElementById('crt-on-sound');
+      if (!sfx || window._audioMuted) return;
+      sfx.volume = 0.55;
+      const t0 = performance.now();
+      const start = () => {
+        // If the file only turned up after the picture did, there's nothing
+        // left to sync to — a static burst over a settled page reads as a
+        // glitch, so let it go rather than play it late.
+        const late = performance.now() - t0;
+        if (late > CRT_ON_MS) return;
+        // Seek to where the clip *should* be by now, not to its head, so a
+        // slow load costs a shortened lead-in rather than the sync itself.
+        sfx.currentTime = CRT_ON_SFX_LEAD + late / 1000;
+        // First visits usually have no user gesture yet, so this is often
+        // blocked — same deal as the background score, and just as harmless.
+        sfx.play().catch(() => {});
+      };
+      // A seek set before the metadata lands is silently dropped and the clip
+      // plays from its head — 0.34s of dead air over the whole animation, and
+      // the pop arriving after the reveal. Wait for metadata when it isn't in
+      // yet; with preload="auto" and a 60KB file that's usually already true.
+      if (sfx.readyState >= 1) start();
+      else sfx.addEventListener('loadedmetadata', start, { once: true });
+    }
+
     if (crtOnOverlay) {
       if (skipCrtOn) {
         crtOnOverlay.style.display = 'none';
         runGateLogic();
       } else {
+        playCrtOnStatic();
         document.body.classList.add('crt-on');
         setTimeout(() => {
           document.body.classList.remove('crt-on');
