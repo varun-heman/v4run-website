@@ -133,7 +133,9 @@ html.tear .col { will-change: transform; }
 }
 .cell { padding-left: var(--gut); padding-right: var(--gut); }
 .rule { border-bottom: 1px solid var(--hair); }
-.gap { height: 48px; flex-shrink: 0; }   /* ruled emptiness */
+.gap { height: 48px; flex-shrink: 0; }   /* ruled emptiness, bounded by its neighbours */
+main > section { border-bottom: 1px solid var(--hair); }
+.gap + section { border-top: 1px solid var(--hair); }
 
 /* ── glass ─────────────────────────────────────────────────────
    From the reference: a lit top edge, a shaded bottom one, and a
@@ -435,7 +437,7 @@ footer a:hover { color: var(--fg); }
 
   <main>
 
-    <section class="bio cell rule">
+    <section class="bio cell">
       <p>I'm a Senior Curator at PUCAR — the Public Collective for Avoidance and Resolution
          of Disputes, an Agami initiative working to transform India's dispute resolution
          experience through process re-engineering, open-source technology, and judicial
@@ -451,7 +453,7 @@ footer a:hover { color: var(--fg); }
          the coast on two wheels.</p>
     </section>
 
-    <div class="gap rule"></div>
+    <div class="gap"></div>
 
     <section>
       <div class="sec-head cell"><span>WORK</span><a href="https://linkedin.com/in/varunh" target="_blank" rel="noopener"><span class="t">LinkedIn</span> <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></div>
@@ -497,7 +499,7 @@ footer a:hover { color: var(--fg); }
       </div>
     </section>
 
-    <div class="gap rule"></div>
+    <div class="gap"></div>
 
     <section>
       <div class="sec-head cell"><span>PROJECTS</span><a href="https://github.com/varun-heman" target="_blank" rel="noopener"><span class="t">GitHub</span> <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></div>
@@ -512,7 +514,7 @@ footer a:hover { color: var(--fg); }
       </a>
     </section>
 
-    <div class="gap rule"></div>
+    <div class="gap"></div>
 
     <section>
       <div class="sec-head cell"><span>RECENTLY READ</span><a href="/#reads"><span class="t">All reads</span> <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a></div>
@@ -536,7 +538,7 @@ footer a:hover { color: var(--fg); }
       </div>
     </section>
 
-    <div class="gap rule"></div>
+    <div class="gap"></div>
 
     <section>
       <div class="sec-head cell"><span>ELSEWHERE</span><span>&nbsp;</span></div>
@@ -566,6 +568,8 @@ footer a:hover { color: var(--fg); }
   'use strict';
 
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var fine = !window.matchMedia || window.matchMedia('(pointer: fine)').matches;
+  var floodOn = null, floodOff = null, floodLabel = null;
   var jolt = null;          // the seismograph hands this out below
   var onStrain = null;      // the facade listens for it
   var otherWorld = false;   // true only while the facade is down
@@ -621,7 +625,6 @@ footer a:hover { color: var(--fg); }
     // The instrument shakes its own ground until it gets a real reading, so the
     // page never arrives on a dead flat line — and a touch visitor, who will
     // never send one, keeps the tremor for good.
-    var fine = !window.matchMedia || window.matchMedia('(pointer: fine)').matches;
     var synthetic = true;
 
     var px = 0, py = 0, pt = 0, pvx = 0, pvy = 0, tracking = false;
@@ -1557,20 +1560,56 @@ footer a:hover { color: var(--fg); }
     }
     function off() { to = 0; run(); }
 
-    pill.addEventListener('pointerenter', on);
-    pill.addEventListener('pointerleave', off);
-    pill.addEventListener('focus', on);
-    pill.addEventListener('blur', off);
+    if (fine) {
+      pill.addEventListener('pointerenter', on);
+      pill.addEventListener('pointerleave', off);
+      pill.addEventListener('focus', on);
+      pill.addEventListener('blur', off);
+    } else {
+      // no hover to be had — the button below drives this on the first tap
+      floodOn = on; floodOff = off; floodLabel = lab;
+    }
     size();
   })();
 
   var btn = document.getElementById('take-red');
   if (!btn) return;
-  btn.addEventListener('click', function () {
+
+  var SAID = 'Take the red pill', ARMED = 'Tap again to take the red pill';
+  var armed = false, armTimer = 0;
+
+  function disarm() {
+    if (!armed) return;
+    armed = false;
+    clearTimeout(armTimer);
+    document.removeEventListener('pointerdown', elsewhere, true);
+    if (floodOff) floodOff();
+    if (floodLabel) floodLabel.textContent = SAID;
+  }
+  function elsewhere(e) { if (!btn.contains(e.target)) disarm(); }
+
+  function go() {
     // He talks you back across the black, then the world arrives on the bang —
     // no gate, no choice, no typing, since all of that already happened.
     if (window.plumeTransition) window.plumeTransition('/audio/backtored.mp3', '/?enter=bang');
     else window.location.href = '/?enter=bang';
+  }
+
+  btn.addEventListener('click', function (e) {
+    // A phone never gets to hover, so the first tap is the hover: the row
+    // floods and the label says what the next one will do. Tapping anywhere
+    // else, or waiting, puts it back.
+    if (!fine && floodOn && !armed) {
+      e.preventDefault();
+      armed = true;
+      if (floodLabel) floodLabel.textContent = ARMED;
+      floodOn();
+      document.addEventListener('pointerdown', elsewhere, true);
+      armTimer = setTimeout(disarm, 6000);
+      return;
+    }
+    clearTimeout(armTimer);
+    go();
   });
 })();
 </script>

@@ -11135,19 +11135,22 @@ window.addEventListener('popstate', (e) => {
     } catch (e) { fail(); }
   }
 
-  /* the breathing bed steps back while he speaks rather than cutting out */
+  /* The bed is his breathing between sentences, not under them: it goes to
+     nothing while he speaks and comes back when he stops. Out of the way
+     quickly so it never sits on his first word, back in slowly so it doesn't
+     announce itself the moment he finishes. */
   function duckBreath(down) {
     if (!elBreath) return;
-    var level = down ? 0.18 : 0.55;
+    var level = down ? 0 : 0.55;
     var tap = window.choiceBreath && window.choiceBreath.taps
       && window.choiceBreath.taps.nasal;
     if (tap && tap.gain) {
-      /* ramped, so the bed leans back rather than stepping */
       var g = tap.gain.gain, now = tap.gain.context.currentTime;
+      var ramp = down ? 0.16 : 0.45;
       try {
         g.cancelScheduledValues(now);
         g.setValueAtTime(g.value, now);
-        g.linearRampToValueAtTime(level / 0.55, now + 0.22);
+        g.linearRampToValueAtTime(level / 0.55, now + ramp);
       } catch (e) { g.value = level / 0.55; }
       elBreath.volume = 0.55;   /* ignored on iOS, correct everywhere else */
       return;
